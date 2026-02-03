@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+.beautiful-input {
+  @apply w-full border border-gray-300 rounded-xl py-2.5 px-4 
+  shadow-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400 
+  outline-none transition bg-gray-50 hover:bg-white;
+}
+
+.label-style {
+  @apply text-gray-700 font-medium flex items-center gap-2 mb-1;
+}
+
+.upload-box {
+  @apply mt-2 border-2 border-dashed rounded-xl p-6 text-center 
+  hover:border-blue-400 transition cursor-pointer bg-gray-50;
+}
+.beautiful-input {
+  @apply w-full border border-gray-300 rounded-xl py-2.5 px-4 
+  shadow-sm focus:ring-2 focus:ring-green-400 focus:border-green-400 
+  outline-none transition bg-gray-50 hover:bg-white;
+}
+
+.label-style {
+  @apply text-gray-700 font-medium flex items-center gap-2 mb-1;
+}
+
+.upload-box {
+  @apply mt-2 border-2 border-dashed rounded-xl p-6 text-center 
+  hover:border-green-400 transition cursor-pointer bg-gray-50;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c7d2fe;
+  border-radius: 10px;
+}
