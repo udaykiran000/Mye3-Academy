@@ -36,7 +36,8 @@ const __dirname = path.dirname(__filename);
 app.use(express.json());
 
 const allowedOrigins = [
-  "http://localhost:5173",        // local frontend
+  "http://localhost:5173", 
+   "https://mye3-academy-1.onrender.com"       // local frontend
 
 ];
 
