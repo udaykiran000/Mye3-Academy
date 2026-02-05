@@ -7,6 +7,7 @@ const sendEmail = async (email, subject, text) => {
   console.log("EMAIL_PASS length:", process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0);
 
   try {
+    console.log("Checking Env:", process.env.EMAIL_USER);
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 465, // 
