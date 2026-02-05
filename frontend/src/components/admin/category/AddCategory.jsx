@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import { Upload, X, Loader2, Save } from "lucide-react";
-import api from "../../api/axios";
+import api from "../../../api/axios";
 
 const AddCategory = ({ onClose }) => {
   const [name, setName] = useState("");

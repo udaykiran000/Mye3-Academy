@@ -4,52 +4,51 @@ import ScrollToTop from "./components/ScrollToTop";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 
+// PUBLIC PAGES
 import Home from "./pages/Home";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
-
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ForgetPassword from "./pages/ForgetPassword";
 
+// ADMIN COMPONENTS
 import AdminLayout from "./components/admin/AdminLayout";
 import DashboardPage from "./components/admin/DashboardPage";
-import ManageInstructors from "./components/admin/ManageInstructors";
-import ManageStudents from "./components/admin/ManageStudents";
-import ManageMocktests from "./components/admin/ManageMocktests";
-
-import CategoryPage from "./components/admin/CategoryPage";
-import CreateMocktestPage from "./components/admin/CreateMocktestPage";
-import FormMocktest from "./components/admin/FormMocktest";
+import ManageInstructors from "./components/admin/instructors/ManageInstructors";
+import ManageStudents from "./components/admin/students/ManageStudents";
+import ManageMocktests from "./components/admin/mocktest/ManageMocktests";
+import FormMocktest from "./components/admin/mocktest/FormMocktest";
 import AdminQuestions from "./components/admin/AdminQuestions";
-import SelectCategoryForCreation from "./components/admin/SelectCategoryForCreation";
+import SelectCategoryForCreation from "./components/admin/category/SelectCategoryForCreation";
+import CategoryMockTests from "./components/admin/category/CategoryMockTests.jsx";
+import AddInstructor from "./components/admin/instructors/AddInstructor";
+import AddStudent from "./components/admin/students/AddStudent";
+import PaymentManagement from "./components/admin/PaymentManagement";
+import AdminProfileSettings from "./components/admin/AdminProfileSettings";
+import AdminDoubts from "./pages/admin/AdminDoubts";
+import PaymentGatewaySettings from "./pages/admin/PaymentGatewaySettings";
 
+// STUDENT PAGES
 import WriteMocktest from "./pages/student/WriteMocktest";
 import InstructionsPage from "./pages/student/InstructionsPage";
 import StuDashboard from "./pages/student/StuDashboard";
-
 import AllMockTests from "./pages/AllMockTests";
 import MockTestDetail from "./pages/MockTestDetail";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
-import AddInstructor from "./components/admin/AddInstructor";
-
-import { Toaster } from "react-hot-toast";
-import AddStudent from "./components/admin/AddStudent";
-import PaymentManagement from "./components/admin/PaymentManagement"; // History Page
-import PaymentGatewaySettings from "./pages/admin/PaymentGatewaySettings"; // ✅ NEW SETTINGS PAGE
-
-import InstructorDashboard from "./pages/instructor/InstructorDashboard";
-import AdminProfileSettings from "./components/admin/AdminProfileSettings";
-import ReviewSolutions from './pages/student/ReviewSolutions';
-import ProtectedRoute from "./components/student/ProtectedRoute";
+import ReviewSolutions from "./pages/student/ReviewSolutions";
 import StudentDoubts from "./pages/student/StudentDoubts";
-import AdminDoubts from "./pages/admin/AdminDoubts";
+
+// INSTRUCTOR PAGES
+import InstructorDashboard from "./pages/instructor/InstructorDashboard";
 import InstructorDoubts from "./pages/instructor/InstructorDoubts";
 
+// PROTECTED ROUTE
+import ProtectedRoute from "./components/student/ProtectedRoute";
+import { Toaster } from "react-hot-toast";
 
-// ------------------------- MAIN LAYOUT -------------------------
-
+// ------------------------- MAIN LAYOUT COMPONENT -------------------------
 const MainLayout = ({ children }) => {
   const location = useLocation();
 
@@ -57,10 +56,9 @@ const MainLayout = ({ children }) => {
     location.pathname.startsWith("/admin") ||
     location.pathname.startsWith("/student-dashboard") ||
     location.pathname.startsWith("/instructor-dashboard") ||
-    location.pathname.startsWith("/student/write-test") || 
-    location.pathname.startsWith("/student/review") || 
+    location.pathname.startsWith("/student/write-test") ||
+    location.pathname.startsWith("/student/review") ||
     location.pathname.startsWith("/student/instructions") ||
-
     location.pathname === "/login" ||
     location.pathname === "/signup";
 
@@ -74,8 +72,7 @@ const MainLayout = ({ children }) => {
   );
 };
 
-// ------------------------- MAIN APP -------------------------
-
+// ------------------------- MAIN APP COMPONENT -------------------------
 const App = () => {
   const { userData } = useSelector((state) => state.user);
 
@@ -88,13 +85,11 @@ const App = () => {
         <Routes>
           {/* ---------------- PUBLIC ROUTES ---------------- */}
           <Route path="/" element={<Home />} />
-
           <Route
             path="/signup"
             element={!userData ? <Signup /> : <Navigate to="/" replace />}
           />
           <Route path="/forget-password" element={<ForgetPassword />} />
-
           <Route
             path="/login"
             element={
@@ -104,62 +99,53 @@ const App = () => {
                 <Navigate to="/admin" replace />
               ) : userData.role === "instructor" ? (
                 <Navigate to="/instructor-dashboard" replace />
-              ) : userData.purchasedTests?.length > 0 ? (
-                <Navigate to="/student-dashboard" replace />
               ) : (
                 <Navigate to="/mocktests" replace />
               )
             }
           />
-          <Route 
-            path="/student/review/:attemptId" 
-            element={
-              <ProtectedRoute>
-                 <ReviewSolutions /> 
-              </ProtectedRoute>
-            } 
-          />
+
           {/* ---------------- STUDENT ROUTES ---------------- */}
-          <Route
-            path="/student/instructions/:mocktestId"
-            element={userData ? <InstructionsPage /> : <Navigate to="/login" replace />}
-          />
-          <Route path="/student/doubts" element={<StudentDoubts />} />
-
-
-          <Route
-            path="/student/write-test/:attemptId"
-            element={userData ? <WriteMocktest /> : <Navigate to="/login" replace />}
-          />
-
           <Route path="/mocktests" element={<AllMockTests />} />
           <Route path="/mocktests/:id" element={<MockTestDetail />} />
-
           <Route path="/cart" element={<Cart />} />
-
           <Route
             path="/checkout"
             element={userData ? <Checkout /> : <Navigate to="/login" replace />}
           />
-          
-
-          {/* ---------------- STUDENT DASHBOARD ---------------- */}
+          <Route path="/student/doubts" element={<StudentDoubts />} />
+          <Route
+            path="/student/instructions/:mocktestId"
+            element={
+              userData ? <InstructionsPage /> : <Navigate to="/login" replace />
+            }
+          />
+          <Route
+            path="/student/write-test/:attemptId"
+            element={
+              userData ? <WriteMocktest /> : <Navigate to="/login" replace />
+            }
+          />
+          <Route
+            path="/student/review/:attemptId"
+            element={
+              <ProtectedRoute>
+                <ReviewSolutions />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/student-dashboard"
             element={
               userData?.role === "student" ? (
-                userData.purchasedTests?.length > 0 ? (
-                  <StuDashboard />
-                ) : (
-                  <Navigate to="/mocktests" replace />
-                )
+                <StuDashboard />
               ) : (
                 <Navigate to="/login" replace />
               )
             }
           />
 
-          {/* ---------------- INSTRUCTOR DASHBOARD ---------------- */}
+          {/* ---------------- INSTRUCTOR ROUTES ---------------- */}
           <Route
             path="/instructor-dashboard"
             element={
@@ -170,10 +156,9 @@ const App = () => {
               )
             }
           />
-
           <Route path="/instructor/doubts" element={<InstructorDoubts />} />
 
-          {/* ---------------- ADMIN ROUTES ---------------- */}
+          {/* ---------------- ADMIN ROUTES (Holistic & Clean) ---------------- */}
           <Route
             path="/admin"
             element={
@@ -184,42 +169,61 @@ const App = () => {
               )
             }
           >
-            {/* ADMIN HOME */}
+            {/* Admin Home Dashboard */}
             <Route index element={<DashboardPage />} />
 
-            {/* USERS SECTION */}
+            {/* User Management */}
             <Route path="users">
-              <Route path="instructors/manage" element={<ManageInstructors />} />
+              <Route
+                path="instructors/manage"
+                element={<ManageInstructors />}
+              />
               <Route path="instructors/add" element={<AddInstructor />} />
-              <Route path="instructors/edit/:id" element={<AddInstructor/>} />
-
+              <Route path="instructors/edit/:id" element={<AddInstructor />} />
               <Route path="students/manage" element={<ManageStudents />} />
-              <Route path="students/edit/:id" element={<AddStudent/>}/>
               <Route path="students/add" element={<AddStudent />} />
+              <Route path="students/edit/:id" element={<AddStudent />} />
             </Route>
 
-            {/* ✅ UPDATED PAYMENT ROUTES */}
+            {/* Finance & Support */}
             <Route path="payments" element={<PaymentManagement />} />
-            <Route path="payment-settings" element={<PaymentGatewaySettings />} /> 
-            
+            <Route
+              path="payment-settings"
+              element={<PaymentGatewaySettings />}
+            />
             <Route path="doubts" element={<AdminDoubts />} />
-
-            {/* CATEGORIES */}
-            <Route path="categories" element={<CategoryPage />} />
-
-            {/* TESTS SECTION */}
-            <Route path="tests">
-              <Route path="manage-tests" element={<ManageMocktests />} />
-              <Route path="add-new-test" element={<SelectCategoryForCreation />} />
-            </Route>
             <Route path="profile" element={<AdminProfileSettings />} />
 
-            {/* LEGACY MOCKTEST ROUTES */}
+            {/* Categories Management (Directory of all exam types) */}
+            <Route path="categories" element={<SelectCategoryForCreation />} />
+
+            {/* Test Management Section */}
+            <Route path="tests">
+              <Route path="manage-tests" element={<ManageMocktests />} />
+              <Route
+                path="add-new-test"
+                element={<SelectCategoryForCreation />}
+              />
+            </Route>
+
+            {/* Mocktest Core Routing System (Handles New and Edit via FormMocktest) */}
             <Route path="mocktests" element={<ManageMocktests />} />
-            <Route path="mocktests/:category" element={<CategoryPage />} />
-            <Route path="mocktests/:category/new" element={<CreateMocktestPage />} />
-            <Route path="mocktests/:category/edit/:id" element={<FormMocktest />} />
-            <Route path="mocktests/:id/questions" element={<AdminQuestions />} />
+            <Route path="mocktests/:category" element={<CategoryMockTests />} />
+
+            {/* CREATE MODE: category provided, no ID */}
+            <Route path="mocktests/:category/new" element={<FormMocktest />} />
+
+            {/* EDIT MODE: category and ID provided */}
+            <Route
+              path="mocktests/:category/edit/:id"
+              element={<FormMocktest />}
+            />
+
+            {/* Question Builder for specific mocktest */}
+            <Route
+              path="mocktests/:id/questions"
+              element={<AdminQuestions />}
+            />
           </Route>
 
           {/* ---------------- FALLBACK ---------------- */}

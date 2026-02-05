@@ -3,8 +3,8 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   fetchStudents,
   updateStudent,
-} from "../../redux/adminStudentSlice";
-import api from "../../api/axios";
+} from "../../../redux/adminStudentSlice";
+import api from "../../../api/axios";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 

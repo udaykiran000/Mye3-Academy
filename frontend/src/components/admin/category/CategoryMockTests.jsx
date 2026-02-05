@@ -12,10 +12,10 @@ import {
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast"; 
-import api from "../../api/axios";
+import api from "../../../api/axios";
 import { ClipLoader } from "react-spinners";
 
-export default function CategoryPage() {
+export default function CategoryMockTests() {
     const { category } = useParams();
     const navigate = useNavigate();
 

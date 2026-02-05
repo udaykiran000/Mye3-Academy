@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addInstructor, updateInstructor, fetchInstructors } from "../../redux/instructorSlice";
+import { addInstructor, updateInstructor, fetchInstructors } from "../../../redux/instructorSlice";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { updateCategory } from "../../redux/categorySlice";
+import { updateCategory } from "../../../redux/categorySlice";
 import { toast } from "react-hot-toast";
 import { FaTimes, FaCloudUploadAlt } from "react-icons/fa";
 

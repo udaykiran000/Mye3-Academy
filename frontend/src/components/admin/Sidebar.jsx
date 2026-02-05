@@ -30,34 +30,34 @@ import {
 const navItems = [
   { name: "Main Dashboard", path: "/admin", icon: Home, end: true },
   {
-    name: "Tests Directory",
+    name: "TESTS",
     key: "tests",
     icon: FileText,
     children: [
       {
-        name: "Manage Categories",
-        path: "/admin/tests/manage-tests",
-        icon: BarChart3,
-      },
-      {
-        name: "Create Blueprint",
+        name: "Categories",
         path: "/admin/tests/add-new-test",
         icon: Plus,
+      },
+      {
+        name: "manage Tests",
+        path: "/admin/tests/manage-tests",
+        icon: BarChart3,
       },
     ],
   },
   {
-    name: "Staff & Students",
+    name: "Instructor & Students",
     key: "users",
     icon: Users,
     children: [
       {
-        name: "Instructors Pool",
+        name: "Instructors",
         key: "instructors",
         icon: UserCog,
         children: [
           {
-            name: "Manage Directory",
+            name: "Manage Instructors",
             path: "/admin/users/instructors/manage",
             icon: UserCog,
           },
@@ -69,17 +69,17 @@ const navItems = [
         ],
       },
       {
-        name: "Student Registry",
+        name: "Students",
         key: "students",
         icon: Users,
         children: [
           {
-            name: "Active List",
+            name: "Manage Students",
             path: "/admin/users/students/manage",
             icon: Users,
           },
           {
-            name: "Register New",
+            name: "New Student",
             path: "/admin/users/students/add",
             icon: Plus,
           },
@@ -96,7 +96,7 @@ const navItems = [
       { name: "Gateway Config", path: "/admin/payment-settings", icon: Wallet },
     ],
   },
-  { name: "Query System", path: "/admin/doubts", icon: FileText },
+  { name: "Doubt Management", path: "/admin/doubts", icon: FileText },
 ];
 
 // ----------------------------------------------
@@ -247,7 +247,7 @@ const Sidebar = () => {
       {/* SIDEBAR MAIN PANEL */}
       <aside
         className={`
-        bg-white border-r border-slate-200 shadow-sm
+        bg-gray-300 border-1 border-gray-600 shadow-sm
         fixed top-0 left-0 h-screen 
         w-72 flex flex-col z-[55]
         transition-transform duration-300 ease-in-out
@@ -256,15 +256,15 @@ const Sidebar = () => {
       >
         {/* BRAND IDENTITY */}
         <div className="px-6 py-6 border-b border-slate-100 flex items-center gap-3">
-          <div className="bg-indigo-600 w-8 h-8 rounded flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+          {/* <div className="bg-indigo-600 w-8 h-8 rounded flex items-center justify-center text-white shadow-lg shadow-indigo-100">
             <Settings size={18} strokeWidth={2.5} />
-          </div>
+          </div> */}
           <div>
             <h2 className="text-[13px] font-black text-slate-800 uppercase tracking-widest leading-none">
-              MYE 3 System
+              MYE 3 Academy
             </h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-0.5">
-              Management Portal
+            <p className="text-[13px] text-slate-400 font-bold uppercase tracking-tight mt-0.5">
+              ADMIN
             </p>
           </div>
         </div>
@@ -280,12 +280,9 @@ const Sidebar = () => {
           >
             <img
               src={avatarUrl}
-              className="w-14 h-14 rounded-xl object-cover border border-slate-100 shadow-sm hover:scale-105 transition duration-500"
+              className="w-10 h-10 rounded-xl object-cover border border-slate-100 shadow-sm hover:scale-105 transition duration-500"
               alt="Avatar"
             />
-            <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-md border border-slate-100 shadow-sm text-indigo-500">
-              <Settings size={12} />
-            </div>
           </div>
           <div className="mt-4 text-center">
             <h4 className="text-slate-800 font-black text-[14px] leading-tight uppercase tracking-tight">
@@ -293,17 +290,15 @@ const Sidebar = () => {
                 ? `${adminProfile.firstname} ${adminProfile.lastname}`
                 : "Retrieving Data..."}
             </h4>
-            <p className="text-indigo-500 text-[10px] font-bold uppercase tracking-widest mt-0.5">
-              Super Administrator
-            </p>
+            <p className="text-indigo-500 text-[10px] font-bold uppercase tracking-widest mt-0.5"></p>
           </div>
         </div>
 
         {/* DYNAMIC NAVIGATION LINKS */}
         <nav className="flex-grow overflow-y-auto px-3 py-6 no-scrollbar space-y-6">
           <div>
-            <p className="px-5 text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em] mb-3">
-              Directory Maps
+            <p className="px-5 text-[12px] font-bold text-black   uppercase tracking-[0.2em] mb-3">
+              Index
             </p>
             <ul className="space-y-0.5">
               {navItems.map((item) => (
@@ -318,17 +313,16 @@ const Sidebar = () => {
               ))}
             </ul>
           </div>
-          <div className="px-5">
+          {/* <div className="px-5">
             <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em] mb-2">
               Internal Index
             </p>
             <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
               <p className="text-[10px] text-slate-400 leading-relaxed font-medium">
-                Dashboard back-end systemsync 
-                dashboard consistency 
+                Dashboard back-end systemsync dashboard consistenc
               </p>
             </div>
-          </div>
+          </div> */}
         </nav>
 
         {/* LOGOUT UNIT */}
@@ -336,13 +330,15 @@ const Sidebar = () => {
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className={`w-full group hover:bg-rose-50 border border-transparent hover:border-rose-100 text-slate-400 hover:text-rose-500 py-2.5 rounded-lg flex items-center gap-3 justify-center font-bold text-xs uppercase tracking-widest transition duration-300 ${isLoggingOut ? "opacity-50" : ""}`}
+            className={`w-full group bg-rose-50 border border-rose-200 text-rose-500 py-2.5 rounded-lg flex items-center gap-3 justify-center font-bold text-xs uppercase tracking-widest transition duration-300 hover:bg-rose-100 hover:text-rose-600 ${
+              isLoggingOut ? "opacity-50" : ""
+            }`}
           >
             <LogOut
-              size={16}
+              size={18}
               className="group-hover:-translate-x-1 transition-transform"
             />
-            Commit Logout
+            Logout
           </button>
         </div>
       </aside>

@@ -282,6 +282,11 @@ export const startTestAttempt = async (req, res) => {
       marks: q.marks || 1,
       negative: q.negative || 0,
       parentQuestionId: q.parentQuestionId || null,
+
+      // ⭐ FIXED: SYNCING CORRECT ANSWERS FOR SCORING
+      correct: q.correct || [],
+      correctManualAnswer: q.correctManualAnswer || null,
+      explanation: q.explanation || "",
     }));
 
     const attemptDoc = await Attempt.create({
@@ -428,12 +433,12 @@ export const loadExamPaper = async (req, res) => {
 };
 
 // -----------------------------------------------------------------------------
-// 3️⃣ SUBMIT MOCK TEST
+// 3️⃣ SUBMIT MOCK TEST (FIXED SCORING LOGIC)
 // -----------------------------------------------------------------------------
 export const submitMockTest = async (req, res) => {
   try {
     const { id: attemptId } = req.params;
-    const { answers } = req.body; // Expecting: Array of { questionId: string, selectedAnswer: number | string }
+    const { answers } = req.body;
 
     const attempt = await Attempt.findById(attemptId);
     if (!attempt)
@@ -450,46 +455,46 @@ export const submitMockTest = async (req, res) => {
     let totalMarks = 0;
     const processedAnswers = [];
 
-    // Assuming attempt.questions is correctly populated with embedded question data
     const attemptQuestions = attempt.questions || [];
 
     for (const q of attemptQuestions) {
-      // Find the user's submitted answer for the current question
       const userAns = Array.isArray(answers)
         ? answers.find((a) => a.questionId === q._id.toString())
         : null;
-      const selectedAnswer = userAns ? userAns.selectedAnswer : null;
+
+      const selectedAnswer =
+        userAns && userAns.selectedAnswer !== undefined
+          ? userAns.selectedAnswer
+          : null;
       let isCorrect = false;
 
-      // Only count marks for scorable questions
       if (q.questionType !== "passage") {
         totalMarks += q.marks || 0;
       }
 
       if (q.questionType === "mcq") {
-        // Ensure submitted answer is a number (e.g., "1" -> 1)
-        const submittedIndex = Number(selectedAnswer);
-
-        // ✅ FIX: Normalize the database 'correct' array to ensure all elements are JavaScript numbers
         const correctIndices = (q.correct || []).map((index) => Number(index));
 
-        // Check for inclusion using the normalized array
-        if (
-          userAns &&
-          !isNaN(submittedIndex) &&
-          correctIndices.includes(submittedIndex)
-        ) {
-          score += q.marks || 0;
-          correctCount++;
-          isCorrect = true;
-        } else if (userAns && selectedAnswer !== null) {
-          // Answered incorrectly
-          score -= q.negative || 0;
+        // ✅ FIXED: Only calculate score if user actually provided an answer
+        if (userAns && selectedAnswer !== null && selectedAnswer !== "") {
+          const submittedIndex = Number(selectedAnswer);
+
+          if (
+            !isNaN(submittedIndex) &&
+            correctIndices.includes(submittedIndex)
+          ) {
+            score += q.marks || 0;
+            correctCount++;
+            isCorrect = true;
+          } else {
+            // Negative marking only for incorrect answers
+            score -= q.negative || 0;
+          }
         }
 
         processedAnswers.push({
           questionId: q._id.toString(),
-          selectedAnswer: submittedIndex,
+          selectedAnswer: selectedAnswer,
           correctAnswer:
             q.options && q.options[correctIndices[0]]
               ? q.options[correctIndices[0]].text
@@ -500,7 +505,6 @@ export const submitMockTest = async (req, res) => {
           questionText: q.questionText,
         });
       } else if (q.questionType === "manual") {
-        // Assuming manual means NAT (Numerical Answer Type) or short exact match
         const submittedValue = selectedAnswer
           ? selectedAnswer.toString().trim().toLowerCase()
           : "";
@@ -508,16 +512,14 @@ export const submitMockTest = async (req, res) => {
           ? q.correctManualAnswer.toString().trim().toLowerCase()
           : "";
 
-        const isAnswerProvided = submittedValue.length > 0;
-        const isManualCorrect =
-          isAnswerProvided && submittedValue === correctValue;
-
-        if (isManualCorrect) {
-          score += q.marks || 0;
-          correctCount++;
-          isCorrect = true;
-        } else if (isAnswerProvided) {
-          score -= q.negative || 0;
+        if (submittedValue !== "") {
+          if (submittedValue === correctValue) {
+            score += q.marks || 0;
+            correctCount++;
+            isCorrect = true;
+          } else {
+            score -= q.negative || 0;
+          }
         }
 
         processedAnswers.push({
@@ -532,7 +534,6 @@ export const submitMockTest = async (req, res) => {
       }
     }
 
-    // 3. Finalize and Save the Attempt
     attempt.score = score;
     attempt.correctCount = correctCount;
     attempt.status = "completed";
@@ -540,7 +541,6 @@ export const submitMockTest = async (req, res) => {
     attempt.answers = processedAnswers;
     await attempt.save();
 
-    // 4. Send the result back to the frontend
     res.json({
       success: true,
       score,
@@ -772,79 +772,6 @@ export const updateMockTest = async (req, res) => {
 /* ============================================================
    6️⃣ ADD SINGLE QUESTION (✅ FIXED: ADDS TO PRIVATE POOL)
    ============================================================ */
-// export const addQuestion = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const {
-//       subject,
-//       level,
-//       questionText,
-//       title,
-//       options,
-//       correct,
-//       correctManualAnswer,
-//       questionType = "mcq",
-//       marks,
-//       negative,
-//       explanation,
-//     } = req.body;
-
-//     const mt = await MockTest.findById(id);
-//     if (!mt) return res.status(404).json({ message: "MockTest not found" });
-
-//     const finalTitle = questionText || title;
-//     const finalCategory =
-//       subject || mt.subcategory || mt.categorySlug || "General";
-
-//     if (!finalTitle)
-//       return res.status(400).json({ message: "Question Text is required" });
-//     if (!finalCategory)
-//       return res.status(400).json({ message: "Subject is required" });
-
-//     const files = req.files || {};
-//     const getFileUrl = (field) =>
-//       files[field] ? files[field][0].path.replace(/\\/g, "/") : null;
-
-//     const newQuestionData = {
-//       questionType,
-//       title: finalTitle.trim(),
-//       difficulty: (level || "easy").toLowerCase().trim(),
-//       category: finalCategory.trim(),
-//       marks: Number(marks || 1),
-//       negative: Number(negative || 0),
-//       explanation: explanation?.trim() || "",
-//       questionImageUrl: getFileUrl("questionImage"),
-//     };
-
-//     if (questionType === "mcq") {
-//       const rawOptions = Array.isArray(options)
-//         ? options
-//         : JSON.parse(options || "[]");
-//       newQuestionData.options = rawOptions.map((opt, i) => ({
-//         text: typeof opt === "string" ? opt : opt.text || "",
-//         imageUrl: getFileUrl(`optionImage${i}`),
-//       }));
-//       newQuestionData.correct = Array.isArray(correct)
-//         ? correct.map(Number)
-//         : JSON.parse(correct || "[]").map(Number);
-//     } else if (questionType === "manual") {
-//       newQuestionData.correctManualAnswer = correctManualAnswer?.trim();
-//     }
-
-//     const qDoc = new Question(newQuestionData);
-//     await qDoc.save();
-
-//     // ✅ Only add to THIS mock test's ID list.
-//     mt.questionIds.push(qDoc._id);
-//     await mt.save();
-
-//     res
-//       .status(201)
-//       .json({ message: "Question added successfully", question: qDoc });
-//   } catch (err) {
-//     res.status(500).json({ message: "Server Error: " + err.message });
-//   }
-// };
 
 /* ============================================================
    7️⃣ BULK UPLOAD (✅ FIXED: ADDS TO PRIVATE POOL)
@@ -1296,70 +1223,6 @@ export const getMocktestQuestions = async (req, res) => {
     res.status(500).json({ message: "Error fetching questions" });
   }
 };
-
-// Question add chesetappude MockTest "questionIds" array lo ki push cheyalai
-// export const addQuestion = async (req, res) => {
-//   try {
-//     const { id: mocktestId } = req.params;
-//     const {
-//       title,
-//       category,
-//       options,
-//       correct,
-//       questionType,
-//       correctManualAnswer,
-//       difficulty,
-//       marks,
-//       negative,
-//     } = req.body;
-
-//     // Create New Question Document
-//     const newQuestion = await Question.create({
-//       questionType,
-//       title,
-//       category: category.toLowerCase(), // Schema normalization
-//       difficulty,
-//       marks: Number(marks),
-//       negative: Number(negative),
-//       questionImageUrl:
-//         req.files && req.files["questionImage"]
-//           ? `/uploads/${req.files["questionImage"][0].filename}`
-//           : null,
-//       ...(questionType === "mcq"
-//         ? { options: JSON.parse(options), correct: JSON.parse(correct) }
-//         : { correctManualAnswer }),
-//     });
-
-//     // ✅ HOLISTIC SYNC: Add the Question ID to the Mocktest
-//     await MockTest.findByIdAndUpdate(mocktestId, {
-//       $push: { questionIds: newQuestion._id },
-//     });
-
-//     res.status(201).json({
-//       success: true,
-//       message: "Sync successful",
-//       question: newQuestion,
-//     });
-//   } catch (err) {
-//     res.status(500).json({ success: false, message: err.message });
-//   }
-// };
-
-// export const deleteQuestion = async (req, res) => {
-//   try {
-//     const { qId } = req.params;
-//     const question = await Question.findById(qId);
-//     if (!question) return res.status(404).json({ message: "Not found" });
-
-//     // Remove reference from any Mocktests
-//     await MockTest.updateMany({}, { $pull: { questionIds: qId } });
-//     await Question.findByIdAndDelete(qId);
-
-//     res.json({ success: true, message: "Pool item deleted" });
-//   } catch (err) {
-//     res.status(500).json({ success: false, message: "Delete action failed" });
-//   }
-// };
 
 // 1. ADD QUESTION: UNIFIED SYNC LOGIC
 export const addQuestion = async (req, res) => {

@@ -26,9 +26,9 @@ import {
   deleteMockTest,
   togglePublish,
   setCategoryFilter,
-} from "../../redux/mockTestSlice";
+} from "../../../redux/mockTestSlice";
 
-import { fetchCategories } from "../../redux/categorySlice";
+import { fetchCategories } from "../../../redux/categorySlice";
 
 const ManageMocktests = () => {
   const dispatch = useDispatch();

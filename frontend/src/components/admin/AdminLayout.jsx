@@ -15,7 +15,7 @@ const AdminLayout = () => {
            - md:ml-64: Pushes content right, assuming Sidebar is 64 units wide.
            - overflow-y-auto: Makes THIS section scrollable.
       */}
-      <main className="flex-1 w-full bg-gray-100 p-6 md:ml-80 overflow-y-auto"> {/* <--- CHANGED FROM md:ml-64 to md:ml-80 */}
+      <main className="flex-1 w-full bg-gray-200 p-6 md:ml-66 overflow-y-auto"> 
         <Outlet /> 
       </main>
     </div>

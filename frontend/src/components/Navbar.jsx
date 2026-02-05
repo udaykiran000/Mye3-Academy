@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-
 import {
   Menu,
   X,
@@ -28,15 +27,13 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- REDUX STATE (Original Names) ---
   const { userData } = useSelector((state) => state.user);
   const { cartItems } = useSelector((state) => state.cart);
   const { items: categories } = useSelector((state) => state.category);
   const { filters } = useSelector((state) => state.students);
 
-  // --- UI STATES ---
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false); // For Mobile Top Bar
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const dropdownRef = useRef(null);
@@ -54,25 +51,9 @@ const Navbar = () => {
     setIsProfileDropdownOpen(false);
   }, [location]);
 
-  // --- HANDLERS (Original Logic Restored) ---
   const handleLogout = () => {
     dispatch(logoutUser());
     navigate("/login");
-  };
-
-  const handleCategoryClick = (e) => {
-    e.preventDefault();
-    setIsMobileMenuOpen(false);
-    if (location.pathname === "/") {
-      const section = document.getElementById("categories-section");
-      if (section) section.scrollIntoView({ behavior: "smooth" });
-    } else {
-      navigate("/");
-      setTimeout(() => {
-        const section = document.getElementById("categories-section");
-        if (section) section.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    }
   };
 
   const handleSelectCategory = (catId) => {
@@ -81,64 +62,31 @@ const Navbar = () => {
     if (location.pathname !== "/mocktests") navigate("/mocktests");
   };
 
-  // --- LOGIC CALCULATIONS (Original) ---
-  const firstName = userData?.firstname || "User";
-  const userInitial = firstName.charAt(0).toUpperCase();
+  // --- LOGIC CONNECTIVITY FIX: Dashboard Visibility ---
   const role = userData?.role || "student";
-
   let dashboardPath = "/student-dashboard";
-  let showDashboardBtn = false;
-  let dashboardLabel = "Dashboard";
+  let showDashboardBtn = !!userData; // If logged in, show dashboard button
+  let dashboardLabel = "My Dashboard";
 
   if (role === "admin") {
     dashboardPath = "/admin";
-    showDashboardBtn = true;
     dashboardLabel = "Admin Panel";
   } else if (role === "instructor") {
     dashboardPath = "/instructor-dashboard";
-    showDashboardBtn = true;
     dashboardLabel = "Instructor Panel";
-  } else {
-    dashboardPath = "/student-dashboard";
-    // Student Logic: Only show if they have purchases/enrollments
-    const hasPurchased =
-      userData?.purchasedTests?.length > 0 ||
-      userData?.enrolledMockTests?.length > 0;
-    showDashboardBtn = hasPurchased;
-    dashboardLabel = "My Dashboard";
   }
 
   const currentCategoryName =
     categories?.find((c) => c._id === filters.category)?.name || "Categories";
 
-  const getActiveTab = () => {
-    const { pathname, search } = location;
-    if (pathname === "/") return "home";
-    if (pathname === "/mocktests" && search.includes("grand")) return "grand";
-    if (pathname === "/mocktests") return "tests";
-    if (
-      pathname.includes("dashboard") ||
-      pathname === "/login" ||
-      pathname === "/signup"
-    )
-      return "profile";
-    return "";
-  };
-  const activeTab = getActiveTab();
-
   return (
     <>
-      {/* ================= TOP NAVBAR ================= */}
       <nav
-        className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-          scrolled
-            ? "bg-white border-b border-slate-100 py-2 shadow-sm"
-            : "bg-white/90 backdrop-blur-md py-4"
-        }`}
+        className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? "bg-white border-b border-slate-100 py-2 shadow-sm" : "bg-white/90 backdrop-blur-md py-4"}`}
       >
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex justify-between items-center h-12">
-            {/* 📱 MOBILE TOP UI: Hamburger | Dropdown | Search */}
+            {/* MOBILE TOP UI */}
             <div className="flex md:hidden items-center justify-between w-full">
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
@@ -146,7 +94,6 @@ const Navbar = () => {
               >
                 <Menu size={26} />
               </button>
-
               <div
                 className="relative flex-1 max-w-[180px] mx-2"
                 ref={dropdownRef}
@@ -155,16 +102,12 @@ const Navbar = () => {
                   onClick={() =>
                     setIsCategoryDropdownOpen(!isCategoryDropdownOpen)
                   }
-                  className="w-full flex items-center justify-between gap-2 px-4 py-2 bg-white border border-slate-200 rounded-2xl shadow-sm"
+                  className="w-full flex items-center justify-between gap-2 px-4 py-2 bg-white border border-slate-200 rounded-2xl shadow-sm font-bold text-sm text-slate-700"
                 >
-                  <span className="text-sm font-bold text-slate-700 truncate">
-                    {currentCategoryName}
-                  </span>
+                  <span className="truncate">{currentCategoryName}</span>
                   <ChevronDown
                     size={14}
-                    className={`text-slate-400 transition-transform ${
-                      isCategoryDropdownOpen ? "rotate-180" : ""
-                    }`}
+                    className={isCategoryDropdownOpen ? "rotate-180" : ""}
                   />
                 </button>
                 {isCategoryDropdownOpen && (
@@ -189,7 +132,6 @@ const Navbar = () => {
                   </div>
                 )}
               </div>
-
               <button
                 onClick={() => navigate("/mocktests")}
                 className="p-2 text-slate-700"
@@ -198,76 +140,63 @@ const Navbar = () => {
               </button>
             </div>
 
-            {/* 💻 DESKTOP TOP UI: Logo | Links | Profile */}
+            {/* DESKTOP TOP UI */}
             <div className="hidden md:flex items-center justify-between w-full">
-              <Link to="/" className="flex items-center gap-2 group">
-                <div className="bg-indigo-600 p-1.5 rounded-lg group-hover:scale-105 transition shadow-lg shadow-indigo-100">
+              <Link
+                to="/"
+                className="flex items-center gap-2 group font-black text-xl italic tracking-tighter"
+              >
+                <div className="bg-indigo-600 p-1.5 rounded-lg shadow-lg shadow-indigo-100">
                   <GraduationCap className="text-white w-5 h-5" />
                 </div>
-                <span className="text-xl font-black text-slate-900 tracking-tighter italic">
-                  MYE 3 Academy
-                </span>
+                MYE 3 Academy
               </Link>
 
-              <div className="flex items-center gap-8">
+              <div className="flex items-center gap-8 font-bold text-sm text-slate-600">
                 <Link
                   to="/"
-                  className={`text-sm font-bold ${
+                  className={
                     location.pathname === "/"
                       ? "text-indigo-600"
-                      : "text-slate-600 hover:text-indigo-600"
-                  }`}
+                      : "hover:text-indigo-600"
+                  }
                 >
                   Home
                 </Link>
                 <Link
                   to="/mocktests"
-                  className={`text-sm font-bold ${
+                  className={
                     location.pathname === "/mocktests" &&
                     !location.search.includes("grand")
                       ? "text-indigo-600"
-                      : "text-slate-600 hover:text-indigo-600"
-                  }`}
+                      : "hover:text-indigo-600"
+                  }
                 >
                   All Tests
                 </Link>
                 <Link
                   to="/mocktests?filter=grand"
-                  className={`text-sm font-bold ${
+                  className={
                     location.search.includes("grand")
                       ? "text-indigo-600"
-                      : "text-slate-600 hover:text-indigo-600"
-                  }`}
+                      : "hover:text-indigo-600"
+                  }
                 >
                   Grand Tests
                 </Link>
-                <button
-                  onClick={handleCategoryClick}
-                  className="text-sm font-bold text-slate-600 hover:text-indigo-600"
-                >
-                  Categories
-                </button>
               </div>
 
               <div className="flex items-center gap-4">
                 {userData ? (
                   <div className="flex items-center gap-5">
-                    {showDashboardBtn ? (
+                    {showDashboardBtn && (
                       <Link
                         to={dashboardPath}
                         className="px-5 py-2 text-xs font-black uppercase tracking-widest bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
                       >
                         {dashboardLabel}
                       </Link>
-                    ) : (
-                      <Link
-                        to="/mocktests"
-                        className="flex items-center gap-2 px-5 py-2 text-xs font-black uppercase tracking-widest text-orange-600 border border-orange-100 bg-orange-50 rounded-xl hover:bg-orange-600 hover:text-white transition-all shadow-sm"
-                      >
-                        <ShoppingBag size={14} /> Browse
-                      </Link>
                     )}
-
                     {role === "student" && (
                       <Link
                         to="/cart"
@@ -281,15 +210,14 @@ const Navbar = () => {
                         )}
                       </Link>
                     )}
-
                     <div className="relative">
                       <button
                         onClick={() =>
                           setIsProfileDropdownOpen(!isProfileDropdownOpen)
                         }
-                        className="flex items-center gap-3 p-1 pr-4 rounded-full border border-slate-200 bg-slate-50 hover:bg-white hover:shadow-md transition transition-all duration-300"
+                        className="flex items-center gap-3 p-1 pr-4 rounded-full border border-slate-200 bg-slate-50 hover:bg-white transition-all"
                       >
-                        <div className="w-8 h-8 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center border border-white">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center font-black text-xs text-indigo-600">
                           {userData.profilePicture ? (
                             <img
                               src={userData.profilePicture}
@@ -297,34 +225,29 @@ const Navbar = () => {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <span className="text-xs font-black text-indigo-600">
-                              {userInitial}
-                            </span>
+                            userData.firstname?.charAt(0).toUpperCase()
                           )}
                         </div>
                         <span className="text-sm font-bold text-slate-700">
-                          {firstName}
+                          {userData.firstname}
                         </span>
                         <ChevronDown
                           size={14}
-                          className={`text-slate-400 transition-transform ${
-                            isProfileDropdownOpen ? "rotate-180" : ""
-                          }`}
+                          className={isProfileDropdownOpen ? "rotate-180" : ""}
                         />
                       </button>
                       {isProfileDropdownOpen && (
-                        <div className="absolute right-0 mt-3 w-48 bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95">
+                        <div className="absolute right-0 mt-3 w-48 bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 z-50">
                           <Link
                             to={dashboardPath}
-                            className="flex items-center px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-indigo-600"
+                            className="flex items-center px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
                           >
                             <LayoutDashboard size={16} className="mr-2" />{" "}
                             {dashboardLabel}
                           </Link>
-                          <div className="border-t border-slate-50 my-1"></div>
                           <button
                             onClick={handleLogout}
-                            className="w-full flex items-center px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50"
+                            className="w-full flex items-center px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
                           >
                             <LogOut size={16} className="mr-2" /> Logout
                           </button>
@@ -333,16 +256,16 @@ const Navbar = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 font-bold text-sm">
                     <Link
                       to="/login"
-                      className="text-sm font-bold text-slate-600 hover:text-indigo-600"
+                      className="text-slate-600 hover:text-indigo-600"
                     >
                       Login
                     </Link>
                     <Link
                       to="/signup"
-                      className="px-6 py-2.5 bg-indigo-600 text-white rounded-2xl text-sm font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition transform hover:scale-105"
+                      className="px-6 py-2.5 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all transform hover:scale-105"
                     >
                       Sign Up
                     </Link>
@@ -354,7 +277,7 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* ================= 📱 MOBILE BOTTOM NAVIGATION ================= */}
+      {/* MOBILE BOTTOM NAVIGATION */}
       <div className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-100 z-50 py-3 shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
         <div className="flex justify-around items-center">
           {[
@@ -377,106 +300,26 @@ const Navbar = () => {
               icon: User,
               path: userData ? dashboardPath : "/login",
             },
-          ].map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <Link
-                key={tab.id}
-                to={tab.path}
-                className="flex flex-col items-center gap-1 min-w-[70px]"
+          ].map((tab) => (
+            <Link
+              key={tab.id}
+              to={tab.path}
+              className="flex flex-col items-center gap-1 min-w-[70px]"
+            >
+              <div
+                className={`p-3 rounded-full transition-all ${location.pathname === tab.path ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400"}`}
               >
-                <div
-                  className={`p-3 rounded-full transition-all duration-300 ${
-                    isActive
-                      ? "bg-[#4f46e5] text-white shadow-lg shadow-indigo-200"
-                      : "text-slate-400"
-                  }`}
-                >
-                  <tab.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-                </div>
-                <span
-                  className={`text-[10px] font-black tracking-widest ${
-                    isActive ? "text-[#4f46e5]" : "text-slate-400"
-                  }`}
-                >
-                  {tab.label}
-                </span>
-              </Link>
-            );
-          })}
+                <tab.icon size={22} />
+              </div>
+              <span
+                className={`text-[10px] font-black tracking-widest ${location.pathname === tab.path ? "text-indigo-600" : "text-slate-400"}`}
+              >
+                {tab.label}
+              </span>
+            </Link>
+          ))}
         </div>
       </div>
-
-      {/* ================= 📱 MOBILE SIDEBAR DRAWER ================= */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[100] md:hidden">
-          <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-          <div className="relative w-72 h-full bg-white shadow-2xl p-8 flex flex-col animate-in slide-in-from-left duration-300">
-            <div className="flex justify-between items-center mb-8">
-              <span className="text-xl font-black italic text-indigo-600">
-                MYE 3 Academy
-              </span>
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 bg-slate-50 rounded-full"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="flex-1 space-y-6">
-              <Link
-                to="/"
-                className="flex items-center gap-4 py-2 font-bold text-slate-700 hover:text-indigo-600"
-              >
-                <Home size={20} /> Home
-              </Link>
-              <Link
-                to="/mocktests"
-                className="flex items-center gap-4 py-2 font-bold text-slate-700 hover:text-indigo-600"
-              >
-                <ClipboardList size={20} /> All Tests
-              </Link>
-              <button
-                onClick={handleCategoryClick}
-                className="flex items-center gap-4 py-2 font-bold text-slate-700 hover:text-indigo-600 w-full text-left"
-              >
-                <ShoppingBag size={20} /> Categories
-              </button>
-              {role === "student" && (
-                <Link
-                  to="/cart"
-                  className="flex items-center justify-between py-2 font-bold text-slate-700"
-                >
-                  Cart{" "}
-                  <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">
-                    {cartItems.length}
-                  </span>
-                </Link>
-              )}
-            </div>
-            <div className="pt-6 border-t border-slate-100">
-              {userData ? (
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-3 py-4 text-red-500 font-black uppercase text-xs tracking-[0.2em] bg-red-50 rounded-2xl"
-                >
-                  Logout
-                </button>
-              ) : (
-                <Link
-                  to="/login"
-                  className="block text-center py-4 bg-indigo-600 text-white rounded-2xl font-bold"
-                >
-                  Sign In
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };

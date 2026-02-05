@@ -7,24 +7,24 @@ const FiltersPanel = ({
   onSelectCategory,
 }) => {
   return (
-    <div className="p-5 border border-gray-700 rounded-lg shadow bg-gray-900 text-white">
-      <h4 className="font-bold text-lg mb-4">Categories</h4>
-
-      {loading && <p className="text-gray-400">Loading...</p>}
+    <div className="bg-white">
+      {loading && (
+        <p className="text-slate-400 text-sm p-4">Loading categories...</p>
+      )}
 
       {!loading && (
-        <ul className="space-y-2">
+        <ul className="space-y-1">
           {/* ALL BUTTON */}
           <li>
             <button
               onClick={() => onSelectCategory("")}
-              className={`block w-full text-left px-3 py-2 rounded transition ${
+              className={`block w-full text-left px-4 py-2.5 text-sm font-medium transition-all rounded-md ${
                 selectedCategory === ""
-                  ? "bg-cyan-600 text-white"
-                  : "hover:bg-gray-800"
+                  ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               }`}
             >
-              All
+              All Categories
             </button>
           </li>
 
@@ -33,10 +33,10 @@ const FiltersPanel = ({
             <li key={cat._id}>
               <button
                 onClick={() => onSelectCategory(cat._id)}
-                className={`block w-full text-left px-3 py-2 rounded transition ${
+                className={`block w-full text-left px-4 py-2.5 text-sm font-medium transition-all rounded-md ${
                   selectedCategory === cat._id
-                    ? "bg-cyan-600 text-white"
-                    : "hover:bg-gray-800"
+                    ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
                 {cat.name}
@@ -44,8 +44,10 @@ const FiltersPanel = ({
             </li>
           ))}
 
-          {categories.length === 0 && (
-            <li className="text-gray-400">No categories found.</li>
+          {categories.length === 0 && !loading && (
+            <li className="text-slate-400 text-xs p-4 italic">
+              No categories available
+            </li>
           )}
         </ul>
       )}

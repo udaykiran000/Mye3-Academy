@@ -6,8 +6,9 @@ import {
   Settings,
   LogOut,
   Search,
+  Home,
   Menu,
-  MessageCircle
+  MessageCircle,
 } from "lucide-react";
 
 import { useDispatch, useSelector } from "react-redux";
@@ -112,7 +113,10 @@ const StuSidebar = ({ activeTab, setActiveTab }) => {
         `}
       >
         <div className="flex flex-col items-center py-8 border-b border-gray-800 mt-14 md:mt-0">
-          <div className="relative group cursor-pointer" onClick={() => setActiveTab("settings")}>
+          <div
+            className="relative group cursor-pointer"
+            onClick={() => setActiveTab("settings")}
+          >
             {renderAvatar()}
             <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               <Settings className="text-white w-6 h-6" />
@@ -131,6 +135,15 @@ const StuSidebar = ({ activeTab, setActiveTab }) => {
         </div>
 
         <nav className="mt-6 flex-grow overflow-y-auto px-4 space-y-2 scrollbar-hidden">
+          <SidebarLink
+            icon={<Home size={20} />}
+            label="Home"
+            isActive={false}
+            onClick={() => {
+              navigate("/");
+            }}
+          />
+
           <SidebarLink
             icon={<BarChart2 size={20} />}
             label="Overview"
@@ -196,7 +209,7 @@ const StuSidebar = ({ activeTab, setActiveTab }) => {
           <button
             onClick={handleLogout}
             disabled={loading}
-            className={`w-full bg-red-700/30 hover:bg-red-700/50 text-red-300 py-3 rounded-lg flex items-center gap-3 justify-center font-medium transition duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-full bg-red-700/30 hover:bg-red-700/50 text-red-300 py-3 rounded-lg flex items-center gap-3 justify-center font-medium transition duration-200 ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             <LogOut className="w-4 h-4" />
             {loading ? "Logging out..." : "Logout"}

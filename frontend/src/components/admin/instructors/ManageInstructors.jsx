@@ -4,8 +4,8 @@ import {
   fetchInstructors,
   toggleInstructorStatus,
   deleteInstructor,
-} from "../../redux/instructorSlice";
-import api from "../../api/axios";
+} from "../../../redux/instructorSlice";
+import api from "../../../api/axios";
 import { useNavigate } from "react-router-dom";
 import { Search, User, Lock, Unlock, Pencil, Trash2, X } from "lucide-react";
 

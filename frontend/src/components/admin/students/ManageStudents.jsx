@@ -6,7 +6,7 @@ import {
   fetchStudents,
   blockStudent,
   deleteStudent,
-} from "../../redux/adminStudentSlice";
+} from "../../../redux/adminStudentSlice";
 
 import {
   FaArrowLeft,

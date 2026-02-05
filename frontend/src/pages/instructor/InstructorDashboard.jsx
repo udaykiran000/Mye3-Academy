@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import InstructorSidebar from "../../components/instractor/InstructorSidebar";
+import InstructorSidebar from "../../components/instructors/InstructorSidebar";
 import InstructorProfileSettings from "./InstructorProfileSettings";
 import InstructorDoubts from "./InstructorDoubts";
 

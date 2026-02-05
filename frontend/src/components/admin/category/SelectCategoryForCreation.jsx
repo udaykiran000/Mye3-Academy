@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchCategories, deleteCategory } from "../../redux/categorySlice";
+import { fetchCategories, deleteCategory } from "../../../redux/categorySlice";
 import { useNavigate, Link } from "react-router-dom";
 import AddCategory from "./AddCategory";
 import EditCategoryModal from "./EditCategoryModal";
