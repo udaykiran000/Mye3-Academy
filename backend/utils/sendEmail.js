@@ -1,27 +1,29 @@
-// backend/utils/sendEmail.js
 import nodemailer from "nodemailer";
 
 const sendEmail = async (email, subject, text) => {
   try {
     const transporter = nodemailer.createTransport({
-      service: "gmail", // or your SMTP provider
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true, // Render
       auth: {
-        user: process.env.EMAIL_USER, // Put your email in .env
-        pass: process.env.EMAIL_PASS, // Put your App Password in .env
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"MYE 3 ACADEMY" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: subject,
       text: text,
     });
 
-    console.log("Email sent successfully");
+    console.log("✅ Email sent successfully");
+    return true;
   } catch (error) {
-    console.log("Email not sent");
-    console.error(error);
+    console.error("❌ Email failed:", error.message);
+    return false;
   }
 };
 

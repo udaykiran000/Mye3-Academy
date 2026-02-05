@@ -139,15 +139,20 @@ const Signup = () => {
     }
   };
 
-  const handleSignUp = async () => {
+ const handleSignUp = async () => {
     if (!formData.email || !formData.password)
       return showToast("Details missing", "error");
     if (formData.password !== formData.confirmPassword)
       return showToast("Passwords don't match", "error");
+
     try {
       setLoading(true);
+      
+      showToast("Sending OTP, please wait...", "success"); 
+
       await api.post("/api/auth/signup", { ...formData, role });
-      showToast("OTP sent to your email!", "success");
+      
+      showToast("OTP sent successfully!", "success");
       setStep(2);
     } catch (error) {
       showToast(error.response?.data?.message || "Signup Failed", "error");
