@@ -9,10 +9,8 @@ import fs from "fs";
 
 export const signup = async (req, res) => {
   try {
-    // ⭐ EXTRACT ROLE FROM BODY
     const { firstname, lastname, email, password, confirmPassword, phoneNumber, role } = req.body;
 
-    // 1. Validations
     if (!firstname || !lastname || !email || !password || !confirmPassword || !phoneNumber) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -26,34 +24,26 @@ export const signup = async (req, res) => {
       return res.status(400).json({ message: "Password must be at least 8 characters" });
     }
 
-    // ⭐ DETERMINE ROLE
     const userRole = role === "instructor" ? "instructor" : "student";
-
-    // 2. Check if user exists
     let user = await User.findOne({ email });
     
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
     let hashPassword = await bcrypt.hash(password, 10);
 
     if (user) {
-        // SCENARIO A: User exists AND is verified -> Block them
         if (user.isVerified) {
             return res.status(400).json({ message: "User already exists" });
         }
-
-        // SCENARIO B: User exists but is NOT verified -> Overwrite/Update them
         user.firstname = firstname;
         user.lastname = lastname;
         user.phoneNumber = phoneNumber;
         user.password = hashPassword;
         user.otp = otp;
         user.otpExpires = otpExpires;
-        user.role = userRole; // ⭐ UPDATE ROLE ON RE-SIGNUP
+        user.role = userRole;
         await user.save();
-
     } else {
-        // SCENARIO C: New User -> Create them
         await User.create({
             firstname,
             lastname,
@@ -62,14 +52,19 @@ export const signup = async (req, res) => {
             password: hashPassword,
             otp,
             otpExpires,
-            role: userRole // ⭐ SAVE SELECTED ROLE
+            role: userRole
         });
     }
 
-    // 3. Send Email
-    await sendEmail(email, "Account Verification OTP", `Your OTP is ${otp}. It expires in 10 minutes.`);
+    // ⭐ మెయిల్ పంపడం మరియు చెక్ చేయడం
+    const isEmailSent = await sendEmail(email, "Account Verification OTP", `Your OTP is ${otp}. It expires in 10 minutes.`);
 
-    return res.status(201).json({ message: "Signup successful. Please check your email for OTP." });
+    if (isEmailSent) {
+      return res.status(201).json({ message: "Signup successful. Please check your email for OTP." });
+    } else {
+      // మెయిల్ వెళ్లకపోతే 500 ఎర్రర్ పంపిస్తాం, అప్పుడు ఫ్రంటెండ్ లో OTP పేజీకి వెళ్ళదు
+      return res.status(500).json({ message: "Failed to send OTP email. Please check your internet or try again." });
+    }
 
   } catch (error) {
     console.error(error);
@@ -120,11 +115,9 @@ export const verifyOtp = async (req, res) => {
 export const resendOtp = async (req, res) => {
   try {
     const { email } = req.body;
-
     if (!email) return res.status(400).json({ message: "Email is required" });
 
     const user = await User.findOne({ email });
-
     if (!user) return res.status(404).json({ message: "User not found" });
 
     if (user.isVerified) {
@@ -136,9 +129,14 @@ export const resendOtp = async (req, res) => {
     user.otpExpires = Date.now() + 10 * 60 * 1000; 
     await user.save();
 
-    await sendEmail(email, "Resend OTP", `Your new OTP is ${otp}`);
+    // ⭐ మెయిల్ చెక్
+    const isEmailSent = await sendEmail(email, "Resend OTP", `Your new OTP is ${otp}`);
 
-    return res.status(200).json({ message: "New OTP sent to your email" });
+    if (isEmailSent) {
+      return res.status(200).json({ message: "New OTP sent to your email" });
+    } else {
+      return res.status(500).json({ message: "Could not send OTP. Please try again later." });
+    }
 
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -191,9 +189,15 @@ export const forgotPassword = async (req, res) => {
     user.otpExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
-    await sendEmail(email, "Password Reset OTP", `Your Password Reset OTP is ${otp}`);
+    // ⭐ మెయిల్ చెక్
+    const isEmailSent = await sendEmail(email, "Password Reset OTP", `Your Password Reset OTP is ${otp}`);
 
-    return res.status(200).json({ message: "OTP sent to email" });
+    if (isEmailSent) {
+      return res.status(200).json({ message: "OTP sent to email" });
+    } else {
+      return res.status(500).json({ message: "Failed to send reset OTP. Try again." });
+    }
+    
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
