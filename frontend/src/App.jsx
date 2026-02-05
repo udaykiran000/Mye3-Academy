@@ -1,4 +1,6 @@
 import React from "react";
+import InstructorDashboardPage from "./pages/instructor/InstructorDashboardPage";
+
 import { ToastContainer } from "react-toastify";
 import ScrollToTop from "./components/ScrollToTop";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
@@ -43,6 +45,7 @@ import StudentDoubts from "./pages/student/StudentDoubts";
 // INSTRUCTOR PAGES
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
 import InstructorDoubts from "./pages/instructor/InstructorDoubts";
+import InstructorProfileSettings from "./pages/instructor/InstructorProfileSettings";
 
 // PROTECTED ROUTE
 import ProtectedRoute from "./components/student/ProtectedRoute";
@@ -155,8 +158,11 @@ const App = () => {
                 <Navigate to="/login" replace />
               )
             }
-          />
-          <Route path="/instructor/doubts" element={<InstructorDoubts />} />
+          >
+            <Route index element={<InstructorDashboardPage />} />
+            <Route path="doubts" element={<InstructorDoubts />} />
+            <Route path="profile" element={<InstructorProfileSettings />} />
+          </Route>
 
           {/* ---------------- ADMIN ROUTES (Holistic & Clean) ---------------- */}
           <Route
