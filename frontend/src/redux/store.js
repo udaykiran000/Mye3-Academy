@@ -6,6 +6,8 @@ import categoryReducer from './categorySlice';
 import cartReducer from './cartSlice.js';
 import dashboardReducer from "./dashboardSlice.js";
 import instructorReducer from "./instructorSlice";
+import instructorDashboardReducer from "./instructorDashboardSlice";
+
 // --- 👇 ADD THIS IMPORT ---
 import studentReducer from "./studentSlice";
 import paymentReducer from "./paymentSlice";
@@ -28,6 +30,8 @@ export const store=configureStore({
         adminStudents: adminStudentReducer, 
         attempts: attemptsReducer,
         admin: adminReducer,
+        instructorDashboard: instructorDashboardReducer,
+
          doubts: doubtsReducer,
          
     }
