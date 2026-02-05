@@ -64,7 +64,7 @@ const StuSidebar = ({ activeTab, setActiveTab }) => {
 
   const renderAvatar = () => {
     if (studentProfile?.avatar && !imgError) {
-      const avatarUrl = `http://localhost:8000/${studentProfile.avatar.replace(/\\/g, "/")}`;
+      const avatarUrl = `import.meta.env.VITE_SERVER_URL/${studentProfile.avatar.replace(/\\/g, "/")}`;
       return (
         <img
           src={avatarUrl}

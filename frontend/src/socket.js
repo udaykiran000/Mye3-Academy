@@ -6,7 +6,7 @@ let socket;
 export const initSocket = (userId) => {
   // Only connect if not already connected
   if (!socket) {
-    socket = io("http://localhost:8000", {
+    socket = io("import.meta.env.VITE_SERVER_URL", {
       query: { userId },
       transports: ["websocket"], // Force WebSocket for better performance
       withCredentials: true,

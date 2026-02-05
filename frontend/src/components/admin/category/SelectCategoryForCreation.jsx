@@ -19,7 +19,7 @@ const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
   let cleaned = imagePath.trim();
   if (!cleaned.startsWith("/")) cleaned = "/" + cleaned;
-  return `http://localhost:8000${cleaned}`;
+  return `import.meta.env.VITE_SERVER_URL${cleaned}`;
 };
 
 const SelectCategoryForCreation = () => {

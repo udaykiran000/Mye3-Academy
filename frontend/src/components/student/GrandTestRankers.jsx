@@ -12,11 +12,13 @@ const GrandTestRankers = ({ mockTestId, testTitle }) => {
       try {
         setLoading(true);
         setMessage(null);
-        
-        const { data } = await api.get(`/api/student/grandtest-leaderboard/${mockTestId}`);
-        
+
+        const { data } = await api.get(
+          `/api/student/grandtest-leaderboard/${mockTestId}`,
+        );
+
         // Handle different response structures
-        const list = data.leaderboard || data; 
+        const list = data.leaderboard || data;
 
         if (Array.isArray(list) && list.length > 0) {
           setRankers(list);
@@ -37,36 +39,38 @@ const GrandTestRankers = ({ mockTestId, testTitle }) => {
   // Helper for avatar URL
   const getAvatar = (path) => {
     if (!path) return "https://ui-avatars.com/api/?background=random";
-    return path.startsWith("http") ? path : `http://localhost:8000/${path.replace(/\\/g, "/")}`;
+    return path.startsWith("http")
+      ? path
+      : `import.meta.env.VITE_SERVER_URL/${path.replace(/\\/g, "/")}`;
   };
 
   // 1. Loading State
   if (loading) {
-      return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 flex justify-center items-center h-48">
-             <Loader2 className="animate-spin text-blue-600 w-8 h-8"/>
-        </div>
-      );
+    return (
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 flex justify-center items-center h-48">
+        <Loader2 className="animate-spin text-blue-600 w-8 h-8" />
+      </div>
+    );
   }
 
   // 2. No Data / Waiting State
   if (!rankers || rankers.length === 0) {
-      return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
-            <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-2">
-                <Trophy className="text-gray-400" size={20} />
-                <h3 className="text-lg font-bold text-gray-700">
-                Top Rankers: <span className="text-blue-600">{testTitle}</span>
-                </h3>
-            </div>
-            <div className="flex flex-col items-center justify-center py-8 text-center bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                <Clock className="text-gray-400 mb-2 w-8 h-8" />
-                <p className="text-gray-500 font-medium text-sm">
-                    {message || "Results are being processed..."}
-                </p>
-            </div>
+    return (
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
+        <div className="flex items-center gap-2 mb-4 border-b border-gray-100 pb-2">
+          <Trophy className="text-gray-400" size={20} />
+          <h3 className="text-lg font-bold text-gray-700">
+            Top Rankers: <span className="text-blue-600">{testTitle}</span>
+          </h3>
         </div>
-      );
+        <div className="flex flex-col items-center justify-center py-8 text-center bg-gray-50 rounded-lg border border-dashed border-gray-200">
+          <Clock className="text-gray-400 mb-2 w-8 h-8" />
+          <p className="text-gray-500 font-medium text-sm">
+            {message || "Results are being processed..."}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // 3. Success State (Table View)
@@ -79,10 +83,6 @@ const GrandTestRankers = ({ mockTestId, testTitle }) => {
           Top Rankers: <span className="text-blue-600">{testTitle}</span>
         </h3>
       </div>
-
-       
-       
-      
 
       {/* Table Section */}
       <div className="overflow-x-auto">
@@ -106,20 +106,34 @@ const GrandTestRankers = ({ mockTestId, testTitle }) => {
           <tbody className="divide-y divide-gray-100 bg-white">
             {rankers.map((student, idx) => {
               // Determine Rank Icon/Style
-              let RankDisplay = <span className="text-gray-600 font-bold">#{student.rank}</span>;
+              let RankDisplay = (
+                <span className="text-gray-600 font-bold">#{student.rank}</span>
+              );
               let rowHighlight = "";
 
               if (student.rank === 1) {
-                RankDisplay = <Trophy size={20} className="text-yellow-500 mx-auto fill-yellow-500" />;
+                RankDisplay = (
+                  <Trophy
+                    size={20}
+                    className="text-yellow-500 mx-auto fill-yellow-500"
+                  />
+                );
                 rowHighlight = "bg-yellow-50/30"; // Subtle highlight for #1
               } else if (student.rank === 2) {
-                RankDisplay = <Medal size={20} className="text-gray-400 mx-auto" />;
+                RankDisplay = (
+                  <Medal size={20} className="text-gray-400 mx-auto" />
+                );
               } else if (student.rank === 3) {
-                RankDisplay = <Medal size={20} className="text-orange-500 mx-auto" />;
+                RankDisplay = (
+                  <Medal size={20} className="text-orange-500 mx-auto" />
+                );
               }
 
               return (
-                <tr key={idx} className={`hover:bg-gray-50 transition-colors ${rowHighlight}`}>
+                <tr
+                  key={idx}
+                  className={`hover:bg-gray-50 transition-colors ${rowHighlight}`}
+                >
                   {/* Column 1: Profile (Avatar) */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -128,7 +142,10 @@ const GrandTestRankers = ({ mockTestId, testTitle }) => {
                           className="h-10 w-10 rounded-full object-cover border border-gray-200 shadow-sm"
                           src={getAvatar(student.avatar)}
                           alt={student.name}
-                          onError={(e) => { e.target.src = "https://ui-avatars.com/api/?background=random"; }} 
+                          onError={(e) => {
+                            e.target.src =
+                              "https://ui-avatars.com/api/?background=random";
+                          }}
                         />
                       </div>
                     </div>
@@ -136,7 +153,9 @@ const GrandTestRankers = ({ mockTestId, testTitle }) => {
 
                   {/* Column 2: Name */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-semibold text-gray-900">{student.name}</div>
+                    <div className="text-sm font-semibold text-gray-900">
+                      {student.name}
+                    </div>
                   </td>
 
                   {/* Column 3: Marks */}

@@ -4,14 +4,14 @@ import {
   Settings,
   LogOut,
   Menu,
-  MessageSquare
+  MessageSquare,
 } from "lucide-react";
 
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 import { fetchInstructorProfile } from "../../redux/instructorSlice";
-import { setUserData } from "../../redux/userSlice"; 
+import { setUserData } from "../../redux/userSlice";
 import api from "../../api/axios";
 import toast from "react-hot-toast";
 
@@ -46,7 +46,7 @@ const InstructorSidebar = ({ activeTab, setActiveTab }) => {
       localStorage.clear();
 
       toast.success("Logged out successfully");
-      window.location.href = "/"; 
+      window.location.href = "/";
     } catch (err) {
       dispatch(setUserData(null));
       localStorage.clear();
@@ -61,7 +61,7 @@ const InstructorSidebar = ({ activeTab, setActiveTab }) => {
   --------------------------------------------------- */
   const getAvatarUrl = () => {
     if (instructorProfile?.avatar) {
-      return `http://localhost:8000/${instructorProfile.avatar.replace(/\\/g, "/")}`;
+      return `import.meta.env.VITE_SERVER_URL/${instructorProfile.avatar.replace(/\\/g, "/")}`;
     }
 
     const firstname = instructorProfile?.firstname || "I";
@@ -102,19 +102,19 @@ const InstructorSidebar = ({ activeTab, setActiveTab }) => {
         {/* PROFILE SECTION */}
         <div className="flex flex-col items-center py-8 border-b border-gray-800 mt-14 md:mt-0">
           <div
-  className="relative cursor-pointer flex items-center justify-center w-20 h-20 rounded-full bg-blue-700 text-white text-3xl font-bold border-4 border-gray-800 shadow-xl"
-  onClick={() => setActiveTab("settings")}
->
-  {getAvatarUrl() ? (
-    <img
-      src={getAvatarUrl()}
-      className="w-full h-full rounded-full object-cover"
-      alt="Instructor Profile"
-    />
-  ) : (
-    (instructorProfile?.firstname?.charAt(0) || "I").toUpperCase()
-  )}
-</div>
+            className="relative cursor-pointer flex items-center justify-center w-20 h-20 rounded-full bg-blue-700 text-white text-3xl font-bold border-4 border-gray-800 shadow-xl"
+            onClick={() => setActiveTab("settings")}
+          >
+            {getAvatarUrl() ? (
+              <img
+                src={getAvatarUrl()}
+                className="w-full h-full rounded-full object-cover"
+                alt="Instructor Profile"
+              />
+            ) : (
+              (instructorProfile?.firstname?.charAt(0) || "I").toUpperCase()
+            )}
+          </div>
 
           <h4 className="text-white font-bold mt-4 text-lg tracking-wide capitalize text-center px-4">
             {instructorProfile?.firstname

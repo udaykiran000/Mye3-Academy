@@ -48,7 +48,7 @@ const AdminProfileSettings = () => {
             }));
 
             if (adminProfile.avatar) {
-                setAvatarPreview(`http://localhost:8000/${adminProfile.avatar.replace(/\\/g, "/")}`);
+                setAvatarPreview(`import.meta.env.VITE_SERVER_URL/${adminProfile.avatar.replace(/\\/g, "/")}`);
             }
         }
     }, [adminProfile]);

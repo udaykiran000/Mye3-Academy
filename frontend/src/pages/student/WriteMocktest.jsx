@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 // 1. Base URL configuration (Used for image paths)
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = "import.meta.env.VITE_SERVER_URL";
 
 // 2. Simple Spinner Component
 const SimpleSpinner = ({ size = 24, color = "#06b6d4", className = "" }) => (

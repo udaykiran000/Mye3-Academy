@@ -27,24 +27,38 @@ export default function AdminQuestions() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // --- LOCAL STATES ---
   const [mocktest, setMocktest] = useState(null);
   const [addedQuestions, setAddedQuestions] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [preview, setPreview] = useState(null);
+  const [entryMode, setEntryMode] = useState("manual");
+  const [bulkFile, setBulkFile] = useState(null);
+  const [bulkFree, setBulkFree] = useState(false);
+  const [bulkPublish, setBulkPublish] = useState(false);
+  const [bulkRows, setBulkRows] = useState([]);
 
   const [form, setForm] = useState({
     questionType: "mcq",
     title: "",
     options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
-    correct: [], // Marks the correct index(es)
+    correct: [],
     correctManualAnswer: "",
     difficulty: "easy",
     category: "",
   });
 
-  // --- INITIAL DATA SYNC ---
+  const parseBulkCSV = (text) => {
+    const rows = text.split("\n").filter(Boolean);
+    const headers = rows[0].split(",");
+    return rows.slice(1).map((r) => {
+      const cols = r.split(",");
+      const obj = {};
+      headers.forEach((h, i) => (obj[h.trim()] = cols[i]?.trim()));
+      return obj;
+    });
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -66,7 +80,7 @@ export default function AdminQuestions() {
         setAddedQuestions(qRes.value.data || []);
       }
     } catch (err) {
-      toast.error("Resource repository mismatch detected.");
+      toast.error("Failed to load questions.");
     } finally {
       setLoading(false);
     }
@@ -76,7 +90,6 @@ export default function AdminQuestions() {
     if (id) loadData();
   }, [id]);
 
-  // --- LOGIC TRACKER (Limits & Status) ---
   const stats = useMemo(() => {
     const limits = {};
     mocktest?.subjects?.forEach((s) => {
@@ -94,32 +107,52 @@ export default function AdminQuestions() {
     return { limits, counts, totalLimit: mocktest?.totalQuestions || 0 };
   }, [addedQuestions, mocktest]);
 
-  // --- COMMIT QUESTION TO DATABASE ---
+  const handleBulkSubmit = async () => {
+    if (!bulkFile) return toast.error("Select CSV file");
+
+    setIsSubmitting(true);
+
+    try {
+      const fd = new FormData();
+      fd.append("file", bulkFile);
+      fd.append("isFree", bulkFree);
+      fd.append("publish", bulkPublish);
+
+      await api.post(`/api/admin/mocktests/${id}/questions/bulk-upload`, fd, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      toast.success("Bulk uploaded successfully");
+
+      setBulkFile(null);
+      setBulkRows([]);
+      loadData();
+    } catch (err) {
+      console.log(err.response?.data);
+      toast.error("Bulk upload failed");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const onAddQuestion = async (e) => {
     e.preventDefault();
 
-    // ✅ ENFORCEMENT: Check Overall Mocktest Question Capacity
     if (addedQuestions.length >= stats.totalLimit) {
-      return toast.error(
-        "ACCESS DENIED: Overall capacity for this test is already full (Limit reached).",
-      );
+      return toast.error("Question limit reached.");
     }
 
-    // ✅ ENFORCEMENT: Check Individual Subject Limits
     const subKey = form.category.toLowerCase();
     const subLimit = stats.limits[subKey] || 0;
     const currentSubCount = stats.counts[subKey] || 0;
     if (subLimit > 0 && currentSubCount >= subLimit) {
-      return toast.error(
-        `POOL OVERFLOW: Subject limit for ${subKey.toUpperCase()} has been satisfied.`,
-      );
+      return toast.error(`Subject limit reached.`);
     }
 
-    // ✅ INTEGRITY: Verify MCQ Answers
     if (form.questionType === "mcq" && form.correct.length === 0) {
-      return toast.error(
-        "SELECTION REQUIRED: Mark at least one correct index path!",
-      );
+      return toast.error("Select at least one correct option.");
     }
 
     setIsSubmitting(true);
@@ -143,11 +176,9 @@ export default function AdminQuestions() {
 
     try {
       const res = await api.post(`/api/admin/mocktests/${id}/questions`, fd);
-      // 🔥 HOLISTIC SYNC: Pushing actual saved record with unique ID to state immediately
       setAddedQuestions((prev) => [...prev, res.data.question || res.data]);
-      toast.success("Blueprint Synced Successfully");
+      toast.success("Question saved");
 
-      // RESET COMPONENT FORM
       setForm((f) => ({
         ...f,
         title: "",
@@ -159,21 +190,20 @@ export default function AdminQuestions() {
       if (document.getElementById("fileInputRef"))
         document.getElementById("fileInputRef").value = "";
     } catch (err) {
-      toast.error("Operation commit interruption.");
+      toast.error("Failed to save.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const deleteQuestion = async (qId) => {
-    if (!window.confirm("Archive resource from question bank?")) return;
+    if (!window.confirm("Delete this question?")) return;
     try {
-      // ✅ USING THE CORRECT 404-RESOLVED ENDPOINT
       await api.delete(`/api/admin/mocktests/questions/${qId}`);
       setAddedQuestions((prev) => prev.filter((q) => q._id !== qId));
-      toast.success("Pool Updated");
+      toast.success("Deleted");
     } catch (err) {
-      toast.error("Action restricted by Controller sync.");
+      toast.error("Delete failed");
     }
   };
 
@@ -181,327 +211,297 @@ export default function AdminQuestions() {
     try {
       const res = await api.put(`/api/admin/mocktests/${id}/publish`);
       setMocktest((prev) => ({ ...prev, isPublished: res.data.isPublished }));
-      toast.success(res.data.isPublished ? "Service: LIVE" : "Service: DRAFT");
+      toast.success(res.data.isPublished ? "Published" : "Draft");
     } catch (err) {
-      toast.error("State sync failed.");
+      toast.error("Update failed");
     }
   };
 
   if (loading)
     return (
-      <div className="min-h-screen bg-[#fafbfc] flex items-center justify-center animate-pulse gap-3 text-slate-300 font-bold uppercase tracking-widest text-xs">
-        <Database /> INITIALIZING SYSTEM SYNC...
+      <div className="min-h-screen bg-[#fafbfc] flex items-center justify-center gap-3 text-slate-900 font-bold uppercase tracking-widest text-sm">
+        <Database /> Loading...
       </div>
     );
 
   return (
     <div className="bg-[#f8fafc] min-h-screen px-4 md:px-8 py-8 font-sans">
       <div className="max-w-[1500px] mx-auto space-y-6">
-        {/* HEADER CONTROL AREA */}
+        {/* HEADER */}
         <div className="bg-white border border-slate-200 px-6 py-4 rounded-lg flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 border border-slate-100 rounded text-slate-400 hover:text-indigo-600 transition shadow-sm"
+              className="p-2 border border-slate-200 rounded text-slate-00 hover:text-indigo-600 transition shadow-sm"
             >
               <ArrowLeft size={16} />
             </button>
+
             <div>
-              <h1 className="text-xl font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-tight">
+              <h1 className="text-xl font-extrabold text-slate-700 uppercase tracking-tight">
                 {mocktest?.title}
-                <span className="text-[10px] font-black bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded shadow-inner">
-                  DIRECTORY: {addedQuestions.length} / {stats.totalLimit} ITEMS
-                </span>
               </h1>
-              <p className="text-[10px] font-bold text-slate-300 uppercase tracking-[0.2em] mt-0.5">
-                Asset Registry Integration
+              <p className="text-xs font-bold text-slate-700 uppercase mt-1">
+                Question Management
               </p>
             </div>
           </div>
 
           <button
             onClick={handleTogglePublish}
-            className={`px-4 py-2 rounded-md font-bold text-[11px] uppercase tracking-wider flex items-center gap-2 border transition-all ${mocktest?.isPublished ? "bg-emerald-50 text-emerald-600 border-emerald-200 shadow-emerald-50 shadow-md" : "bg-white text-slate-400 border-slate-200"}`}
+            className={`px-4 py-2 rounded-md font-bold text-xs uppercase tracking-wider flex items-center gap-2 border transition-all ${
+              mocktest?.isPublished
+                ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                : "bg-white text-slate-700 border-slate-200"
+            }`}
           >
             {mocktest?.isPublished ? <Globe size={14} /> : <Lock size={14} />}
-            {mocktest?.isPublished ? "COMMIT LIVE" : "DRAFT MODE"}
+            {mocktest?.isPublished ? "LIVE" : "DRAFT"}
           </button>
         </div>
 
-        {/* BLUEPRINT METRIC TRACKER */}
-        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1">
-          {mocktest?.subjects?.map((s, idx) => {
-            const key = (s.name || s).toString().toLowerCase();
-            const lim = stats.limits[key] || 0;
-            const cnt = stats.counts[key] || 0;
-            const isFilled = cnt >= lim && lim > 0;
-            return (
-              <div
-                key={idx}
-                className={`flex-none bg-white border px-5 py-2.5 rounded-lg flex items-center gap-5 transition-colors ${isFilled ? "border-amber-200 bg-amber-50 shadow-inner" : "border-slate-100 shadow-sm"}`}
-              >
-                <span
-                  className={`text-[10px] font-black uppercase tracking-tighter ${isFilled ? "text-amber-600" : "text-slate-400"}`}
-                >
-                  {s.name || s}
-                </span>
-                <div
-                  className={`px-3 py-1 rounded-md text-[11px] font-black ${isFilled ? "bg-amber-400 text-white" : "bg-slate-100 text-indigo-500 border border-slate-100"}`}
-                >
-                  {cnt} / {lim}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* ================= LEFT: CONSTRUCTION CONSOLE ================= */}
+          {/* LEFT */}
           <div className="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-8 space-y-8 shadow-sm">
-            <div className="flex items-center gap-2 pb-4 border-b border-slate-50 opacity-60">
+            <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
               <BarChart4 className="text-indigo-500" size={18} />
-              <h2 className="text-xs font-black uppercase tracking-widest text-slate-800 italic">
-                Generate Question Architecture
+              <h2 className="text-sm font-extrabold uppercase text-slate-700">
+                Question Builder
               </h2>
             </div>
 
-            <form onSubmit={onAddQuestion} className="space-y-7">
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  {
-                    label: "Mapping Segment",
-                    key: "category",
-                    options: mocktest?.subjects?.map((sub) => sub.name) || [
-                      "general",
-                    ],
-                  },
-                  {
-                    label: "Intelligence Depth",
-                    key: "difficulty",
-                    options: ["easy", "medium", "hard"],
-                  },
-                  {
-                    label: "Interface Format",
-                    key: "questionType",
-                    options: ["mcq", "manual"],
-                  },
-                ].map((config) => (
-                  <div key={config.key} className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-300 uppercase tracking-tight">
-                      {config.label}
-                    </label>
-                    <select
-                      className="w-full bg-[#fbfcfd] border border-slate-100 rounded-md p-2.5 text-[11px] font-bold text-slate-600 outline-none uppercase tracking-wide cursor-pointer focus:ring-1 focus:ring-indigo-100"
-                      value={form[config.key]}
-                      onChange={(e) =>
-                        setForm({ ...form, [config.key]: e.target.value })
-                      }
-                    >
-                      {config.options?.map((opt, i) => (
-                        <option key={i} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
+            <div className="flex gap-3 mb-5">
+              <button
+                type="button"
+                onClick={() => setEntryMode("manual")}
+                className={`px-4 py-2 rounded font-bold ${
+                  entryMode === "manual"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white border"
+                }`}
+              >
+                Manual Entry
+              </button>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                  Base Narrative (Statement)
-                </label>
-                <textarea
-                  className="w-full bg-[#fcfdfe] border border-slate-100 rounded-lg p-5 text-[13px] h-36 outline-none focus:border-indigo-100 font-medium placeholder:text-slate-200 leading-relaxed shadow-inner"
-                  placeholder="Draft the analytical statement of the entry..."
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  required
-                />
-              </div>
+              <button
+                type="button"
+                onClick={() => setEntryMode("bulk")}
+                className={`px-4 py-2 rounded font-bold ${
+                  entryMode === "bulk"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white border"
+                }`}
+              >
+                Bulk CSV Upload
+              </button>
+            </div>
 
-              <div className="border-2 border-dashed border-slate-50 bg-[#fafbfc]/30 p-5 rounded-lg text-center relative group hover:border-indigo-200 transition cursor-pointer">
-                <ImageIcon
-                  className="mx-auto text-slate-200 mb-1.5"
-                  size={24}
-                />
-                <p className="text-[11px] font-bold text-slate-300 uppercase italic">
-                  Add Logical Illustration (Visual Resource)
-                </p>
-                <input
-                  id="fileInputRef"
-                  type="file"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={(e) =>
-                    setPreview(URL.createObjectURL(e.target.files[0]))
-                  }
-                />
-                {preview && (
-                  <div className="mt-4 flex items-center justify-center gap-3 p-3 bg-indigo-50 border border-indigo-100 rounded-lg animate-in slide-in-from-top-2">
-                    <img
-                      src={preview}
-                      className="w-14 h-14 object-cover rounded shadow-sm bg-white"
-                    />
-                    <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em]">
-                      Asset Binding Successful
-                    </p>
-                  </div>
-                )}
-              </div>
+            {entryMode === "manual" && (
+              <form onSubmit={onAddQuestion} className="space-y-7">
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    {
+                      label: "Language / Subject",
+                      key: "category",
+                      options: mocktest?.subjects?.map((sub) => sub.name) || [
+                        "general",
+                      ],
+                    },
+                    {
+                      label: "Difficulty Level",
+                      key: "difficulty",
+                      options: ["easy", "medium", "hard"],
+                    },
+                    {
+                      label: "Question Type",
+                      key: "questionType",
+                      options: ["mcq", "manual"],
+                    },
+                  ].map((config) => (
+                    <div key={config.key} className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700 uppercase">
+                        {config.label}
+                      </label>
 
-              {/* LOGIC PATH SELECTIONS (MCQ Fix) */}
-              {form.questionType === "mcq" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-5">
-                  {form.options.map((opt, i) => (
-                    <div
-                      key={i}
-                      className={`p-4 rounded-xl border flex flex-col gap-2 transition-all ${form.correct.includes(i) ? "bg-emerald-50 border-emerald-100 shadow-sm shadow-emerald-100" : "bg-slate-50 border-slate-100"}`}
-                    >
-                      <div className="flex justify-between items-center text-[10px] font-black">
-                        <span className="text-slate-400 opacity-60">
-                          Logic Path: {String.fromCharCode(65 + i)}
-                        </span>
-                        {/* SINGLE SELECT SYNC LOGIC */}
-                        <input
-                          type="checkbox"
-                          className="accent-emerald-600 scale-105"
-                          checked={form.correct.includes(i)}
-                          onChange={() =>
-                            setForm({
-                              ...form,
-                              correct: form.correct.includes(i) ? [] : [i],
-                            })
-                          }
-                        />
-                      </div>
-                      <input
-                        className="bg-transparent text-[11px] font-bold text-slate-700 outline-none w-full"
-                        placeholder="Specify outcome definition..."
-                        value={opt.text}
-                        onChange={(e) => {
-                          let cp = [...form.options];
-                          cp[i].text = e.target.value;
-                          setForm({ ...form, options: cp });
-                        }}
-                        required
-                      />
+                      <select
+                        className="w-full bg-white border border-slate-300 rounded-md p-2.5 text-sm font-bold text-slate-700 outline-none"
+                        value={form[config.key]}
+                        onChange={(e) =>
+                          setForm({ ...form, [config.key]: e.target.value })
+                        }
+                      >
+                        {config.options?.map((opt, i) => (
+                          <option key={i} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   ))}
                 </div>
-              )}
 
-              {form.questionType === "manual" && (
-                <div className="p-5 bg-indigo-50 border border-indigo-100 rounded-lg flex flex-col gap-2">
-                  <label className="text-[11px] font-black text-indigo-500 uppercase tracking-tighter italic">
-                    Fixed Key Allocation
+                <div>
+                  <label className="text-xs font-bold text-slate-700 uppercase">
+                    Question Text
                   </label>
-                  <input
-                    className="w-full bg-white border-none p-3 rounded-md text-[13px] font-black text-indigo-600 shadow-sm outline-none"
-                    placeholder="Target Constant: 100.5"
-                    value={form.correctManualAnswer}
+                  <textarea
+                    className="w-full bg-white border border-slate-300 rounded-lg p-4 text-sm h-36 outline-none font-bold text-slate-900 placeholder:text-slate-400"
+                    placeholder="Enter question..."
+                    value={form.title}
                     onChange={(e) =>
-                      setForm({ ...form, correctManualAnswer: e.target.value })
+                      setForm({ ...form, title: e.target.value })
                     }
                     required
                   />
                 </div>
-              )}
 
-              <div className="pt-2 border-t border-slate-50">
+                <div className="border-2 border-dashed border-indigo-300 bg-indigo-50 p-5 rounded-lg text-center relative">
+                  <ImageIcon
+                    className="mx-auto text-indigo-400 mb-2"
+                    size={24}
+                  />
+                  <p className="text-sm font-bold text-indigo-600">
+                    Upload Image (Optional)
+                  </p>
+                  <input
+                    id="fileInputRef"
+                    type="file"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={(e) =>
+                      setPreview(URL.createObjectURL(e.target.files[0]))
+                    }
+                  />
+                </div>
+
+                {form.questionType === "mcq" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                    {form.options.map((opt, i) => (
+                      <div key={i} className="p-4 rounded border bg-slate-50">
+                        <div className="flex justify-between mb-2">
+                          <span className="text-xs font-bold text-slate-700">
+                            Answer Option {String.fromCharCode(65 + i)}
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={form.correct.includes(i)}
+                            onChange={() =>
+                              setForm({
+                                ...form,
+                                correct: form.correct.includes(i) ? [] : [i],
+                              })
+                            }
+                          />
+                        </div>
+
+                        <input
+                          className="w-full border border-slate-300 p-2 rounded font-bold text-slate-700"
+                          value={opt.text}
+                          onChange={(e) => {
+                            let cp = [...form.options];
+                            cp[i].text = e.target.value;
+                            setForm({ ...form, options: cp });
+                          }}
+                          required
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {form.questionType === "manual" && (
+                  <input
+                    className="w-full border border-slate-300 p-3 rounded font-bold text-slate-700"
+                    placeholder="Correct Answer"
+                    value={form.correctManualAnswer}
+                    onChange={(e) =>
+                      setForm({ ...form, correctManualAnswer: e.target.value })
+                    }
+                  />
+                )}
+
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className={`w-full py-3.5 px-4 rounded-lg font-black text-[12px] uppercase tracking-[0.3em] transition-all shadow-md flex items-center justify-center gap-3 active:scale-[0.98] ${isSubmitting ? "bg-slate-200 text-slate-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100"}`}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded font-extrabold text-sm"
                 >
-                  {isSubmitting
-                    ? "COMMIT IN PROGRESS..."
-                    : "Push Index to Repository"}
+                  {isSubmitting ? "Saving..." : "Save Question"}
+                </button>
+              </form>
+            )}
+
+            {entryMode === "bulk" && (
+              <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
+                <input
+                  type="file"
+                  name="file"
+                  accept=".csv"
+                  onChange={(e) => {
+                    const f = e.target.files[0];
+                    setBulkFile(f);
+                    const reader = new FileReader();
+                    reader.onload = (ev) =>
+                      setBulkRows(parseBulkCSV(ev.target.result));
+                    reader.readAsText(f);
+                  }}
+                />
+
+                {bulkRows.length > 0 && (
+                  <p className="font-bold">Rows Loaded: {bulkRows.length}</p>
+                )}
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setBulkFree(!bulkFree)}
+                    className={`px-4 py-2 rounded font-bold ${
+                      bulkFree ? "bg-emerald-500 text-white" : "bg-slate-100"
+                    }`}
+                  >
+                    {bulkFree ? "FREE" : "PAID"}
+                  </button>
+
+                  <button
+                    onClick={() => setBulkPublish(!bulkPublish)}
+                    className={`px-4 py-2 rounded font-bold ${
+                      bulkPublish ? "bg-indigo-600 text-white" : "bg-slate-100"
+                    }`}
+                  >
+                    {bulkPublish ? "PUBLISH" : "DRAFT"}
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleBulkSubmit}
+                  disabled={isSubmitting}
+                  className="w-full bg-indigo-600 text-white py-3 rounded font-extrabold"
+                >
+                  Upload CSV
                 </button>
               </div>
-            </form>
+            )}
           </div>
 
-          {/* ================= RIGHT: BANK DIRECTORY ================= */}
-          <div className="lg:col-span-5 h-[800px] flex flex-col bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <div className="bg-slate-50 border-b border-slate-100 px-6 py-5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Library className="text-slate-400" size={18} />
-                <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">
-                  Asset Index Store
-                </h3>
-              </div>
-              <div className="flex items-center gap-2 text-[10px] font-black text-slate-300">
-                <Database size={12} /> DATA MODE: SYNC
-              </div>
-            </div>
+          {/* RIGHT */}
+          <div className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-6">
+            <h3 className="text-sm font-extrabold text-slate-700 mb-4">
+              Question Preview
+            </h3>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 no-scrollbar scroll-smooth">
-              {addedQuestions.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center opacity-30 italic text-[11px] uppercase tracking-tighter text-slate-400 gap-4">
-                  <Library size={32} /> System Bank Dataset: (Zero Indices)
-                </div>
-              ) : (
-                [...addedQuestions].reverse().map((q) => (
-                  <div
-                    key={q?._id || Math.random()}
-                    className="bg-slate-50 border border-slate-100 rounded-lg p-5 relative group hover:bg-white hover:border-indigo-100 transition shadow-sm overflow-hidden animate-in fade-in zoom-in-95"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1.5">
-                        {/* ✅ ID CRASH PROTECTION FIX: q?._id?.slice */}
-                        <span className="text-[10px] font-black text-indigo-400 tracking-tight">
-                          ENTRY INDEX: #{q?._id?.slice(-4) || "AS-P"}
-                        </span>
-                        <span
-                          className={`text-[8px] font-black uppercase px-2 py-0.5 rounded shadow-sm text-white ${q.difficulty === "hard" ? "bg-rose-400" : q.difficulty === "medium" ? "bg-amber-400" : "bg-emerald-400"}`}
-                        >
-                          {q.difficulty}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => deleteQuestion(q?._id)}
-                        className="text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all p-1 hover:bg-rose-50 rounded"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-
-                    <p className="text-[13px] font-medium text-slate-700 leading-relaxed italic line-clamp-3 mb-4 tracking-tight px-1">
-                      "{q.title || "Reference Title Incomplete"}"
-                    </p>
-
-                    {/* KEY & PERFORMANCE DISPLAY AREA */}
-                    <div className="mt-auto border-t border-slate-100/60 pt-3 flex items-center justify-between">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] italic">
-                            {q.category || "GENMAP"}
-                          </span>
-                          <span className="text-[9px] font-black text-indigo-300">
-                            ({q.questionType?.toUpperCase()})
-                          </span>
-                        </div>
-                        {/* ✅ DISPLAYING THE ACTUAL CORRECT ANSWER AS REQUESTED */}
-                        <div className="bg-indigo-50 border border-indigo-50 px-3 py-1 rounded shadow-inner w-fit mt-1">
-                          <p className="text-[9px] font-black text-indigo-600 uppercase">
-                            Correct Log:{" "}
-                            {q.questionType === "mcq"
-                              ? q.correct
-                                  ?.map((v) => String.fromCharCode(65 + v))
-                                  .join(", ")
-                              : q.correctManualAnswer || "0.00"}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-500 uppercase bg-emerald-50 px-2 py-1 rounded shadow-sm">
-                        <CheckCircle2 size={11} strokeWidth={3} /> +
-                        {q.marks || 1} POINTS
-                      </span>
-                    </div>
+            {addedQuestions.length === 0 ? (
+              <p className="text-sm font-bold text-slate-700">
+                No Questions Added
+              </p>
+            ) : (
+              addedQuestions.map((q) => (
+                <div key={q._id} className="border p-4 rounded mb-3">
+                  <div className="flex justify-between">
+                    <p className="font-bold text-slate-700">{q.title}</p>
+                    <button onClick={() => deleteQuestion(q._id)}>
+                      <Trash2 size={14} className="text-rose-500" />
+                    </button>
                   </div>
-                ))
-              )}
-            </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

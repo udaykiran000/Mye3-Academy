@@ -216,7 +216,7 @@ const Sidebar = () => {
 
   const avatarUrl = useMemo(() => {
     if (adminProfile?.avatar)
-      return `http://localhost:8000/${adminProfile.avatar.replace(/\\/g, "/")}`;
+      return `import.meta.env.VITE_SERVER_URL/${adminProfile.avatar.replace(/\\/g, "/")}`;
     return `https://ui-avatars.com/api/?name=${adminProfile?.firstname || "Admin"}+${adminProfile?.lastname || ""}&background=6366f1&color=fff&size=128&bold=true`;
   }, [adminProfile]);
 
