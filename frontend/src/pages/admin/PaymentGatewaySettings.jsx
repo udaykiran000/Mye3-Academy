@@ -10,7 +10,7 @@ const PaymentGatewaySettings = () => {
 
   const fetchSettings = async () => {
     try {
-      const { data } = await api.get("/api/payment/admin/settings");
+      const { data } = await api.get("/api/admin/payment-settings");
       setGateways(data);
       setLoading(false);
     } catch (error) {
@@ -32,7 +32,7 @@ const PaymentGatewaySettings = () => {
   const handleSave = async (gateway) => {
     const toastId = toast.loading(`Updating ${gateway.name}...`);
     try {
-      await api.put("/api/payment/admin/update", {
+      await api.put("/api/admin/payment-settings", {
         name: gateway.name,
         isActive: gateway.isActive,
         keyId: gateway.keyId,

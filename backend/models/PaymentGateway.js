@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { encrypt, decrypt } from "../utils/encryption.js";
 
 const paymentGatewaySchema = new mongoose.Schema(
   {
@@ -31,6 +32,21 @@ const paymentGatewaySchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Encrypt secret key before saving
+paymentGatewaySchema.pre('save', function(next) {
+  if (this.isModified('credentials.keySecret') && this.credentials.keySecret) {
+    this.credentials.keySecret = encrypt(this.credentials.keySecret);
+  }
+  next();
+});
+
+// Decrypt secret key after retrieving
+paymentGatewaySchema.post('init', function(doc) {
+  if (doc.credentials && doc.credentials.keySecret) {
+    doc.credentials.keySecret = decrypt(doc.credentials.keySecret);
+  }
+});
 
 const PaymentGateway = mongoose.model("PaymentGateway", paymentGatewaySchema);
 

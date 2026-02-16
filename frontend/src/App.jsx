@@ -46,6 +46,7 @@ import InstructorDoubts from "./pages/instructor/InstructorDoubts";
 
 // PROTECTED ROUTE
 import ProtectedRoute from "./components/student/ProtectedRoute";
+import ViewModeToggle from "./components/common/ViewModeToggle";
 import { Toaster } from "react-hot-toast";
 
 // ------------------------- MAIN LAYOUT COMPONENT -------------------------
@@ -68,6 +69,7 @@ const MainLayout = ({ children }) => {
       {!hideLayout && <Navbar />}
       <main className="min-h-[80vh]">{children}</main>
       {!hideLayout && <Footer />}
+      <ViewModeToggle />
     </>
   );
 };
@@ -137,7 +139,7 @@ const App = () => {
           <Route
             path="/student-dashboard"
             element={
-              userData?.role === "student" ? (
+              userData?.role === "student" || userData?.role === "admin" ? (
                 <StuDashboard />
               ) : (
                 <Navigate to="/login" replace />

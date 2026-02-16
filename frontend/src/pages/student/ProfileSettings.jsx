@@ -54,10 +54,16 @@ const ProfileSettings = () => {
 
       // If they have a photo, show it. Else show placeholder.
       if (studentProfile.avatar) {
-        // ⚠️ MAKE SURE THIS URL MATCHES YOUR SERVER (e.g., import.meta.env.VITE_SERVER_URL/)
-        setAvatarPreview(
-          `import.meta.env.VITE_SERVER_URL/${studentProfile.avatar.replace(/\\/g, "/")}`,
-        );
+        // Check if it's already a full URL (e.g. Google Auth)
+        if (studentProfile.avatar.startsWith("http")) {
+             setAvatarPreview(studentProfile.avatar);
+        } else {
+             // It's a local file upload
+             const baseUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:8000";
+             // Remove any leading 'public' or backslashes if present, ensure distinct path
+             const cleanPath = studentProfile.avatar.replace(/\\/g, "/");
+             setAvatarPreview(`${baseUrl}/${cleanPath}`);
+        }
       }
     }
   }, [studentProfile]);

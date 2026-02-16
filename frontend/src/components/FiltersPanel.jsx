@@ -32,9 +32,9 @@ const FiltersPanel = ({
           {categories.map((cat) => (
             <li key={cat._id}>
               <button
-                onClick={() => onSelectCategory(cat._id)}
+                onClick={() => onSelectCategory(cat.slug)}
                 className={`block w-full text-left px-4 py-2.5 text-sm font-medium transition-all rounded-md ${
-                  selectedCategory === cat._id
+                  selectedCategory === cat.slug
                     ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600"
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}

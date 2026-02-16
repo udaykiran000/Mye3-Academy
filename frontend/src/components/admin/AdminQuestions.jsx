@@ -77,7 +77,7 @@ export default function AdminQuestions() {
         }
       }
       if (qRes.status === "fulfilled") {
-        setAddedQuestions(qRes.value.data || []);
+        setAddedQuestions(qRes.value.data.questions || []);
       }
     } catch (err) {
       toast.error("Failed to load questions.");
@@ -176,7 +176,7 @@ export default function AdminQuestions() {
 
     try {
       const res = await api.post(`/api/admin/mocktests/${id}/questions`, fd);
-      setAddedQuestions((prev) => [...prev, res.data.question || res.data]);
+      setAddedQuestions((prev) => [...prev, res.data.question]);
       toast.success("Question saved");
 
       setForm((f) => ({
@@ -492,10 +492,16 @@ export default function AdminQuestions() {
               </p>
             ) : (
               addedQuestions.map((q) => (
-                <div key={q._id} className="border p-4 rounded mb-3">
+                <div key={q.id || q._id} className="border p-4 rounded mb-3">
                   <div className="flex justify-between">
-                    <p className="font-bold text-slate-700">{q.title}</p>
-                    <button onClick={() => deleteQuestion(q._id)}>
+                    <div className="space-y-1">
+                      <p className="font-bold text-slate-700">{q.title}</p>
+                      {/* Adding info labels for Admin clarity */}
+                      <p className="text-[10px] uppercase font-black text-indigo-500">
+                        {q.category} • {q.difficulty}
+                      </p>
+                    </div>
+                    <button onClick={() => deleteQuestion(q.id || q._id)}>
                       <Trash2 size={14} className="text-rose-500" />
                     </button>
                   </div>

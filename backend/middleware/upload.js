@@ -91,13 +91,7 @@ export const uploadQuestionImages = multer({
 ]);
 
 // For Single Image (Profile photo, etc.)
-export const uploadImage = multer({
+export const upload = multer({
   storage: imageStorage,
   fileFilter: imageFileFilter
 });
-
-// For Any Image (Generic)
-export const uploadAny = multer({
-  storage: imageStorage,
-  fileFilter: imageFileFilter
-}).any();

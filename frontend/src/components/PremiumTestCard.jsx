@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 
 import { addItemToCart, fetchCart } from "../redux/cartSlice";
 import api from "../api/axios";
+import { getImageUrl, handleImageError } from "../utils/imageHelper";
 
 const StatItem = ({ icon: Icon, value, label, accentLight }) => (
   <div className="text-center">
@@ -37,31 +38,10 @@ const PremiumTestCard = ({ test }) => {
     (item) => item._id === test._id || item.mockTestId === test._id
   );
 
-  const [fetchedImageURL, setFetchedImageURL] = useState(null);
-  const [loadingImage, setLoadingImage] = useState(false);
-
-  useEffect(() => {
-    if (!test.thumbnail) return;
-
-    const fetchImage = async () => {
-      setLoadingImage(true);
-      try {
-        const res = await api.get(test.thumbnail, { responseType: "blob" });
-        setFetchedImageURL(URL.createObjectURL(res.data));
-      } catch {
-        setFetchedImageURL("https://placehold.co/600x400?text=Image+Load+Error");
-      } finally {
-        setLoadingImage(false);
-      }
-    };
-
-    fetchImage();
-    return () => {
-      if (fetchedImageURL) URL.revokeObjectURL(fetchedImageURL);
-    };
-  }, [test.thumbnail]);
-
-  const imageSource = fetchedImageURL || "https://placehold.co/600x400?text=Mock+Test";
+  /* Image logic replaced with helper */
+  
+  // const imageSource = fetchedImageURL || "https://placehold.co/600x400?text=Mock+Test";
+  const imageSource = getImageUrl(test.thumbnail);
 
   const isFree = test.isFree === true;
 
@@ -144,13 +124,11 @@ const PremiumTestCard = ({ test }) => {
       )}
 
       <div className="relative w-full h-40">
-        {loadingImage ? (
-          <div className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-500 animate-pulse">
-            Loading Image...
-          </div>
-        ) : (
-          <img src={imageSource} className="w-full h-full object-cover" />
-        )}
+          <img 
+            src={imageSource} 
+            onError={handleImageError}
+            className="w-full h-full object-cover" 
+          />
       </div>
 
       <Link to={`/mocktests/${test._id}`} className="p-6 flex flex-col flex-grow">

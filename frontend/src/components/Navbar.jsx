@@ -68,16 +68,27 @@ const Navbar = () => {
   let showDashboardBtn = !!userData; // If logged in, show dashboard button
   let dashboardLabel = "My Dashboard";
 
+  // Check if Admin is in "Student View" mode
+  const isAdminInStudentView = role === "admin" && !location.pathname.startsWith("/admin");
+
   if (role === "admin") {
-    dashboardPath = "/admin";
-    dashboardLabel = "Admin Panel";
+    if (isAdminInStudentView) {
+        // In Student View: Link to Student Dashboard, but label appropriately or hide if preferred
+        dashboardPath = "/student-dashboard"; 
+        dashboardLabel = "Student Dashboard";
+        // Option: set showDashboardBtn = false to hide it completely in student view
+        // showDashboardBtn = false; 
+    } else {
+        dashboardPath = "/admin";
+        dashboardLabel = "Admin Panel";
+    }
   } else if (role === "instructor") {
     dashboardPath = "/instructor-dashboard";
     dashboardLabel = "Instructor Panel";
   }
 
   const currentCategoryName =
-    categories?.find((c) => c._id === filters.category)?.name || "Categories";
+    categories?.find((c) => c.slug === filters.category)?.name || "Categories";
 
   return (
     <>
@@ -122,7 +133,7 @@ const Navbar = () => {
                       {categories.map((cat) => (
                         <button
                           key={cat._id}
-                          onClick={() => handleSelectCategory(cat._id)}
+                          onClick={() => handleSelectCategory(cat.slug)}
                           className="w-full text-left px-5 py-3 text-sm font-semibold hover:bg-slate-50 text-slate-600"
                         >
                           {cat.name}

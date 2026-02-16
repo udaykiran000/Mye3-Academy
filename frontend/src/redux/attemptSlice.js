@@ -31,7 +31,7 @@ const attemptSlice = createSlice({
       })
       .addCase(fetchMyAttempts.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload;
+        state.list = action.payload.attempts || []; 
       })
       .addCase(fetchMyAttempts.rejected, (state, action) => {
         state.loading = false;
