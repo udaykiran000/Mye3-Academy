@@ -4,4 +4,10 @@ build/
 .env
 *.log
 backend/uploads/
+
+# Global Ignores
+**/.env
+**/node_modules
+**/.DS_Store
+**/*.log
 uploads/
