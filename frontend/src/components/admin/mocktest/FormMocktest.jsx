@@ -28,6 +28,7 @@ export default function FormMocktest() {
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
   const [isFree, setIsFree] = useState(null); // No default selection (Proactive check)
   const [isGrandTest, setIsGrandTest] = useState(false);
+  const [isPublished, setIsPublished] = useState(false);
   const [subjects, setSubjects] = useState([]);
   const [displayCategory, setDisplayCategory] = useState("");
 
@@ -124,6 +125,7 @@ export default function FormMocktest() {
 
       setIsFree(rawData.isFree);
       setIsGrandTest(rawData.isGrandTest || false);
+      setIsPublished(rawData.isPublished || false);
     }
   }, [currentMocktest, isEditMode]);
 
@@ -138,10 +140,15 @@ export default function FormMocktest() {
     if (!form.title.trim()) return toast.error("Test Title is missing");
 
     const formData = new FormData();
-    Object.keys(form).forEach((key) => formData.append(key, form[key]));
+    Object.keys(form).forEach((key) => {
+      if (key !== "category") {
+        formData.append(key, form[key]);
+      }
+    });
     formData.append("totalMarks", totalMarks);
     formData.append("isFree", isFree);
     formData.append("isGrandTest", isGrandTest);
+    formData.append("isPublished", isPublished);
     formData.append("category", isEditMode ? form.category : categoryParam);
     if (thumbnail) formData.append("thumbnail", thumbnail);
 
@@ -446,6 +453,21 @@ export default function FormMocktest() {
                   >
                     <div
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${isGrandTest ? "left-6" : "left-1"}`}
+                    ></div>
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3 border border-slate-300 rounded-lg bg-slate-50">
+                  <label className="text-[10px] font-bold text-slate-700 uppercase">
+                    Publish Status
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsPublished(!isPublished)}
+                    className={`w-11 h-6 rounded-full transition-all relative ${isPublished ? "bg-emerald-500" : "bg-slate-300"}`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${isPublished ? "left-6" : "left-1"}`}
                     ></div>
                   </button>
                 </div>

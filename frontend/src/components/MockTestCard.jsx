@@ -12,6 +12,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { addItemToCart } from "../redux/cartSlice";
 import { toast } from "react-toastify";
 import api from "../api/axios";
+import { getImageUrl, handleImageError } from "../utils/imageHelper";
 
 const StatItem = ({ icon: Icon, value, label }) => (
   <div className="flex flex-col items-center border-r border-slate-100 last:border-0">
@@ -29,22 +30,7 @@ const MockTestCard = ({ test, isEmbedded = false }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { userData } = useSelector((state) => state.user);
-  const [fetchedImageURL, setFetchedImageURL] = useState(null);
 
-  useEffect(() => {
-    if (!test.thumbnail) return;
-    const fetchImage = async () => {
-      try {
-        const response = await api.get(test.thumbnail, {
-          responseType: "blob",
-        });
-        setFetchedImageURL(URL.createObjectURL(response.data));
-      } catch (e) {
-        setFetchedImageURL("https://placehold.co/400x250?text=Mock+Test");
-      }
-    };
-    fetchImage();
-  }, [test.thumbnail]);
 
   const isFree = test.isFree === true;
   const enrolledCount = test.totalQuestions * 12 + 150; // Dynamic mock count
@@ -69,10 +55,9 @@ const MockTestCard = ({ test, isEmbedded = false }) => {
       {/* THUMBNAIL AREA */}
       <div className="relative h-40 overflow-hidden bg-slate-100">
         <img
-          src={
-            fetchedImageURL || "https://placehold.co/400x250?text=Loading..."
-          }
+          src={getImageUrl(test.thumbnail)}
           alt={test.title}
+          onError={handleImageError}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
 

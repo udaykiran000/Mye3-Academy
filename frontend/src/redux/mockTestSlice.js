@@ -10,7 +10,7 @@ export const fetchPublicMockTests = createAsyncThunk(
   async (query = "", { rejectWithValue }) => {
     try {
       const res = await api.get(`/api/public/mocktests${query}`);
-      return res.data;
+      return res.data.mocktests || res.data.tests || res.data;
     } catch (err) {
       return rejectWithValue("Failed to load public mock tests");
     }
@@ -25,7 +25,7 @@ export const fetchPublicTestById = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const res = await api.get(`/api/public/mocktests/${id}`);
-      return res.data;
+      return res.data.test || res.data.mocktest || res.data;
     } catch (err) {
       return rejectWithValue("Failed to load mocktest");
     }

@@ -506,7 +506,12 @@ const WriteMocktest = () => {
     const load = async () => {
       try {
         const { data } = await api.get(`/api/student/attempt/${attemptId}`);
-        setAttempt(data);
+        if (data.success && data.attempt) {
+            setAttempt(data.attempt);
+        } else {
+            // Fallback for older structure or errors
+            setAttempt(data);
+        }
 
         // ✅ ACCESS CONTROL LOGIC:
         // hasDashboardAccess should come from backend:

@@ -23,6 +23,7 @@ export const fetchUserData = createAsyncThunk(
 );
 
 // --- ADDED: New asyncThunk to fetch student's paid tests ---
+// --- ADDED: New asyncThunk to fetch student's paid tests ---
 export const fetchMyMockTests = createAsyncThunk(
     "user/fetchMyMockTests",
     async (_, { rejectWithValue }) => {
@@ -30,9 +31,9 @@ export const fetchMyMockTests = createAsyncThunk(
             // Use 'api' to ensure cookies/headers are sent
             const response = await api.get("/api/student/my-mocktests");
 
-            // Check standard response format { success: true, tests: [...] }
+            // Check standard response format { success: true, mocktests: [...] }
             if (response.data.success) {
-                return response.data.tests;
+                return response.data.mocktests || [];
             }
             // Fallback if backend sends just array
             else if (Array.isArray(response.data)) {
@@ -111,6 +112,7 @@ const userSlice = createSlice({
             .addCase(fetchMyMockTests.rejected, (state, action) => {
                 state.myMockTestsStatus = "failed";
                 state.myMockTestsError = action.payload;
+                state.myMockTests = [];
             });
     },
 });

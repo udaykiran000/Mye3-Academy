@@ -3,7 +3,6 @@ import MockTest from "../../models/MockTest.js";
 import Doubt from "../../models/Doubt.js";
 import Attempt from "../../models/Attempt.js";
 
-
 export const getInstructorDashboardStats = async (req, res) => {
   try {
     const instructorId = req.user._id;

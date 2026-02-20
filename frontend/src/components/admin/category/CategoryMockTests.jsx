@@ -34,7 +34,7 @@ export default function CategoryMockTests() {
         setLoading(true);
         try {
             const res = await api.get(`/api/admin/mocktests/category?category=${category}`);
-            setMocktests(res.data || []);
+            setMocktests(res.data.mocktests || []);
         } catch (err) {
             console.error(err);
             toast.error("Failed to fetch mocktests");
@@ -91,7 +91,6 @@ export default function CategoryMockTests() {
                         Mocktests
                     </span>
                 </h1>
-
                 <Link
                     to={`/admin/mocktests/${category}/new`}
                     className="mt-5 sm:mt-0 flex items-center gap-2 px-5 py-3 rounded-lg text-white font-semibold bg-gradient-to-r from-blue-600 to-cyan-500 hover:opacity-90 shadow-lg transition-all"

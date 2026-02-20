@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 import { IoSearch, IoFunnel, IoClose, IoChevronForward } from "react-icons/io5";
 
+import { useDebounce } from "../hooks/useDebounce";
+
 import {
   fetchPublicMockTests,
   setPublicCategoryFilter,
@@ -27,12 +29,29 @@ export default function AllMockTests({ isEmbedded = false }) {
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [testTypeFilter, setTestTypeFilter] = useState("all");
 
+  // Local state for search input to prevent firing API on every keystroke
+  const [searchTerm, setSearchTerm] = useState(filters.q || "");
+  const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms delay
+
   useEffect(() => {
     const categoryFromUrl = searchParams.get("category");
     const searchFromUrl = searchParams.get("q");
+
     if (categoryFromUrl) dispatch(setPublicCategoryFilter(categoryFromUrl));
-    if (searchFromUrl) dispatch(setPublicSearch(searchFromUrl));
+    if (searchFromUrl) {
+      dispatch(setPublicSearch(searchFromUrl));
+      setSearchTerm(searchFromUrl);
+    }
   }, [dispatch, searchParams]);
+
+  // Effect to sync local debounced search term with Redux
+  // Only dispatches if the value has actually changed to prevent loops
+  useEffect(() => {
+    if (debouncedSearchTerm !== filters.q) {
+      dispatch(setPublicSearch(debouncedSearchTerm));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm, dispatch]); // Intentionally omitting filters.q to avoid loop
 
   useEffect(() => {
     dispatch(fetchCategories());
@@ -63,9 +82,7 @@ export default function AllMockTests({ isEmbedded = false }) {
     const now = new Date();
 
     return processed.filter((test) => {
-      const isGrand =
-        test.isGrandTest === true ||
-        test.title?.toLowerCase().includes("grand");
+      const isGrand = test.isGrandTest === true;
       const eventDate = new Date(test.scheduledFor || test.availableFrom);
       const isUpcoming = eventDate > now;
 
@@ -101,8 +118,8 @@ export default function AllMockTests({ isEmbedded = false }) {
               size={20}
             />
             <input
-              value={filters.q}
-              onChange={(e) => dispatch(setPublicSearch(e.target.value))}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by exam or subject..."
               className="w-full pl-11 pr-4 py-2.5 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm"
             />
@@ -207,6 +224,7 @@ export default function AllMockTests({ isEmbedded = false }) {
                     </p>
                     <button
                       onClick={() => {
+                        setSearchTerm("");
                         dispatch(setPublicSearch(""));
                         dispatch(setPublicCategoryFilter(""));
                       }}

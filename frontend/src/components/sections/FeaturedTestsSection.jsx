@@ -13,6 +13,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { addItemToCart } from "../../redux/cartSlice";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
+import { getImageUrl, handleImageError } from "../../utils/imageHelper";
 
 // Helper for Stats
 const StatItem = ({ icon: Icon, value, label, accentLight }) => (
@@ -30,41 +31,8 @@ const TestCard = ({ test }) => {
   const navigate = useNavigate();
   const { userData } = useSelector((state) => state.user);
 
-  const [fetchedImageURL, setFetchedImageURL] = useState(null);
-  const [loadingImage, setLoadingImage] = useState(false);
-
-  useEffect(() => {
-    if (!test.thumbnail) return;
-
-    const fetchImage = async () => {
-      setLoadingImage(true);
-      try {
-        const response = await api.get(test.thumbnail, {
-          responseType: "blob",
-        });
-        const url = URL.createObjectURL(response.data);
-        setFetchedImageURL(url);
-      } catch (error) {
-        console.error("Failed to fetch mock test image via API:", error);
-        setFetchedImageURL(
-          "https://placehold.co/600x400?text=Image+Load+Error"
-        );
-      } finally {
-        setLoadingImage(false);
-      }
-    };
-
-    fetchImage();
-
-    return () => {
-      if (fetchedImageURL) {
-        URL.revokeObjectURL(fetchedImageURL);
-      }
-    };
-  }, [test.thumbnail]);
-
-  const imageSource =
-    fetchedImageURL || "https://placehold.co/600x400?text=Mock+Test";
+  /* Image logic replaced with helper */
+  const imageSource = getImageUrl(test.thumbnail);
 
   const isFree = test.isFree === true;
   const isGrand = test.isGrandTest === true;
@@ -117,17 +85,12 @@ const TestCard = ({ test }) => {
       )}
 
       <div className="relative w-full h-44 overflow-hidden">
-        {loadingImage ? (
-          <div className="w-full h-full flex items-center justify-center bg-slate-50 animate-pulse text-slate-400 font-bold">
-            Loading...
-          </div>
-        ) : (
           <img
             src={imageSource}
             alt={test.title}
+            onError={handleImageError}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           />
-        )}
       </div>
 
       <Link

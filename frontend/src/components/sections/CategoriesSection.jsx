@@ -175,7 +175,7 @@ const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
         {!loading && filteredExams.length === 0 && (
           <div className="py-24 text-center border-2 border-dashed border-slate-50 rounded-3xl">
             <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">
-              Ee category lo data ledu bro.
+No exams found in this category.
             </p>
           </div>
         )}

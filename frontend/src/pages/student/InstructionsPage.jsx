@@ -32,6 +32,7 @@ const InstructionsPage = () => {
 
   const [test, setTest] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     dispatch(fetchMyMockTests());
@@ -40,22 +41,51 @@ const InstructionsPage = () => {
   useEffect(() => {
     const fetchTestDetails = async (id) => {
       try {
+        setLoading(true);
+        console.log("📡 FETCHING DETAILS FOR:", id);
         const { data } = await api.get(`/api/public/mocktests/${id}`);
-        setTest(data);
+        console.log("✅ FETCH SUCCESS:", data);
+        
+        if (data.success && data.test) {
+            setTest(data.test);
+        } else {
+            console.error("❌ INVALID DATA:", data);
+            setFetchError(true);
+        }
       } catch (error) {
-        console.error("Failed to fetch public test details:", error);
+        console.error("❌ AXIOS ERROR:", error);
+        setFetchError(true);
+      } finally {
+        setLoading(false);
       }
     };
 
-    if (myMockTestsStatus === "succeeded") {
-      const foundTest = myMockTests.find((t) => t._id === mocktestId);
-      if (foundTest) {
-        setTest(foundTest);
-      } else {
-        fetchTestDetails(mocktestId);
-      }
+    if (mocktestId) {
+        // 1. First try to find in Redux store (if available)
+        const foundInStore = myMockTests?.find((t) => t._id === mocktestId);
+        
+        if (foundInStore) {
+            console.log("✅ FOUND IN STORE:", foundInStore.title);
+            setTest(foundInStore);
+        } 
+        // 2. If not in store, and store is not loading, fetch from API
+        else if (myMockTestsStatus !== "loading") {
+            console.log("⚠️ NOT IN STORE, FETCHING API...");
+            fetchTestDetails(mocktestId);
+        }
     }
   }, [myMockTestsStatus, myMockTests, mocktestId]);
+
+  // Fail-safe: If still loading after 5 seconds, show error
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if ((myMockTestsStatus === "loading" || !test) && myMockTestsStatus !== "failed") {
+        // Did not load in time
+        setFetchError(true);
+      }
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [myMockTestsStatus, test]);
 
   const handleStartTest = async () => {
     if (loading || !test) return;
@@ -82,20 +112,35 @@ const InstructionsPage = () => {
     }
   };
 
-  if (myMockTestsStatus === "loading" || !test) {
+  // Show loader if we don't have a test yet and no error has occurred
+  if (!test && !fetchError) {
     return (
       <div className="flex flex-col justify-center items-center h-[90vh] bg-slate-50">
         <ClipLoader size={40} color={"#4f46e5"} />
         <p className="mt-4 text-slate-500 font-medium">
-          Fetching instructions...
+          Loading test details...
         </p>
       </div>
     );
   }
 
+  if (fetchError) {
+      return (
+        <div className="flex flex-col justify-center items-center h-[90vh] bg-slate-50">
+          <AlertCircle size={40} className="text-red-500" />
+          <p className="mt-4 text-slate-500 font-medium">
+            Unable to load test details. Please try again later.
+          </p>
+          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            Retry
+          </button>
+        </div>
+      );
+  }
+
   if (
     myMockTestsStatus === "succeeded" &&
-    !myMockTests.find((t) => t._id === mocktestId) &&
+    !myMockTests?.find((t) => t._id === mocktestId) &&
     test.price > 0
   ) {
     return <Navigate to={`/mocktests/${mocktestId}`} replace />;
@@ -318,3 +363,5 @@ const InstructionsPage = () => {
 };
 
 export default InstructionsPage;
+
+// recompile trigger

@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 .beautiful-input {
   @apply w-full border border-gray-300 rounded-xl py-2.5 px-4 

@@ -24,7 +24,7 @@ const MyTests = () => {
       </div>
     );
   } else if (myMockTestsStatus === "succeeded") {
-    if (!myMockTests || myMockTests.length === 0) {
+    if (!myMockTests || !Array.isArray(myMockTests) || myMockTests.length === 0) {
       content = (
         <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
           <p className="text-gray-500 text-lg">

@@ -5,7 +5,6 @@ import {
   Trophy,
   FileText,
   Video,
-  MessageCircle,
 } from "lucide-react";
 import heroBanner from "../../assets/home-banner.svg";
 
@@ -129,15 +128,7 @@ const HeroSection = () => {
         </div>
       </div>
 
-      {/* WhatsApp Floating Button */}
-      <div className="fixed bottom-8 right-8 z-50">
-        <a
-          href="#"
-          className="bg-[#25D366] p-4 rounded-full shadow-2xl cursor-pointer hover:scale-110 transition-all duration-300 block"
-        >
-          <MessageCircle className="w-8 h-8 text-white fill-current" />
-        </a>
-      </div>
+
     </section>
   );
 };

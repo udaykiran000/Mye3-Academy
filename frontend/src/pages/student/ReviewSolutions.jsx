@@ -37,7 +37,11 @@ const ReviewSolutions = () => {
 
   const { reviewData, reviewStatus, reviewError } = useSelector(
     (state) => state.students,
-  ); // Local State: Navigation
+  ); 
+  
+  // Logic Fix: Handle wrapped response { success: true, attempt: ... }
+  const attempt = reviewData?.attempt || reviewData;
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSidebarOpen, setSidebarOpen] = useState(false); // Local State: Doubt Modal
 
@@ -53,10 +57,10 @@ const ReviewSolutions = () => {
   }, [dispatch, attemptId]); // --- DATA PROCESSING ---
 
   const processedQuestions = useMemo(() => {
-    if (!reviewData || !reviewData.questions) return [];
-    return reviewData.questions.map((q) => {
+    if (!attempt || !attempt.questions) return [];
+    return attempt.questions.map((q) => {
       // Find user's answer for this question
-      const userAnsObj = reviewData.answers?.find(
+      const userAnsObj = attempt.answers?.find(
         (a) => a.questionId === (q._id || q.id),
       ); // Determine Status
       let status = "unanswered";
@@ -74,19 +78,29 @@ const ReviewSolutions = () => {
         isPassageChild: !!q.parentQuestionId,
       };
     });
-  }, [reviewData]);
+  }, [attempt]);
 
-  const currentQ = processedQuestions[currentIndex]; // --- HANDLER: Submit Doubt ---
+  const currentQ = processedQuestions[currentIndex]; 
+  
+  // --- DEBUGGING ---
+  useEffect(() => {
+    if (attempt) {
+        console.log("Attempt Data:", attempt);
+        console.log("Current Question:", currentQ);
+    }
+  }, [attempt, currentQ]);
+
+  // --- HANDLER: Submit Doubt ---
 
   const handleDoubtSubmit = useCallback(async () => {
     if (!doubtText.trim() || !currentQ) return;
 
-    setSubmissionStatus("loading"); // 1. Safe access to Mock Test ID from reviewData
+    setSubmissionStatus("loading"); // 1. Safe access to Mock Test ID from attempt
 
     const mockTestId =
-      reviewData?.mockTest?._id ||
-      reviewData?.mocktestId?._id ||
-      reviewData?.mocktestId ||
+      attempt?.mockTest?._id ||
+      attempt?.mocktestId?._id ||
+      attempt?.mocktestId ||
       null; // 2. Construct Payload
 
     const payload = {
@@ -115,7 +129,7 @@ const ReviewSolutions = () => {
       console.error("Doubt submission error:", error);
       setSubmissionStatus("idle");
     }
-  }, [doubtText, currentQ, reviewData, attemptId, dispatch]); // --- RENDER HELPERS ---
+  }, [doubtText, currentQ, attempt, attemptId, dispatch]); // --- RENDER HELPERS ---
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -316,7 +330,7 @@ const ReviewSolutions = () => {
                 {/* ⭐ FIX: Use questionText from parentQuestionId */}         
                          {" "}
                 <p className="text-gray-700 whitespace-pre-line text-sm leading-relaxed">
-                  {currentQ.parentQuestionId.questionText}
+                  {currentQ.parentQuestionId.title}
                 </p>
                                    {" "}
                 {currentQ.parentQuestionId.questionImageUrl && (
@@ -346,7 +360,7 @@ const ReviewSolutions = () => {
                     </span>
                                                
                     {/* ⭐ FIX: Use questionText instead of title */}           
-                                   {currentQ?.questionText}                     
+                                   {currentQ?.title}                     
                      {" "}
                   </h2>
                                                                  {" "}
@@ -375,7 +389,7 @@ const ReviewSolutions = () => {
                                     {/* OPTIONS */}                   {" "}
                 <div className="space-y-3 mt-6">
                                          
-                  {currentQ?.questionType === "mcq" &&
+                  {currentQ?.questionType?.toLowerCase() === "mcq" &&
                     currentQ.options.map((opt, idx) => {
                       const isUserSelected =
                         String(idx) === String(currentQ.userSelected);
@@ -573,7 +587,7 @@ const ReviewSolutions = () => {
                 </label>
                                    {" "}
                 <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200 line-clamp-2">
-                                         {currentQ?.questionText}               
+                                         {currentQ?.title}               
                      {" "}
                 </p>
                                  
@@ -611,9 +625,7 @@ const ReviewSolutions = () => {
               <button
                 onClick={handleDoubtSubmit}
                 disabled={submissionStatus === "loading" || !doubtText.trim()}
-                className={`flex items-center gap-2 px-6 py-2 text-sm font-bold text-white rounded-lg shadow-lg transition
-                       ${submissionStatus === "loading" ? "bg-indigo-400" : "bg-indigo-600 hover:bg-indigo-700"}
-                       disabled:opacity-70 disabled:cursor-not-allowed`}
+                className={`flex items-center gap-2 px-6 py-2 text-sm font-bold text-white rounded-lg shadow-lg transition ${submissionStatus === "loading" ? "bg-indigo-400" : "bg-indigo-600 hover:bg-indigo-700"} disabled:opacity-70 disabled:cursor-not-allowed`}
               >
                                    {" "}
                 {submissionStatus === "loading" ? (

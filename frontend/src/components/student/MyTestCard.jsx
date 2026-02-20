@@ -7,6 +7,7 @@ import {
     Play
 } from 'lucide-react';
 import api from "../../api/axios";
+import { getImageUrl, handleImageError } from "../../utils/imageHelper";
 
 const StatItem = ({ icon: Icon, value, label, accentColorClass }) => (
     <div className="text-center">
@@ -19,43 +20,8 @@ const StatItem = ({ icon: Icon, value, label, accentColorClass }) => (
 const MyTestCard = ({ test }) => {
     const navigate = useNavigate();
 
-    const [imageURL, setImageURL] = useState(null);
-    const [loadingImage, setLoadingImage] = useState(false);
-
-    useEffect(() => {
-        if (!test.thumbnail) {
-            setImageURL("https://placehold.co/600x400?text=No+Image");
-            return;
-        }
-
-        const fetchImage = async () => {
-            try {
-                setLoadingImage(true);
-
-                const imgPath = test.thumbnail.startsWith("/")
-                    ? test.thumbnail
-                    : `/${test.thumbnail}`;
-
-                const response = await api.get(imgPath, { responseType: "blob" });
-                const blobURL = URL.createObjectURL(response.data);
-
-                setImageURL(blobURL);
-            } catch (error) {
-                console.error("❌ Failed to load student test thumbnail:", error);
-                setImageURL("https://placehold.co/600x400?text=Image+Error");
-            } finally {
-                setLoadingImage(false);
-            }
-        };
-
-        fetchImage();
-
-        return () => {
-            if (imageURL) URL.revokeObjectURL(imageURL);
-        };
-    }, [test.thumbnail]);
-
-    const imgSrc = imageURL || "https://placehold.co/600x400?text=Loading...";
+  /* Image logic replaced with helper */
+  const imgSrc = getImageUrl(test.thumbnail);
 
     /* ⭐ FIX: Include 'ready_to_retry' status */
     const isCompleted =
@@ -117,17 +83,12 @@ const MyTestCard = ({ test }) => {
         >
 
             <div className="relative w-full h-44 sm:h-52 rounded-t-2xl overflow-hidden">
-                {loadingImage ? (
-                    <div className="flex items-center justify-center w-full h-full bg-gray-800 animate-pulse text-gray-500">
-                        Loading...
-                    </div>
-                ) : (
                     <img
                         src={imgSrc}
                         alt={test.title}
+                        onError={handleImageError}
                         className="w-full h-full object-cover"
                     />
-                )}
 
                 <span
                     className={`
