@@ -1,3 +1,4 @@
+import instructorDashboardRoutes from "./routes/instructor/instructorDashboardRoutes.js";
 import dotenv from "dotenv";
 import express from "express";
 import cookieParser from "cookie-parser";
@@ -72,6 +73,7 @@ app.use((req, res, next) => {
 
 // --- 3. STATIC FILES ---
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api/instructor", instructorDashboardRoutes);
 
 // --- 4. API ROUTES ---
 

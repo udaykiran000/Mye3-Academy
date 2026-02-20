@@ -1,13 +1,22 @@
 import nodemailer from "nodemailer";
 
 const sendEmail = async (email, subject, text) => {
+  //
+  console.log("--- Check Environment Variables ---");
+  console.log("EMAIL_USER exists:", process.env.EMAIL_USER ? "YES ✅" : "NO ❌");
+  console.log("EMAIL_PASS length:", process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0);
+
   try {
+    console.log("Checking Env:", process.env.EMAIL_USER);
     const transporter = nodemailer.createTransport({
-      service: 'gmail', // Render 
+      host: "smtp.gmail.com",
+      port: 465, // 
+      secure: true, 
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        pass: process.env.EMAIL_PASS?.replace(/\s/g, ""), // 
       },
+      connectionTimeout: 10000, // 10 
     });
 
     await transporter.sendMail({
