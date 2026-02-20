@@ -1,4 +1,3 @@
-import instructorDashboardRoutes from "./routes/instructor/instructorDashboardRoutes.js";
 import dotenv from "dotenv";
 import express from "express";
 import cookieParser from "cookie-parser";
