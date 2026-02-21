@@ -6,8 +6,10 @@ import {
   deleteInstructor,
 } from "../../../redux/instructorSlice";
 import api from "../../../api/axios";
-import { useNavigate } from "react-router-dom";
-import { Search, User, Lock, Unlock, Pencil, Trash2, X } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { Search, User, Lock, Unlock, Pencil, Trash2, X, ArrowLeft, Plus, Download, MoreVertical } from "lucide-react";
+import { FaCheckCircle, FaBan, FaSpinner, FaExclamationTriangle } from "react-icons/fa";
+import toast from "react-hot-toast";
 
 // Helper to resolve image URLs
 const getImageUrl = (path) => {
@@ -95,6 +97,25 @@ const ManageInstructors = () => {
 
     dispatch(deleteInstructor(id));
   };
+  
+  const handleDownloadReport = async () => {
+    try {
+      const response = await api.get("/api/admin/users/instructors/report", {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "Instructors_Report.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("Instructor report downloaded successfully");
+    } catch (err) {
+      console.error("Download Error:", err);
+      toast.error("Failed to download report");
+    }
+  };
 
   const clearSearch = () => {
     setSearchTerm("");
@@ -102,6 +123,13 @@ const ManageInstructors = () => {
 
   return (
     <div className="p-6 min-h-screen bg-gray-50 font-sans text-gray-800">
+      <Link
+        to="/admin"
+        className="flex items-center gap-2 text-sm text-cyan-600 hover:text-cyan-800 mb-4 transition font-medium"
+      >
+        <ArrowLeft size={16} /> Back to Dashboard
+      </Link>
+
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <div>
@@ -112,6 +140,23 @@ const ManageInstructors = () => {
             View, manage, and organize your instructors.
           </p>
         </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={handleDownloadReport}
+            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 transition font-medium"
+          >
+            <Download size={18} /> Download Report
+          </button>
+          
+          <Link
+            to="/admin/users/instructors/add"
+            className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg shadow-md transition flex items-center gap-2 font-medium"
+          >
+            <Plus size={18} /> Add Instructor
+          </Link>
+        </div>
+      </div>
 
         {/* Search Bar */}
         <div className="relative w-full md:w-96">
@@ -136,7 +181,6 @@ const ManageInstructors = () => {
             </button>
           )}
         </div>
-      </div>
 
       {/* Loading State */}
       {status === "loading" && (
@@ -171,16 +215,15 @@ const ManageInstructors = () => {
       {/* Instructors Table */}
       {status === "succeeded" && filteredInstructors.length > 0 && (
         <>
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100">
+            <div className="overflow-x-visible">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 uppercase text-sm tracking-wider">
-                    <th className="p-4 font-semibold">Instructor</th>
-                    <th className="p-4 font-semibold">Contact Info</th>
-                    <th className="p-4 font-semibold">Joined Date</th>
-                    <th className="p-4 font-semibold text-center">Status</th>
-                    <th className="p-4 font-semibold text-center">Actions</th>
+                  <tr className="bg-gray-50/50 border-b border-gray-100 text-gray-500 uppercase text-[10px] font-bold tracking-widest">
+                    <th className="p-4 pl-6">Instructor</th>
+                    <th className="p-4">Contact Info</th>
+                    <th className="p-4">Joined Date</th>
+                    <th className="p-4 text-center">Status & Actions</th>
                   </tr>
                 </thead>
 
@@ -230,69 +273,86 @@ const ManageInstructors = () => {
                           </p>
                         </td>
 
-                        {/* Date */}
                         <td className="p-4 text-sm text-gray-600">
-                          {inst.createdAt
-                            ? new Date(inst.createdAt).toLocaleDateString()
-                            : "—"}
+                          <div className="font-medium text-gray-700">
+                            {inst.createdAt ? new Date(inst.createdAt).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric"
+                            }) : "—"}
+                          </div>
+                          <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Access Granted</div>
                         </td>
 
-                        {/* Status Badge */}
                         <td className="p-4 text-center">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              inst.isActive
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {inst.isActive ? "Active" : "Blocked"}
-                          </span>
-                        </td>
+                          <div className="flex items-center justify-center gap-4 relative">
+                            {/* PREMIUM TOGGLE RESTORED */}
+                            <div className="flex flex-col items-center gap-1">
+                              <button
+                                onClick={() => handleToggleStatus(inst)}
+                                className={`group/toggle relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 focus:outline-none ring-2 ring-offset-2 ring-transparent focus:ring-cyan-500 shadow-sm ${
+                                  inst.isActive ? "bg-green-500" : "bg-gray-200"
+                                }`}
+                                title={inst.isActive ? "Deactivate Instructor" : "Activate Instructor"}
+                              >
+                                <span
+                                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-all shadow-md ${
+                                    inst.isActive ? "translate-x-6" : "translate-x-1"
+                                  }`}
+                                />
+                              </button>
+                              <span className={`text-[9px] font-bold uppercase tracking-tight ${inst.isActive ? "text-green-600" : "text-gray-400"}`}>
+                                {inst.isActive ? "Active" : "Blocked"}
+                              </span>
+                            </div>
 
-                        {/* Actions */}
-                        <td className="p-4">
-                          <div className="flex items-center justify-center gap-3">
-                            {/* EDIT */}
-                            <button
-                              onClick={() =>
-                                navigate(
-                                  `/admin/users/instructors/edit/${inst._id}`
-                                )
-                              }
-                              className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
-                              title="Edit Instructor"
-                            >
-                              <Pencil size={16} />
-                            </button>
+                            {/* HOVER ACTION MENU */}
+                            <div className="relative group/actions z-10">
+                              <button 
+                                className={`p-2.5 rounded-xl transition-all duration-300 border bg-white text-gray-400 border-gray-100 group-hover/actions:bg-[#1e293b] group-hover/actions:text-white group-hover/actions:border-[#1e293b] group-hover/actions:shadow-lg`}
+                              >
+                                <MoreVertical size={18} />
+                              </button>
+                              
+                              {/* Floating Menu */}
+                              <div className="absolute top-1/2 right-full mr-2 -translate-y-1/2 hidden group-hover/actions:block animate-in fade-in zoom-in slide-in-from-right-2 duration-200 z-[100]">
+                                <div className="bg-[#1e293b] text-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-2xl overflow-hidden min-w-[170px] border border-gray-700/50 backdrop-blur-xl">
+                                  <div className="px-4 py-2 bg-gray-800/80 border-b border-gray-700">
+                                    <p className="text-[10px] font-black uppercase tracking-[2px] text-gray-400">Inst. Controls</p>
+                                  </div>
+                                  
+                                  <button
+                                    onClick={() => navigate(`/admin/users/instructors/edit/${inst._id}`)}
+                                    className="w-full text-left px-4 py-3.5 text-xs flex items-center gap-3 hover:bg-cyan-600/30 text-gray-300 hover:text-white font-bold transition-all border-l-4 border-transparent hover:border-cyan-500"
+                                  >
+                                    <Pencil size={14} className="text-cyan-400" />
+                                    Edit Details
+                                  </button>
 
-                            {/* BLOCK / UNBLOCK */}
-                            <button
-                              onClick={() => handleToggleStatus(inst)}
-                              className={`p-2 rounded-lg transition ${
-                                inst.isActive
-                                  ? "bg-red-50 text-red-600 hover:bg-red-100"
-                                  : "bg-green-50 text-green-600 hover:bg-green-100"
-                              }`}
-                              title={
-                                inst.isActive ? "Block User" : "Unblock User"
-                              }
-                            >
-                              {inst.isActive ? (
-                                <Lock size={16} />
-                              ) : (
-                                <Unlock size={16} />
-                              )}
-                            </button>
+                                  <button
+                                    onClick={() => handleToggleStatus(inst)}
+                                    className={`w-full text-left px-4 py-3.5 text-xs flex items-center gap-3 font-bold transition-all border-l-4 border-transparent ${
+                                      inst.isActive 
+                                        ? "hover:bg-orange-600/30 text-gray-300 hover:text-orange-400 hover:border-orange-500" 
+                                        : "hover:bg-green-600/30 text-gray-300 hover:text-green-400 hover:border-green-500"
+                                    }`}
+                                  >
+                                    {inst.isActive ? <FaBan size={14} className="text-orange-400" /> : <FaCheckCircle size={14} className="text-green-400" />}
+                                    {inst.isActive ? "Block Access" : "Unblock Access"}
+                                  </button>
 
-                            {/* DELETE */}
-                            <button
-                              onClick={() => handleDelete(inst._id)}
-                              className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
-                              title="Delete Instructor"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                                  <div className="h-px bg-gray-700/50 mx-2 my-1"></div>
+
+                                  <button
+                                    onClick={() => handleDelete(inst._id)}
+                                    className="w-full text-left px-4 py-3.5 text-xs flex items-center gap-3 hover:bg-red-600/30 text-gray-300 hover:text-red-400 font-bold transition-all border-l-4 border-transparent hover:border-red-500"
+                                  >
+                                    <Trash2 size={14} className="text-red-400" />
+                                    Delete Instructor
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </td>
                       </tr>

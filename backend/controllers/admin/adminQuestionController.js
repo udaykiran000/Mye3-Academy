@@ -49,32 +49,41 @@ export const addQuestion = async (req, res) => {
       req.body.correct = JSON.parse(req.body.correct);
 
     // 2. Matching Subject in Blueprint
-    const subjectName = req.body.category.trim().toLowerCase();
+    const subjectName = (req.body.category || "general").trim().toLowerCase();
     const subjectBlueprint = mocktest.subjects.find(
       (s) => s.name.toLowerCase().trim() === subjectName,
     );
 
-    // DEBUG 2: See what limit is set in Mocktest blueprint
-    console.log("Blueprint Found:", subjectBlueprint);
-
     // 3. Validation Logic
-    const totalAllowed = subjectBlueprint ? Number(subjectBlueprint.easy) : 0;
-
-    const currentCount = await Question.countDocuments({
-      _id: { $in: mocktest.questionIds },
-      category: subjectName,
-    });
-
-    // DEBUG 3: Compare Current vs Allowed
-    console.log(
-      `Validation: ${currentCount} questions exist. Limit is ${totalAllowed}`,
-    );
-
-    if (currentCount >= totalAllowed) {
+    // A) Global Limit Check
+    if (mocktest.totalQuestions > 0 && mocktest.questionIds.length >= mocktest.totalQuestions) {
       return res.status(400).json({
         success: false,
-        message: `Question limit reached. Allowed: ${totalAllowed} for ${subjectName}`,
+        message: `Total question limit for this test reached (${mocktest.totalQuestions}).`,
       });
+    }
+
+    // B) Strict Difficulty-Specific Limit Check
+    if (subjectBlueprint) {
+      const difficulty = (req.body.difficulty || "easy").toLowerCase();
+      const difficultyLimit = Number(subjectBlueprint[difficulty]) || 0;
+
+      // ✅ FIX: Only enforce if a limit is actually set (> 0)
+      if (difficultyLimit > 0) {
+        // Check current count for this specific subject AND difficulty
+        const currentDifficultyCount = await Question.countDocuments({
+          _id: { $in: mocktest.questionIds },
+          category: subjectName,
+          difficulty: difficulty,
+        });
+
+        if (currentDifficultyCount >= difficultyLimit) {
+          return res.status(400).json({
+            success: false,
+            message: `Limit reached for ${req.body.category} (${difficulty}). Allowed: ${difficultyLimit}.`,
+          });
+        }
+      }
     }
 
     // 4. Save Logic
@@ -214,7 +223,12 @@ export const bulkUploadQuestions = async (req, res) => {
     const validQuestions = [];
     const blueprintMap = {};
     mocktest.subjects.forEach((s) => {
-      blueprintMap[s.name.toLowerCase()] = s.easy + s.medium + s.hard;
+      const sub = s.name.toLowerCase().trim();
+      blueprintMap[sub] = {
+        easy: Number(s.easy || 0),
+        medium: Number(s.medium || 0),
+        hard: Number(s.hard || 0),
+      };
     });
 
     for (const row of parsedRows) {
@@ -223,13 +237,15 @@ export const bulkUploadQuestions = async (req, res) => {
         clean[k.replace(/\s+/g, "").toLowerCase()] = row[k];
       });
 
-      const sub = clean.subject?.toLowerCase();
-      if (blueprintMap[sub] > 0) {
+      const sub = clean.subject?.toLowerCase().trim();
+      const diff = clean.level?.toLowerCase().trim() || "easy";
+
+      if (blueprintMap[sub] && blueprintMap[sub][diff] > 0) {
         validQuestions.push({
           title: clean.question,
           category: sub,
           questionType: clean.questiontype || "mcq",
-          difficulty: clean.level?.toLowerCase() || "easy",
+          difficulty: diff,
           marks: Number(clean.marks) || 1,
           negative: Number(clean.negative) || 0,
           options: [
@@ -242,7 +258,7 @@ export const bulkUploadQuestions = async (req, res) => {
             .split(",")
             .map(Number),
         });
-        blueprintMap[sub]--;
+        blueprintMap[sub][diff]--;
       }
     }
 

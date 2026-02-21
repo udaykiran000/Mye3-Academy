@@ -22,6 +22,8 @@ import {
   Settings,
   Wallet,
   X,
+  Building2,
+  GraduationCap
 } from "lucide-react";
 
 // ----------------------------------------------
@@ -47,45 +49,19 @@ const navItems = [
     ],
   },
   {
-    name: "Instructor & Students",
-    key: "users",
-    icon: Users,
-    children: [
-      {
-        name: "Instructors",
-        key: "instructors",
-        icon: UserCog,
-        children: [
-          {
-            name: "Manage Instructors",
-            path: "/admin/users/instructors/manage",
-            icon: UserCog,
-          },
-          {
-            name: "Add Entry",
-            path: "/admin/users/instructors/add",
-            icon: Plus,
-          },
-        ],
-      },
-      {
-        name: "Students",
-        key: "students",
-        icon: Users,
-        children: [
-          {
-            name: "Manage Students",
-            path: "/admin/users/students/manage",
-            icon: Users,
-          },
-          {
-            name: "New Student",
-            path: "/admin/users/students/add",
-            icon: Plus,
-          },
-        ],
-      },
-    ],
+    name: "Students",
+    path: "/admin/users/students/manage",
+    icon: GraduationCap,
+  },
+  {
+    name: "Institutions",
+    path: "/admin/users/institutions/manage",
+    icon: Building2,
+  },
+  {
+    name: "Instructors",
+    path: "/admin/users/instructors/manage",
+    icon: UserCog,
   },
   {
     name: "Payment Management",

@@ -61,7 +61,8 @@ router.post(
 router.delete("/questions/:qId", deleteQuestion);
 
 import {
-  getAllPayments
+  getAllPayments,
+  downloadPaymentReport
 } from "../../controllers/admin/adminPaymentController.js";
 
 import {
@@ -77,6 +78,7 @@ router.delete("/categories/:id", deleteCategory);
 
 /* --- PAYMENT MANAGEMENT -- */
 router.get("/payments", getAllPayments);
+router.get("/payments/report", downloadPaymentReport);
 router.get("/payment-settings", getAllPaymentSettings);
 router.put("/payment-settings", updatePaymentSetting);
 

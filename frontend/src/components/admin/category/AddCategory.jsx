@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { toast } from "react-hot-toast";
 import { Upload, X, Loader2, Save } from "lucide-react";
+import { useDispatch } from "react-redux";
+import { addCategory, fetchCategories } from "../../../redux/categorySlice";
 import api from "../../../api/axios";
 
 const AddCategory = ({ onClose }) => {
+  const dispatch = useDispatch();
   const [name, setName] = useState("");
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState("");
@@ -32,18 +35,16 @@ const AddCategory = ({ onClose }) => {
 
     setLoading(true);
     try {
-      const res = await api.post("/api/admin/categories", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await dispatch(addCategory(formData)).unwrap();
+      dispatch(fetchCategories()); // Explicit re-fetch to ensure UI sync
 
-      toast.success(res.data.message);
+      toast.success("Category added successfully");
       setName("");
       setImage(null);
       setPreview("");
-      window.dispatchEvent(new Event("categoryAdded"));
       if (onClose) onClose(); // Auto-close modal after success
     } catch (err) {
-      toast.error(err.response?.data?.message || "Submit failed");
+      toast.error(err || "Submit failed");
     } finally {
       setLoading(false);
     }

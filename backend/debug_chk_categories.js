@@ -11,7 +11,7 @@ const connectDB = async () => {
     
     const categories = await Category.find({});
     console.log("--- EXISTING CATEGORIES ---");
-    categories.forEach(c => console.log(`Name: ${c.name}, Slug: ${c.slug}, ID: ${c._id}`));
+    categories.forEach(c => console.log(`Name: ${c.name}, Slug: ${c.slug}, Image: ${c.image}, ID: ${c._id}`));
     console.log("---------------------------");
     
     process.exit(0);

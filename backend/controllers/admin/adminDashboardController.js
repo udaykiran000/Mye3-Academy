@@ -9,10 +9,11 @@ export const getAdminStats = async (req, res) => {
   try {
     // 1. Get user counts
     const studentCount = await User.countDocuments({ role: "student" });
-    const instructorCount = await User.countDocuments({ role: "instructor" }); // 2. Get content counts
+    const instructorCount = await User.countDocuments({ role: "instructor" });
+    const institutionCount = await User.countDocuments({ role: "institution" });
 
     const mockTestCount = await MockTest.countDocuments();
-    const totalAttempts = await Attempt.countDocuments(); // 3. Get sales data (Revenue & Orders)
+    const totalAttempts = await Attempt.countDocuments(); 
 
     const salesData = await Order.aggregate([
       { $match: { status: "successful" } },
@@ -88,6 +89,7 @@ export const getAdminStats = async (req, res) => {
     const stats = {
       students: studentCount,
       instructors: instructorCount,
+      institutions: institutionCount,
       mockTests: mockTestCount,
       attempts: totalAttempts,
       revenue: salesData[0]?.totalRevenue || 0,

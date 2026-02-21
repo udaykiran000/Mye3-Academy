@@ -43,7 +43,7 @@ export const signup = async (req, res) => {
         .json({ message: "Password must be at least 8 characters" });
     }
 
-    const userRole = role === "instructor" ? "instructor" : "student";
+    const userRole = "student";
     let user = await User.findOne({ email });
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -346,8 +346,8 @@ export const googleAuth = async (req, res) => {
       const safeFirst = firstname && firstname.trim() ? firstname : "Google";
       const safeLast = lastname && lastname.trim() ? lastname : "User";
 
-      // ⭐ Determine role (default to student if invalid/missing)
-      const userRole = role === "instructor" ? "instructor" : "student";
+      // Public Google Signup is EXCLUSIVELY for students
+      const userRole = "student";
 
       const newUser = await User.create({
         firstname: safeFirst,

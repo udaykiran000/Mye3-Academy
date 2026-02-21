@@ -93,15 +93,23 @@ export default function AdminQuestions() {
   const stats = useMemo(() => {
     const limits = {};
     mocktest?.subjects?.forEach((s) => {
-      const name = (s.name || s).toString().toLowerCase();
-      limits[name] =
-        Number(s.easy || 0) + Number(s.medium || 0) + Number(s.hard || 0);
+      const name = (s.name || "").toString().toLowerCase().trim();
+      limits[name] = {
+        easy: Number(s.easy || 0),
+        medium: Number(s.medium || 0),
+        hard: Number(s.hard || 0),
+        total: Number(s.easy || 0) + Number(s.medium || 0) + Number(s.hard || 0)
+      };
     });
 
     const counts = {};
     addedQuestions.forEach((q) => {
-      const sub = (q.category || "general").toLowerCase();
-      counts[sub] = (counts[sub] || 0) + 1;
+      const sub = (q.category || "general").toLowerCase().trim();
+      const diff = (q.difficulty || "easy").toLowerCase().trim();
+      
+      if (!counts[sub]) counts[sub] = { easy: 0, medium: 0, hard: 0, total: 0 };
+      counts[sub][diff] = (counts[sub][diff] || 0) + 1;
+      counts[sub].total += 1;
     });
 
     return { limits, counts, totalLimit: mocktest?.totalQuestions || 0 };
@@ -144,11 +152,18 @@ export default function AdminQuestions() {
       return toast.error("Question limit reached.");
     }
 
-    const subKey = form.category.toLowerCase();
-    const subLimit = stats.limits[subKey] || 0;
-    const currentSubCount = stats.counts[subKey] || 0;
-    if (subLimit > 0 && currentSubCount >= subLimit) {
-      return toast.error(`Subject limit reached.`);
+    const subKey = form.category.toLowerCase().trim();
+    const subLimits = stats.limits[subKey];
+    const difficulty = form.difficulty.toLowerCase().trim();
+    
+    if (subLimits) {
+      const limit = subLimits[difficulty] || 0;
+      const current = stats.counts[subKey]?.[difficulty] || 0;
+      
+      // ✅ FIX: Only enforce if limit is set (> 0)
+      if (limit > 0 && current >= limit) {
+        return toast.error(`Limit reached for ${form.category} (${difficulty}). Allowed: ${limit}`);
+      }
     }
 
     if (form.questionType === "mcq" && form.correct.length === 0) {
@@ -190,7 +205,8 @@ export default function AdminQuestions() {
       if (document.getElementById("fileInputRef"))
         document.getElementById("fileInputRef").value = "";
     } catch (err) {
-      toast.error("Failed to save.");
+      const msg = err.response?.data?.message || "Failed to save.";
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -199,8 +215,9 @@ export default function AdminQuestions() {
   const deleteQuestion = async (qId) => {
     if (!window.confirm("Delete this question?")) return;
     try {
-      await api.delete(`/api/admin/mocktests/questions/${qId}`);
-      setAddedQuestions((prev) => prev.filter((q) => q._id !== qId));
+      await api.delete(`/api/admin/questions/${qId}`);
+      // ✅ FIX: Use a more robust filter and ensure it matches 'id' or '_id'
+      setAddedQuestions((prev) => prev.filter((q) => (q.id || q._id) !== qId));
       toast.success("Deleted");
     } catch (err) {
       toast.error("Delete failed");
@@ -210,10 +227,12 @@ export default function AdminQuestions() {
   const handleTogglePublish = async () => {
     try {
       const res = await api.put(`/api/admin/mocktests/${id}/publish`);
-      setMocktest((prev) => ({ ...prev, isPublished: res.data.isPublished }));
-      toast.success(res.data.isPublished ? "Published" : "Draft");
+      // Update local state: Correcting path to mocktest.isPublished
+      setMocktest((prev) => ({ ...prev, isPublished: res.data.mocktest.isPublished }));
+      toast.success(res.data.mocktest.isPublished ? "Published Successfully" : "Moved to Draft");
     } catch (err) {
-      toast.error("Update failed");
+      const msg = err.response?.data?.message || "Update failed";
+      toast.error(msg);
     }
   };
 
@@ -249,14 +268,14 @@ export default function AdminQuestions() {
 
           <button
             onClick={handleTogglePublish}
-            className={`px-4 py-2 rounded-md font-bold text-xs uppercase tracking-wider flex items-center gap-2 border transition-all ${
+            className={`px-4 py-2 rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2 border transition-all ${
               mocktest?.isPublished
-                ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                : "bg-white text-slate-700 border-slate-200"
+                ? "bg-emerald-600 text-white border-emerald-700 shadow-md hover:bg-emerald-700"
+                : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
             }`}
           >
             {mocktest?.isPublished ? <Globe size={14} /> : <Lock size={14} />}
-            {mocktest?.isPublished ? "LIVE" : "DRAFT"}
+            {mocktest?.isPublished ? "UNPUBLISH TEST" : "PUBLISH TEST"}
           </button>
         </div>
 
@@ -481,10 +500,69 @@ export default function AdminQuestions() {
           </div>
 
           {/* RIGHT */}
-          <div className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-6">
-            <h3 className="text-sm font-extrabold text-slate-700 mb-4">
-              Question Preview
-            </h3>
+          <div className="lg:col-span-5 space-y-6">
+            {/* COMPLEATION STATUS TABLE */}
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Library className="text-indigo-500" size={18} />
+                <h3 className="text-sm font-extrabold text-slate-700 uppercase">
+                  Questionare Status
+                </h3>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-slate-500 uppercase font-black">
+                      <th className="py-2">Subject</th>
+                      <th className="py-2 text-right">Progress</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {mocktest?.subjects?.map((sub) => {
+                      const name = sub.name.toLowerCase().trim();
+                      const limit = stats.limits[name] || {};
+                      const count = stats.counts[name] || {
+                        easy: 0,
+                        medium: 0,
+                        hard: 0,
+                        total: 0,
+                      };
+
+                      return (
+                        <tr key={sub._id}>
+                          <td className="py-2 font-bold text-slate-700 capitalize">
+                            {sub.name}
+                          </td>
+                          <td className="py-2 text-right font-black text-indigo-600">
+                             <span className={count.total >= limit.total ? "text-emerald-600" : ""}>
+                               {count.total}
+                             </span>
+                             <span className="mx-1 text-slate-300">/</span>
+                             {limit.total}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center bg-slate-50 p-3 rounded-lg">
+                <span className="text-[10px] font-black uppercase text-slate-500">
+                  Global Progress
+                </span>
+                <span className="text-sm font-black text-indigo-700">
+                  {addedQuestions.length} / {mocktest?.totalQuestions}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+              <h3 className="text-sm font-extrabold text-slate-700 mb-4 uppercase flex items-center gap-2">
+                <ChevronRight size={14} className="text-indigo-500" />
+                Preview List
+              </h3>
 
             {addedQuestions.length === 0 ? (
               <p className="text-sm font-bold text-slate-700">
@@ -508,6 +586,7 @@ export default function AdminQuestions() {
                 </div>
               ))
             )}
+            </div>
           </div>
         </div>
       </div>

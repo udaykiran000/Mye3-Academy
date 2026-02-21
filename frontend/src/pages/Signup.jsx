@@ -219,28 +219,7 @@ const Signup = () => {
           <div className="px-10 pb-12">
             {step === 1 ? (
               <div className="space-y-1 animate-in fade-in duration-500">
-                <div className="flex p-1.5 bg-slate-100 rounded-2xl mb-6">
-                  <button
-                    onClick={() => setRole("student")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold text-xs uppercase tracking-widest ${
-                      role === "student"
-                        ? "bg-white text-indigo-600 shadow-sm"
-                        : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    <GraduationCap size={18} /> Student
-                  </button>
-                  <button
-                    onClick={() => setRole("instructor")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all font-bold text-xs uppercase tracking-widest ${
-                      role === "instructor"
-                        ? "bg-white text-indigo-600 shadow-sm"
-                        : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    <Presentation size={18} /> Instructor
-                  </button>
-                </div>
+                {/* Role selection removed - Public signup is student only */}
 
                 <div className="flex gap-4">
                   <InputField
@@ -300,7 +279,7 @@ const Signup = () => {
                   {loading ? (
                     <Loader2 className="animate-spin" />
                   ) : (
-                    `Create ${role} Account`
+                    "Create Account"
                   )}
                 </button>
 

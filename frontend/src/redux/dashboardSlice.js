@@ -24,6 +24,7 @@ const initialState = {
   stats: {
     students: 0,
     instructors: 0,
+    institutions: 0,
     mockTests: 0,
     attempts: 0,
     revenue: 0,

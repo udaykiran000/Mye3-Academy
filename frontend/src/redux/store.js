@@ -15,6 +15,7 @@ import adminStudentReducer from "./adminStudentSlice";
 import attemptsReducer from "./attemptSlice";
 import adminReducer from "./adminSlice";
 import doubtsReducer from "./doubtSlice";
+import institutionReducer from "./institutionSlice";
 
 
 export const store=configureStore({
@@ -33,6 +34,7 @@ export const store=configureStore({
         instructorDashboard: instructorDashboardReducer,
 
          doubts: doubtsReducer,
+         institutions: institutionReducer,
          
     }
 })

@@ -120,7 +120,7 @@ const Footer = () => (
       <div className="mt-16 border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-semibold uppercase tracking-widest text-slate-500">
         <p>&copy; 2025 MYE 3 Academy. All rights reserved.</p>
         <p className="flex items-center gap-1">
-          Designed for <span className="text-slate-300">Excellence</span>
+          Designed By <span className="text-slate-300">Web N App Studio</span>
         </p>
       </div>
     </div>

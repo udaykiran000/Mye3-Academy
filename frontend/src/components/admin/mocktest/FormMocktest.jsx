@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../../../api/axios";
+import { getImageUrl, handleImageError } from "../../../utils/imageHelper";
 
 export default function FormMocktest() {
   const dispatch = useDispatch();
@@ -48,8 +49,7 @@ export default function FormMocktest() {
     price: "",
   });
 
-  // --- Holistic System Calculations ---
-  // Calculate total questions assigned in subjects (Single limit field)
+  // Calculate total questions assigned in subjects
   const totalSubjectQuestions = subjects.reduce(
     (sum, s) => sum + (Number(s.limit) || 0),
     0,
@@ -105,12 +105,7 @@ export default function FormMocktest() {
 
       // Sync Thumbnail Preview
       if (rawData.thumbnail) {
-        const baseUrl = api.defaults.baseURL.replace(/\/api\/?$/, "");
-        setThumbnailPreview(
-          rawData.thumbnail.startsWith("http")
-            ? rawData.thumbnail
-            : `${baseUrl}${rawData.thumbnail}`,
-        );
+        setThumbnailPreview(getImageUrl(rawData.thumbnail));
       }
 
       // Sync Subjects (Map 'easy' from backend to local 'limit')
@@ -133,10 +128,11 @@ export default function FormMocktest() {
     e.preventDefault();
     if (isFree === null)
       return toast.error("Please select Access Mode (Paid/Free)");
-    if (isLimitExceeded || isLimitUnder)
+    if (isLimitExceeded || isLimitUnder) {
       return toast.error(
-        `Blueprint mismatch! Subject questions total must be ${form.totalQuestions}`,
+        `Blueprint mismatch! Total subject questions (${totalSubjectQuestions}) must match Total Questions (${form.totalQuestions || 0}).`,
       );
+    }
     if (!form.title.trim()) return toast.error("Test Title is missing");
 
     const formData = new FormData();
@@ -152,7 +148,7 @@ export default function FormMocktest() {
     formData.append("category", isEditMode ? form.category : categoryParam);
     if (thumbnail) formData.append("thumbnail", thumbnail);
 
-    // Send blueprint back (Mapping limit to easy, medium/hard to 0 as discussed)
+    // Send blueprint back (Mapping single limit to easy)
     formData.append(
       "subjects",
       JSON.stringify(
@@ -173,7 +169,12 @@ export default function FormMocktest() {
             ...form,
             isFree,
             isGrandTest,
-            subjects,
+            subjects: subjects.map((s) => ({
+              name: s.name,
+              easy: Number(s.limit) || 0,
+              medium: 0,
+              hard: 0,
+            })),
             thumbnail,
           }),
         );
@@ -314,7 +315,10 @@ export default function FormMocktest() {
                 <button
                   type="button"
                   onClick={() =>
-                    setSubjects([...subjects, { name: "", limit: "" }])
+                    setSubjects([
+                      ...subjects,
+                      { name: "", limit: "" },
+                    ])
                   }
                   className="text-[10px] font-black text-emerald-600 border border-emerald-300 px-4 py-1.5 rounded-full hover:bg-emerald-50 transition"
                 >
@@ -332,6 +336,7 @@ export default function FormMocktest() {
                       Subject Name
                     </label>
                     <input
+                      placeholder="e.g Physics"
                       className="w-full bg-white border border-slate-300 p-2 text-xs rounded-md outline-none"
                       value={s.name}
                       onChange={(e) => {
@@ -343,7 +348,7 @@ export default function FormMocktest() {
                   </div>
                   <div className="w-24 space-y-1">
                     <label className="text-[8px] font-bold text-slate-400 uppercase ml-1">
-                      Qn Limit
+                      Questions
                     </label>
                     <input
                       type="number"
@@ -457,34 +462,19 @@ export default function FormMocktest() {
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between p-3 border border-slate-300 rounded-lg bg-slate-50">
-                  <label className="text-[10px] font-bold text-slate-700 uppercase">
-                    Publish Status
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsPublished(!isPublished)}
-                    className={`w-11 h-6 rounded-full transition-all relative ${isPublished ? "bg-emerald-500" : "bg-slate-300"}`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${isPublished ? "left-6" : "left-1"}`}
-                    ></div>
-                  </button>
                 </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={isLimitExceeded || isLimitUnder}
-              className={`w-full py-4 rounded-xl font-bold text-xs tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 ${isLimitExceeded || isLimitUnder ? "bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300" : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"}`}
-            >
-              <Save size={18} />{" "}
-              {isEditMode ? "UPDATE MOCK TEST" : "CREATE MOCK TEST"}
-            </button>
-          </div>
-        </form>
+              <button
+                type="submit"
+                className={`w-full py-4 rounded-xl font-bold text-xs tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 ${isLimitExceeded || isLimitUnder ? "bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-200" : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"}`}
+              >
+                <Save size={18} />{" "}
+                {isEditMode ? "UPDATE MOCK TEST" : "CREATE MOCK TEST"}
+              </button>
       </div>
-    </div>
-  );
+    </form>
+  </div>
+</div>
+);
 }
