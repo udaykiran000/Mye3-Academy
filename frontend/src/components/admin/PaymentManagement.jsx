@@ -11,6 +11,7 @@ import {
   FaArrowTrendUp,
   FaHandshake,
 } from "react-icons/fa6";
+import toast from "react-hot-toast";
 
 // Helper function to format INR currency
 const formatPrice = (price) =>
@@ -243,7 +244,21 @@ const PaymentManagement = () => {
           </h3>
           <button
             className="flex items-center bg-blue-600 text-white px-4 py-2.5 rounded-lg shadow hover:bg-blue-700 transition text-sm font-medium"
-            onClick={() => alert("Downloading report...")}
+            onClick={async () => {
+              try {
+                const response = await api.get("/api/admin/payments/report", { responseType: "blob" });
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement("a");
+                link.href = url;
+                link.setAttribute("download", "Payments_Report.csv");
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                toast.success("Payment report downloaded");
+              } catch (err) {
+                toast.error("Download failed");
+              }
+            }}
           >
             <FaDownload className="w-4 h-4 mr-2" /> Download Report (
             {filteredPayments.length})

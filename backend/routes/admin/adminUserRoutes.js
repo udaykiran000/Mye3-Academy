@@ -16,7 +16,16 @@ import {
     deleteInstructor,
     updateStudent,
     deleteStudent,
-    toggleStudentStatus 
+    toggleStudentStatus,
+    addInstitution,
+    getAllInstitutions,
+    updateInstitution,
+    toggleInstitutionStatus,
+    deleteInstitution,
+    downloadStudentReport,
+    downloadInstructorReport,
+    downloadInstitutionReport,
+    getStudentActivity
 } from "../../controllers/admin/adminUserController.js";
 
 // Controllers - Profile Management
@@ -41,21 +50,30 @@ adminUserRoutes.put(
 // 3. Admin: Create Students and Instructors
 adminUserRoutes.post("/add/instructors", isAuth, isAdmin, upload.single("photo"), addInstructor);
 adminUserRoutes.post("/add/students", isAuth, isAdmin, upload.single("photo"), addStudent);
+adminUserRoutes.post("/add/institutions", isAuth, isAdmin, upload.single("photo"), addInstitution);
 
 // 4. Admin: View User Lists
 adminUserRoutes.get("/instructors", isAuth, isAdmin, getAllInstructors);
+adminUserRoutes.get("/instructors/report", isAuth, isAdmin, downloadInstructorReport);
 adminUserRoutes.get("/students", isAuth, isAdmin, getAllStudents);
+adminUserRoutes.get("/students/report", isAuth, isAdmin, downloadStudentReport);
+adminUserRoutes.get("/students/:id/activity", isAuth, isAdmin, getStudentActivity);
+adminUserRoutes.get("/institutions", isAuth, isAdmin, getAllInstitutions);
+adminUserRoutes.get("/institutions/report", isAuth, isAdmin, downloadInstitutionReport);
 
 // 5. Admin: Update Existing Users
 adminUserRoutes.put("/instructors/:id", isAuth, isAdmin, upload.single("photo"), updateInstructor);
 adminUserRoutes.put("/students/:id", isAuth, isAdmin, upload.single("photo"), updateStudent);
+adminUserRoutes.put("/institutions/:id", isAuth, isAdmin, upload.single("photo"), updateInstitution);
 
 // 6. Admin: Toggle Account Status (Active/Inactive)
 adminUserRoutes.put("/instructors/:id/toggle-status", isAuth, isAdmin, toggleInstructorStatus);
 adminUserRoutes.put("/students/:id/toggle-status", isAuth, isAdmin, toggleStudentStatus);
+adminUserRoutes.put("/institutions/:id/toggle-status", isAuth, isAdmin, toggleInstitutionStatus);
 
 // 7. Admin: Delete User Accounts
 adminUserRoutes.delete("/instructors/:id", isAuth, isAdmin, deleteInstructor);
 adminUserRoutes.delete("/students/:id", isAuth, isAdmin, deleteStudent);
+adminUserRoutes.delete("/institutions/:id", isAuth, isAdmin, deleteInstitution);
 
 export default adminUserRoutes;

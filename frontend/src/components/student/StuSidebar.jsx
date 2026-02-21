@@ -135,14 +135,6 @@ const StuSidebar = ({ activeTab, setActiveTab }) => {
         </div>
 
         <nav className="mt-6 flex-grow overflow-y-auto px-4 space-y-2 scrollbar-hidden">
-          <SidebarLink
-            icon={<Home size={20} />}
-            label="Home"
-            isActive={false}
-            onClick={() => {
-              navigate("/");
-            }}
-          />
 
           <SidebarLink
             icon={<BarChart2 size={20} />}

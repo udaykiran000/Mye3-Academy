@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["student", "instructor", "admin"],
+      enum: ["student", "instructor", "admin", "institution"],
       default: "student",
     },
     isVerified: {
@@ -57,6 +57,14 @@ const userSchema = new mongoose.Schema(
     purchasedTests: [{ type: mongoose.Schema.Types.ObjectId, ref: "MockTest" }],
     attempts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Attempt" }],
     
+    // 🚩 Tracking Fields
+    addedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    registrationSource: {
+      type: String,
+      enum: ["self", "institution", "admin"],
+      default: "self",
+    },
+
     isActive: {
       type: Boolean,
       default: true,

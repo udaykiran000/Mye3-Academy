@@ -1,13 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
 import api from "../../api/axios";
+import { getImageUrl, handleImageError } from "../../utils/imageHelper";
 
-const getImageUrl = (imagePath) => {
-  if (!imagePath) return null;
-  let cleaned = imagePath.trim();
-  if (!cleaned.startsWith("/")) cleaned = "/" + cleaned;
-  return `${api.defaults.baseURL}${cleaned}`;
-};
 
 const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
   const scrollRef = useRef(null);

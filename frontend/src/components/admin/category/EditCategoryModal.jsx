@@ -4,17 +4,7 @@ import { updateCategory } from "../../../redux/categorySlice";
 import { toast } from "react-hot-toast";
 import { FaTimes, FaCloudUploadAlt } from "react-icons/fa";
 
-const getImageUrl = (imagePath) => {
-  if (!imagePath) return null;
-  let cleaned = imagePath.trim();
-  if (!cleaned.startsWith("/")) {
-    cleaned = "/" + cleaned;
-  }
-  // Use the environment variable or default
-  const baseUrl =
-    import.meta.env.VITE_SERVER_URL || "import.meta.env.VITE_SERVER_URL";
-  return `${baseUrl}${cleaned}`;
-};
+import { getImageUrl, handleImageError } from "../../../utils/imageHelper";
 
 const EditCategoryModal = ({ category, onClose }) => {
   const dispatch = useDispatch();

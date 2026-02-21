@@ -110,7 +110,7 @@ export const getMyAttempts = async (req, res) => {
 
     // Fetch attempts and populate test title for the UI table
     const attempts = await Attempt.find({ studentId: userId })
-      .populate("mocktestId", "title")
+      .populate("mocktestId", "title totalMarks")
       .sort({ createdAt: -1 });
 
     res.status(200).json({

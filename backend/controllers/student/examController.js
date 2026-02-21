@@ -61,8 +61,7 @@ export const startTestAttempt = async (req, res) => {
  */
 export const loadExamPaper = async (req, res) => {
   try {
-    const { attemptId } = req.params;
-    const attempt = await Attempt.findById(attemptId).populate("mocktestId", "title totalMarks price");
+    const attempt = await Attempt.findById(attemptId).populate("mocktestId", "title totalMarks price negativeMarking");
     if (!attempt) return res.status(404).json({ message: "Attempt not found" });
 
     const isFinished = attempt.status === "completed" || attempt.status === "finished";
@@ -76,7 +75,13 @@ export const loadExamPaper = async (req, res) => {
       return q;
     });
 
-    res.json({ _id: attempt._id, questions: sanitizedQuestions, endsAt: attempt.endsAt, status: attempt.status });
+    res.json({ 
+      _id: attempt._id, 
+      questions: sanitizedQuestions, 
+      endsAt: attempt.endsAt, 
+      status: attempt.status,
+      totalMarks: attempt.mocktestId?.totalMarks || 0
+    });
   } catch (err) {
     res.status(500).json({ message: "Error loading exam paper." });
   }
@@ -89,7 +94,7 @@ export const submitMockTest = async (req, res) => {
   try {
     const { id: attemptId } = req.params;
     const { answers } = req.body;
-    const attempt = await Attempt.findById(attemptId);
+    const attempt = await Attempt.findById(attemptId).populate("mocktestId", "totalMarks");
     
     if (attempt.status === "completed") return res.status(400).json({ message: "Already submitted." });
 
@@ -128,7 +133,13 @@ export const submitMockTest = async (req, res) => {
     attempt.submittedAt = new Date();
     await attempt.save();
 
-    res.json({ success: true, score, correctCount, attemptId: attempt._id });
+    res.json({ 
+      success: true, 
+      score, 
+      correctCount, 
+      attemptId: attempt._id,
+      totalMarks: attempt.mocktestId?.totalMarks || 0
+    });
   } catch (err) {
     res.status(500).json({ message: "Submission failed." });
   }

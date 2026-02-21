@@ -29,6 +29,7 @@ import {
 } from "../../../redux/mockTestSlice";
 
 import { fetchCategories } from "../../../redux/categorySlice";
+import { toast } from "react-hot-toast";
 
 const ManageMocktests = () => {
   const dispatch = useDispatch();
@@ -84,8 +85,13 @@ const ManageMocktests = () => {
     dispatch(deleteMockTest(id));
   };
 
-  const handleTogglePublish = (id) => {
-    dispatch(togglePublish(id));
+  const handleTogglePublish = async (id) => {
+    try {
+      await dispatch(togglePublish(id)).unwrap();
+      toast.success("Status Updated");
+    } catch (err) {
+      toast.error(err || "Update failed");
+    }
   };
 
   const formatPrice = (price) =>
@@ -163,7 +169,7 @@ const ManageMocktests = () => {
 
                 <td className="px-5 py-4 text-center">
                   <span className={`px-3 py-1 rounded-full text-xs font-bold inline-flex items-center ${test.isPublished ? "bg-green-100 text-green-700 border border-green-300" : "bg-yellow-100 text-yellow-700 border border-yellow-300"}`}>
-                    {test.isPublished ? <FaRss /> : <FaEyeSlash />} &nbsp;{test.isPublished ? "Published" : "Draft"}
+                    {test.isPublished ? <FaRss /> : <FaEyeSlash />} &nbsp;{test.isPublished ? "Publish" : "Draft"}
                   </span>
                 </td>
 

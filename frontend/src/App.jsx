@@ -30,6 +30,8 @@ import PaymentManagement from "./components/admin/PaymentManagement";
 import AdminProfileSettings from "./components/admin/AdminProfileSettings";
 import AdminDoubts from "./pages/admin/AdminDoubts";
 import PaymentGatewaySettings from "./pages/admin/PaymentGatewaySettings";
+import ManageInstitutions from "./components/admin/institutions/ManageInstitutions";
+import AddInstitution from "./components/admin/institutions/AddInstitution";
 
 // STUDENT PAGES
 import WriteMocktest from "./pages/student/WriteMocktest";
@@ -188,9 +190,12 @@ const App = () => {
               />
               <Route path="instructors/add" element={<AddInstructor />} />
               <Route path="instructors/edit/:id" element={<AddInstructor />} />
-              <Route path="students/manage" element={<ManageStudents />} />
+               <Route path="students/manage" element={<ManageStudents />} />
               <Route path="students/add" element={<AddStudent />} />
               <Route path="students/edit/:id" element={<AddStudent />} />
+              <Route path="institutions/manage" element={<ManageInstitutions />} />
+              <Route path="institutions/add" element={<AddInstitution />} />
+              <Route path="institutions/edit/:id" element={<AddInstitution />} />
             </Route>
 
             {/* Finance & Support */}

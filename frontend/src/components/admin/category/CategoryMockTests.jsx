@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast"; 
 import api from "../../../api/axios";
 import { ClipLoader } from "react-spinners";
+import { getImageUrl, handleImageError } from "../../../utils/imageHelper";
 
 export default function CategoryMockTests() {
     const { category } = useParams();
@@ -132,6 +133,15 @@ export default function CategoryMockTests() {
                                     whileHover={{ y: -5 }}
                                     className="group relative bg-white border border-slate-200 rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col"
                                 >
+                                    <div className="relative group overflow-hidden h-40 bg-slate-100 flex items-center justify-center">
+                                        <img
+                                            src={getImageUrl(test.thumbnail)}
+                                            alt={test.title}
+                                            onError={handleImageError}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        />
+                                    </div>
+
                                     <div className="relative p-6 flex flex-col h-full justify-between">
                                         <div>
                                             <div className="flex justify-between items-start mb-2">

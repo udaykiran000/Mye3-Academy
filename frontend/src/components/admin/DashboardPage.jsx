@@ -61,6 +61,41 @@ const DashboardPage = () => {
                 Data-driven insights for real-time platform management.
             </p>
 
+            {/* QUICK ACTIONS SECTION (Requested Buttons) */}
+            <div className="mb-10">
+                <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                   <FaUsers className="text-indigo-600" /> User Management
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <button 
+                        onClick={() => window.location.href='/admin/users/students/manage'}
+                        className="flex flex-col items-center justify-center p-8 bg-white rounded-3xl shadow-lg border-2 border-transparent hover:border-cyan-500 hover:shadow-cyan-200 transition-all group"
+                    >
+                        <FaUserGraduate className="text-5xl text-cyan-600 mb-4 group-hover:scale-110 transition-transform" />
+                        <span className="text-xl font-bold text-gray-800 tracking-tight">Manage Students</span>
+                        <p className="text-sm text-gray-500 mt-2">View, Add or Block Students</p>
+                    </button>
+
+                    <button 
+                        onClick={() => window.location.href='/admin/users/instructors/manage'}
+                        className="flex flex-col items-center justify-center p-8 bg-white rounded-3xl shadow-lg border-2 border-transparent hover:border-purple-500 hover:shadow-purple-200 transition-all group"
+                    >
+                        <FaChalkboardTeacher className="text-5xl text-purple-600 mb-4 group-hover:scale-110 transition-transform" />
+                        <span className="text-xl font-bold text-gray-800 tracking-tight">Manage Instructors</span>
+                        <p className="text-sm text-gray-500 mt-2">Centralized Instructor Control</p>
+                    </button>
+
+                    <button 
+                        onClick={() => window.location.href='/admin/users/institutions/manage'}
+                        className="flex flex-col items-center justify-center p-8 bg-white rounded-3xl shadow-lg border-2 border-transparent hover:border-indigo-500 hover:shadow-indigo-200 transition-all group"
+                    >
+                        <FaUsers className="text-5xl text-indigo-600 mb-4 group-hover:scale-110 transition-transform" />
+                        <span className="text-xl font-bold text-gray-800 tracking-tight">Manage Institutions</span>
+                        <p className="text-sm text-gray-500 mt-2">Control Institutional Partners</p>
+                    </button>
+                </div>
+            </div>
+
             {/* 1. Stats Card Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                 <StatCard
@@ -69,13 +104,6 @@ const DashboardPage = () => {
                     icon={<FaDollarSign />}
                     bgColor="bg-gradient-to-br from-green-500 to-green-600"
                     iconColor="text-green-200"
-                />
-                <StatCard
-                    title="Total Orders"
-                    value={stats.orders}
-                    icon={<FaClipboardList />}
-                    bgColor="bg-gradient-to-br from-blue-500 to-blue-600"
-                    iconColor="text-blue-200"
                 />
                 <StatCard
                     title="Total Students"
@@ -92,16 +120,23 @@ const DashboardPage = () => {
                     iconColor="text-purple-200"
                 />
                 <StatCard
-                    title="Total Mock Tests"
-                    value={stats.mockTests}
-                    icon={<FaBook />}
+                    title="Total Institutions"
+                    value={stats.institutions || 0}
+                    icon={<FaUsers />}
                     bgColor="bg-gradient-to-br from-indigo-500 to-indigo-600"
                     iconColor="text-indigo-200"
                 />
                 <StatCard
-                    title="Total Test Attempts"
+                    title="Total Mock Tests"
+                    value={stats.mockTests}
+                    icon={<FaBook />}
+                    bgColor="bg-gradient-to-br from-blue-500 to-blue-600"
+                    iconColor="text-blue-200"
+                />
+                <StatCard
+                    title="Test Attempts"
                     value={stats.attempts}
-                    icon={<FaUsers />}
+                    icon={<FaClipboardList />}
                     bgColor="bg-gradient-to-br from-pink-500 to-pink-600"
                     iconColor="text-pink-200"
                 />

@@ -82,13 +82,27 @@ export const createMockTest = async (req, res) => {
       0,
     );
 
+    // ✅ FIX: Robust Thumbnail Handling
+    let finalThumbnail = null;
+    if (req.body.thumbnail) {
+      finalThumbnail = req.body.thumbnail;
+    }
+
+    // ✅ FIX: Handle Scheduled Date
+    let finalScheduledFor = null;
+    if (isTestGrand && req.body.scheduledFor) {
+      finalScheduledFor = new Date(req.body.scheduledFor);
+    }
+
     const mocktest = new MockTest({
       ...req.body,
       isFree: isTestFree,
       isGrandTest: isTestGrand,
       isPublished: isPublished,
+      scheduledFor: finalScheduledFor, // ✅ Added Missing Field
       category: foundCategory._id,
       categorySlug: foundCategory.slug,
+      thumbnail: finalThumbnail, // ✅ Standardized Thumbnail
       subjects: parsedSubjects,
       totalQuestions:
         blueprintSum > 0 ? blueprintSum : Number(req.body.totalQuestions) || 0,
@@ -118,12 +132,24 @@ export const updateMockTest = async (req, res) => {
     // Handle subjects update
     if (req.body.subjects) {
       const parsed = JSON.parse(req.body.subjects);
-      mockTest.subjects = parsed.map((s) => ({
-        name: (s.name || "").trim().toLowerCase(),
-        easy: Number(s.easy) || 0,
-        medium: Number(s.medium) || 0,
-        hard: Number(s.hard) || 0,
-      }));
+      let calcTotal = 0;
+      mockTest.subjects = parsed.map((s) => {
+        const easy = Number(s.easy) || 0;
+        const medium = Number(s.medium) || 0;
+        const hard = Number(s.hard) || 0;
+        calcTotal += easy + medium + hard;
+        
+        return {
+          name: (s.name || "").trim().toLowerCase(),
+          easy,
+          medium,
+          hard,
+        };
+      });
+      // ✅ Sync totalQuestions based on blueprint ONLY if not explicitly provided
+      if (!req.body.totalQuestions) {
+        mockTest.totalQuestions = calcTotal;
+      }
     }
 
     // Update individual fields if provided
@@ -146,11 +172,17 @@ export const updateMockTest = async (req, res) => {
       mockTest.isFree = String(req.body.isFree) === "true";
     if (req.body.isGrandTest !== undefined)
       mockTest.isGrandTest = String(req.body.isGrandTest) === "true";
-    if (req.body.isPublished !== undefined)
-      mockTest.isPublished = String(req.body.isPublished) === "true";
+
+    // ✅ FORCE UNPUBLISH ON ANY EDIT
+    // The user wants any change to return the test to Draft status for re-verification
+    mockTest.isPublished = false;
 
     const updated = await mockTest.save();
-    res.status(200).json({ success: true, mocktest: updated });
+    res.status(200).json({ 
+      success: true, 
+      message: "Updated successfully (Draft mode)",
+      mocktest: updated 
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -186,13 +218,27 @@ export const togglePublish = async (req, res) => {
     const test = await MockTest.findById(req.params.id);
     if (!test) return res.status(404).json({ message: "Test not found" });
 
+    // ✅ VALIDATION: If attempting to publish (moving from draft to live or just staying live)
+    // We check if the question count matches the required total
+    if (!test.isPublished) {
+      const addedCount = test.questionIds?.length || 0;
+      const requiredCount = test.totalQuestions || 0;
+
+      if (addedCount !== requiredCount) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot publish. Total questions needed: ${requiredCount}. Added so far: ${addedCount}.`
+        });
+      }
+    }
+
     test.isPublished = !test.isPublished;
     await test.save();
 
     res.status(200).json({
       success: true,
       message: test.isPublished ? "Published" : "Draft",
-      isPublished: test.isPublished,
+      mocktest: test,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

@@ -15,12 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-const getImageUrl = (imagePath) => {
-  if (!imagePath) return null;
-  let cleaned = imagePath.trim();
-  if (!cleaned.startsWith("/")) cleaned = "/" + cleaned;
-  return `import.meta.env.VITE_SERVER_URL${cleaned}`;
-};
+import { getImageUrl, handleImageError } from "../../../utils/imageHelper";
 
 const SelectCategoryForCreation = () => {
   const dispatch = useDispatch();
@@ -77,7 +72,7 @@ const SelectCategoryForCreation = () => {
               to="/admin"
               className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-indigo-600 mb-1 transition uppercase tracking-tighter"
             >
-              <ArrowLeft size={12} /> Dashboard Root
+              <ArrowLeft size={12} /> Back
             </Link>
             <h1 className="text-xl font-bold text-slate-800 tracking-tight">
               Exams Directory
@@ -91,7 +86,7 @@ const SelectCategoryForCreation = () => {
                 : "bg-indigo-600 text-white hover:bg-indigo-700"
             }`}
           >
-            {showAddForm ? "Cancel Operation" : "+ New Entry"}
+            {showAddForm ? "Cancel Operation" : "+ New Category"}
           </button>
         </div>
 
@@ -104,14 +99,14 @@ const SelectCategoryForCreation = () => {
             />
             <input
               type="text"
-              placeholder="Filter by label..."
+              placeholder="Search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white border border-slate-200 rounded-md pl-9 pr-3 py-1.5 text-xs focus:ring-1 focus:ring-indigo-300 outline-none placeholder:text-slate-300"
             />
           </div>
           <div className="hidden md:flex items-center gap-2 text-[11px] font-bold text-slate-300 uppercase tracking-widest">
-            Total Segments: {categories.length}
+            Total Categories: {categories.length}
           </div>
         </div>
 
@@ -175,7 +170,7 @@ const SelectCategoryForCreation = () => {
                   <div className="flex items-center gap-1 mt-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                     <span className="text-[10px] text-slate-400 font-bold tracking-tight">
-                      Active Index
+                      Active
                     </span>
                   </div>
                 </div>
@@ -190,7 +185,7 @@ const SelectCategoryForCreation = () => {
           >
             <Plus size={20} />
             <span className="text-[10px] font-bold uppercase tracking-widest">
-              Append
+              New
             </span>
           </div>
         </div>

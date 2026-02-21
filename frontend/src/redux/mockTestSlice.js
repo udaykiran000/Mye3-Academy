@@ -174,7 +174,7 @@ export const togglePublish = createAsyncThunk(
       const res = await api.put(`/api/admin/mocktests/${id}/publish`);
       return res.data.mocktest;
     } catch (err) {
-      return rejectWithValue("Failed to toggle publish");
+      return rejectWithValue(err.response?.data?.message || "Failed to toggle publish");
     }
   }
 );

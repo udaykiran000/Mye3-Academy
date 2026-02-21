@@ -116,9 +116,9 @@ const QuestionRenderer = ({ question, answers, handleAnswer }) => {
           Reading Passage
         </h3>
 
-        {question.questionText && (
+        {question.title && (
           <p className="whitespace-pre-line mb-4 text-gray-700 leading-relaxed">
-            {question.questionText}
+            {question.title}
           </p>
         )}
 
@@ -151,7 +151,7 @@ const QuestionRenderer = ({ question, answers, handleAnswer }) => {
           <div className="max-h-60 overflow-y-auto pr-2 custom-scrollbar">
             {/* Use parentQuestionId.questionText */}
             <p className="whitespace-pre-line mb-2">
-              {question.parentQuestionId.questionText}
+              {question.parentQuestionId.title}
             </p>
 
             {/* Parent Passage Image */}
@@ -170,7 +170,7 @@ const QuestionRenderer = ({ question, answers, handleAnswer }) => {
           MAIN QUESTION TEXT
       ----------------------------------------------------- */}
       <h3 className="text-xl font-bold text-gray-800">
-        Q: {question.questionText}
+        Q: {question.title || question.questionText}
       </h3>
 
       {/* Question Image */}
@@ -527,11 +527,11 @@ const WriteMocktest = () => {
 
         // Resume state if exists
         const restored = {};
-        if (data.answers) {
-          data.questions.forEach((q) => {
+        if (data.attempt.answers?.length > 0) {
+          data.attempt.questions.forEach((q) => {
             const qId = q.id || q._id;
-            const existingAnswer = data.answers.find(
-              (a) => a.questionId === qId,
+            const existingAnswer = data.attempt.answers.find(
+              (a) => a.questionId === qId || a.questionId?.toString() === qId?.toString(),
             );
             // Convert selectedAnswer (which is a number for MCQs) back into a selectable format
             const selected = existingAnswer
