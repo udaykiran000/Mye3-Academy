@@ -23,7 +23,9 @@ import {
   Wallet,
   X,
   Building2,
-  GraduationCap
+  GraduationCap,
+  Layers,
+  Trophy
 } from "lucide-react";
 
 // ----------------------------------------------

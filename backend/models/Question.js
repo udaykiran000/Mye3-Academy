@@ -83,8 +83,7 @@ const questionSchema = new mongoose.Schema({
   },
 
   category: { 
-    type: String, 
-    required: [true, "Category/subject is required"] 
+    type: String
   }
 }, {
   timestamps: true,
@@ -123,4 +122,6 @@ questionSchema.method("toJSON", function() {
   return obj;
 });
 
+// Named export for embedding in MockTest / GrandTest schemas
+export { questionSchema };
 export default mongoose.model("Question", questionSchema);

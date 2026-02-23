@@ -4,7 +4,7 @@ import {
   fetchMockTestByIdForEdit,
   updateMockTest,
 } from "../../../redux/mockTestSlice";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Layers,
@@ -22,16 +22,21 @@ export default function FormMocktest() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { category: categoryParam, id } = useParams();
+  const [searchParams] = useSearchParams();
+  const typeParam = searchParams.get("type"); // "mock" or "grand"
   const isEditMode = Boolean(id);
 
   // States
+  const [isFree, setIsFree] = useState(null); // Force selection
+  const [isGrandTest, setIsGrandTest] = useState(false);
+  const [scheduledFor, setScheduledFor] = useState("");
+  const [isPublished, setIsPublished] = useState(false);
   const [thumbnail, setThumbnail] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
-  const [isFree, setIsFree] = useState(null); // No default selection (Proactive check)
-  const [isGrandTest, setIsGrandTest] = useState(false);
-  const [isPublished, setIsPublished] = useState(false);
-  const [subjects, setSubjects] = useState([]);
   const [displayCategory, setDisplayCategory] = useState("");
+
+  // Subjects blueprint
+  const [subjects, setSubjects] = useState([]);
 
   const { selectedMocktest: currentMocktest } = useSelector(
     (state) => state.mocktest,
@@ -42,9 +47,9 @@ export default function FormMocktest() {
     subcategory: "",
     title: "",
     description: "",
-    durationMinutes: "", // Default empty
-    totalQuestions: "", // Default empty
-    marksPerQuestion: "", // Default empty
+    durationMinutes: "",
+    totalQuestions: "",
+    marksPerQuestion: "",
     negativeMarking: "0.25",
     price: "",
   });
@@ -70,8 +75,14 @@ export default function FormMocktest() {
       dispatch(fetchMockTestByIdForEdit(id));
     } else {
       setDisplayCategory(categoryParam?.toUpperCase() || "General");
+      // Set grand test mode based on URL parameter for new tests
+      if (typeParam === "grand") {
+        setIsGrandTest(true);
+      } else if (typeParam === "mock") {
+        setIsGrandTest(false);
+      }
     }
-  }, [id, isEditMode, categoryParam, dispatch]);
+  }, [id, isEditMode, categoryParam, typeParam, dispatch]);
 
   // --- Proactive Data Syncing (Edit Mode) ---
   useEffect(() => {
@@ -126,15 +137,33 @@ export default function FormMocktest() {
 
   const handleCreateOrSave = async (e) => {
     e.preventDefault();
-    if (isFree === null)
-      return toast.error("Please select Access Mode (Paid/Free)");
-    if (isLimitExceeded || isLimitUnder) {
-      return toast.error(
-        `Blueprint mismatch! Total subject questions (${totalSubjectQuestions}) must match Total Questions (${form.totalQuestions || 0}).`,
-      );
+    
+    // MANDATORY FIELDS CHECK
+    if (!categoryParam) {
+      return toast.error("Category slug is missing from URL");
     }
-    if (!form.title.trim()) return toast.error("Test Title is missing");
 
+    if (!form.title.trim()) {
+      return toast.error("Test Title is mandatory");
+    }
+
+    if (!form.subcategory.trim()) {
+      return toast.error("Subcategory is mandatory");
+    }
+
+    if (isFree === null) {
+      return toast.error("Please select Access Mode (Paid or Free)");
+    }
+
+    if (isFree === false && (!form.price || Number(form.price) <= 0)) {
+      return toast.error("Amount must be greater than 0 for Paid tests");
+    }
+
+    /* Marks per Question and Negative Marking are now optional in the main form */
+
+    if (isLimitExceeded || isLimitUnder) {
+      toast("Blueprint mismatch detected. You can fix this later.", { icon: '⚠️' });
+    }
     const formData = new FormData();
     Object.keys(form).forEach((key) => {
       if (key !== "category") {
@@ -178,15 +207,16 @@ export default function FormMocktest() {
             thumbnail,
           }),
         );
-        toast.success("Mock Test Updated!");
+        toast.success(`${isGrandTest ? "Grand" : "Mock"} Test Updated!`);
         navigate(-1);
       } else {
         const res = await api.post("/api/admin/mocktests", formData);
-        toast.success("Mock Test Created!");
+        toast.success(`${isGrandTest ? "Grand" : "Mock"} Test Created!`);
         navigate(`/admin/mocktests/${res.data.mocktest._id}/questions`);
       }
     } catch (err) {
-      toast.error("Process failed, check console");
+      console.error("DEBUG: Mock Test Creation Error", err.response?.data || err);
+      toast.error(err.response?.data?.message || "Process failed, check console");
     }
   };
 
@@ -195,20 +225,22 @@ export default function FormMocktest() {
       <style>{`
         input[type=number].no-spinner::-webkit-inner-spin-button, 
         input[type=number].no-spinner::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .mandatory-pulse { border-color: #f43f5e; animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); } }
       `}</style>
 
       <div className="max-w-[1200px] mx-auto space-y-6">
         {/* HEADER SECTION */}
         <div className="flex items-center gap-4 border-b border-slate-300 pb-5">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(`/admin/mocktests/${categoryParam}?type=${isGrandTest ? 'grand' : 'mock'}`)}
             className="p-2 hover:bg-white rounded-full transition border border-transparent hover:border-slate-300"
           >
             <ArrowLeft size={20} />
           </button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              {isEditMode ? "Edit Mock Test" : "Create Mock Test"}
+              {isEditMode ? "Edit" : "Create"} {isGrandTest ? "Grand Test" : "Mock Test"}
             </h1>
             <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">
               {displayCategory} CATEGORY
@@ -226,11 +258,12 @@ export default function FormMocktest() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">
-                    Test Title
+                    Test Title <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    className="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-lg px-4 py-2.5 text-sm outline-none"
+                    className={`w-full bg-slate-50 border rounded-lg px-4 py-2.5 text-sm outline-none transition-all ${!form.title.trim() ? "border-rose-400 bg-rose-50/20 mandatory-pulse" : "border-slate-200 focus:border-indigo-500"}`}
                     value={form.title}
+                    placeholder="e.g. RRB Constable 2024"
                     onChange={(e) =>
                       setForm({ ...form, title: e.target.value })
                     }
@@ -238,11 +271,12 @@ export default function FormMocktest() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">
-                    Subcategory
+                    Subcategory <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    className="w-full bg-slate-50 border border-slate-300 focus:border-indigo-500 rounded-lg px-4 py-2.5 text-sm outline-none"
+                    className={`w-full bg-slate-50 border rounded-lg px-4 py-2.5 text-sm outline-none transition-all ${!form.subcategory.trim() ? "border-rose-400 bg-rose-50/20 mandatory-pulse" : "border-slate-200 focus:border-indigo-500"}`}
                     value={form.subcategory}
+                    placeholder="Enter Subcategory Name"
                     onChange={(e) =>
                       setForm({ ...form, subcategory: e.target.value })
                     }
@@ -257,12 +291,18 @@ export default function FormMocktest() {
                   { label: "Marks / Qn", key: "marksPerQuestion" },
                 ].map((field) => (
                   <div key={field.key} className="space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase ml-1">
-                      {field.label}
+                    <label className="text-[9px] font-bold text-slate-400 uppercase ml-1 flex items-center justify-between">
+                      <span>{field.label}</span>
+                      {field.key === "durationMinutes" && !form.durationMinutes && (
+                        <span className="text-[7px] text-indigo-400 normal-case italic">
+                          (Auto: 2m/Q)
+                        </span>
+                      )}
                     </label>
                     <input
                       type="number"
-                      className="no-spinner w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold focus:ring-2 ring-indigo-50 outline-none"
+                      placeholder={field.key === "durationMinutes" ? `${(Number(form.totalQuestions) || 0) * 2}` : "0"}
+                      className={`no-spinner w-full bg-white border rounded-lg px-3 py-2 text-xs font-bold focus:ring-2 ring-indigo-50 outline-none border-slate-300 ${field.key === "durationMinutes" && !form.durationMinutes ? "text-slate-400" : "text-slate-900"}`}
                       value={form[field.key]}
                       onWheel={(e) => e.target.blur()}
                       onChange={(e) =>
@@ -278,7 +318,7 @@ export default function FormMocktest() {
                   <input
                     type="number"
                     step="0.25"
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold focus:border-indigo-500 outline-none"
+                    className={`w-full bg-white border rounded-lg px-3 py-2 text-xs font-bold focus:border-indigo-500 outline-none border-slate-300`}
                     value={form.negativeMarking}
                     onWheel={(e) => e.target.blur()}
                     onChange={(e) =>
@@ -386,6 +426,7 @@ export default function FormMocktest() {
                 {thumbnailPreview ? (
                   <img
                     src={thumbnailPreview}
+                    alt="Preview"
                     className="w-full h-full object-contain"
                   />
                 ) : (
@@ -412,7 +453,7 @@ export default function FormMocktest() {
               <div className="space-y-4 pt-2">
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-bold text-slate-500 uppercase">
-                    Access Mode
+                    Access Mode <span className="text-rose-500">*</span>
                   </label>
                   <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-lg border border-slate-200">
                     <button
@@ -430,51 +471,57 @@ export default function FormMocktest() {
                       FREE
                     </button>
                   </div>
+                  {isFree === null && <p className="text-[8px] text-rose-500 font-bold uppercase ml-1 animate-pulse">Required</p>}
                 </div>
+
                 {isFree === false && (
                   <div className="space-y-1 animate-in slide-in-from-top-2">
                     <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">
-                      Amount (₹)
+                      Amount (₹) <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="number"
                       placeholder="0"
-                      className="no-spinner w-full p-2.5 text-sm border border-slate-300 rounded-lg outline-none focus:border-indigo-500 font-bold"
+                      className={`no-spinner w-full p-2.5 text-sm border rounded-lg outline-none font-black ${(!form.price || Number(form.price) <= 0) ? "border-rose-300 bg-rose-50/5" : "border-slate-300 focus:border-indigo-500"}`}
                       value={form.price}
+                      onWheel={(e) => e.target.blur()} 
                       onChange={(e) =>
                         setForm({ ...form, price: e.target.value })
                       }
                     />
                   </div>
                 )}
-                <div className="flex items-center justify-between p-3 border border-slate-300 rounded-lg bg-slate-50">
-                  <label className="text-[10px] font-bold text-slate-700 uppercase">
-                    Grand Test Mode
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsGrandTest(!isGrandTest)}
-                    className={`w-11 h-6 rounded-full transition-all relative ${isGrandTest ? "bg-orange-500" : "bg-slate-300"}`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${isGrandTest ? "left-6" : "left-1"}`}
-                    ></div>
-                  </button>
-                </div>
 
-                </div>
+                {isGrandTest && (
+                  <div className="space-y-1 pt-2 animate-in slide-in-from-top-2 border-t border-slate-100 mt-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase ml-1 mt-2 block">
+                      Scheduled For <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="datetime-local"
+                      className="w-full p-2.5 text-sm border border-slate-300 rounded-lg outline-none font-bold focus:border-indigo-500 transition-all"
+                      value={scheduledFor}
+                      onChange={(e) => setScheduledFor(e.target.value)}
+                      required={isGrandTest}
+                    />
+                    <p className="text-[8px] text-slate-400 font-medium italic ml-1 mt-1">
+                      Specify when the grand test will be accessible.
+                    </p>
+                  </div>
+                )}
               </div>
+            </div>
 
-              <button
-                type="submit"
-                className={`w-full py-4 rounded-xl font-bold text-xs tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 ${isLimitExceeded || isLimitUnder ? "bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-200" : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"}`}
-              >
-                <Save size={18} />{" "}
-                {isEditMode ? "UPDATE MOCK TEST" : "CREATE MOCK TEST"}
-              </button>
+            <button
+              type="submit"
+              className={`w-full py-4 rounded-xl font-bold text-xs tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 ${isLimitExceeded || isLimitUnder ? "bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-200" : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200"}`}
+            >
+              <Save size={18} />{" "}
+              {isEditMode ? "UPDATE" : "CREATE"} {isGrandTest ? "GRAND TEST" : "MOCK TEST"}
+            </button>
+          </div>
+        </form>
       </div>
-    </form>
-  </div>
-</div>
-);
+    </div>
+  );
 }

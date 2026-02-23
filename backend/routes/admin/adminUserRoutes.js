@@ -25,7 +25,8 @@ import {
     downloadStudentReport,
     downloadInstructorReport,
     downloadInstitutionReport,
-    getStudentActivity
+    getStudentActivity,
+    getInstructorDoubts
 } from "../../controllers/admin/adminUserController.js";
 
 // Controllers - Profile Management
@@ -58,6 +59,7 @@ adminUserRoutes.get("/instructors/report", isAuth, isAdmin, downloadInstructorRe
 adminUserRoutes.get("/students", isAuth, isAdmin, getAllStudents);
 adminUserRoutes.get("/students/report", isAuth, isAdmin, downloadStudentReport);
 adminUserRoutes.get("/students/:id/activity", isAuth, isAdmin, getStudentActivity);
+adminUserRoutes.get("/instructors/:id/doubts", isAuth, isAdmin, getInstructorDoubts);
 adminUserRoutes.get("/institutions", isAuth, isAdmin, getAllInstitutions);
 adminUserRoutes.get("/institutions/report", isAuth, isAdmin, downloadInstitutionReport);
 

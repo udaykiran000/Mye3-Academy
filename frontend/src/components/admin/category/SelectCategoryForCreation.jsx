@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCategories, deleteCategory } from "../../../redux/categorySlice";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import AddCategory from "./AddCategory";
 import EditCategoryModal from "./EditCategoryModal";
 import {
@@ -12,6 +12,9 @@ import {
   Edit,
   ArrowLeft,
   MoreVertical,
+  Layers,
+  Trophy,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -25,6 +28,9 @@ const SelectCategoryForCreation = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
+  
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedType = searchParams.get("type"); // 'mock' or 'grand'
 
   useEffect(() => {
     dispatch(fetchCategories());
@@ -57,154 +63,184 @@ const SelectCategoryForCreation = () => {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <p className="text-slate-400 text-xs font-bold uppercase tracking-widest animate-pulse">
-          Syncing Management...
+           Opening Exam Vault...
         </p>
       </div>
     );
 
-  return (
-    <div className="bg-[#fafbfc] min-h-screen px-6 py-8">
-      <div className="max-w-[1600px] mx-auto space-y-6">
-        {/* 1. COMPACT HEADER */}
-        <div className="flex items-center justify-between border-b border-slate-200 pb-5">
-          <div className="space-y-0.5">
-            <Link
-              to="/admin"
-              className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-indigo-600 mb-1 transition uppercase tracking-tighter"
+  // --- VIEW 1: TYPE SELECTION ---
+  if (!selectedType) {
+    return (
+      <div className="bg-[#f8fafc] min-h-screen px-6 py-16 flex flex-col items-center">
+        <div className="max-w-4xl w-full space-y-12">
+          <div className="text-center space-y-3">
+            <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">Exams Control Center</h1>
+            <p className="text-slate-500 font-bold uppercase tracking-[0.4em] text-[10px]">Select preferred test format to continue</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-10">
+            {/* MOCK TEST CARD */}
+            <div 
+              onClick={() => setSearchParams({ type: 'mock' })}
+              className="group relative bg-white border border-slate-200 rounded-3xl p-10 cursor-pointer hover:border-indigo-600 hover:shadow-[0_30px_60px_-15px_rgba(79,70,229,0.2)] transition-all duration-500"
             >
-              <ArrowLeft size={12} /> Back
-            </Link>
-            <h1 className="text-xl font-bold text-slate-800 tracking-tight">
-              Exams Directory
-            </h1>
-          </div>
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-md text-[13px] font-bold transition shadow-sm ${
-              showAddForm
-                ? "bg-rose-50 text-rose-600 border border-rose-200"
-                : "bg-indigo-600 text-white hover:bg-indigo-700"
-            }`}
-          >
-            {showAddForm ? "Cancel Operation" : "+ New Category"}
-          </button>
-        </div>
-
-        {/* 2. COMPACT SEARCH CONTROL */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-1">
-          <div className="relative w-full md:max-w-xs group">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={14}
-            />
-            <input
-              type="text"
-              placeholder="Search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-md pl-9 pr-3 py-1.5 text-xs focus:ring-1 focus:ring-indigo-300 outline-none placeholder:text-slate-300"
-            />
-          </div>
-          <div className="hidden md:flex items-center gap-2 text-[11px] font-bold text-slate-300 uppercase tracking-widest">
-            Total Categories: {categories.length}
-          </div>
-        </div>
-
-        {/* MODAL WRAPPER FOR ADDCATEGORY */}
-        {showAddForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 backdrop-blur-[2px] bg-slate-900/40 animate-in fade-in duration-300">
-            <div
-              className="absolute inset-0 -z-10"
-              onClick={() => setShowAddForm(false)}
-            />
-            <AddCategory onClose={() => setShowAddForm(false)} />
-          </div>
-        )}
-
-        {/* 4. HIGH-DENSITY DIRECTORY GRID */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {filteredCategories.map((cat) => {
-            const thumbUrl = getImageUrl(cat.image);
-            return (
-              <div
-                key={cat._id}
-                onClick={() => navigate(`/admin/mocktests/${cat.slug}`)}
-                className="group relative bg-white border border-slate-200 rounded-md overflow-hidden cursor-pointer hover:border-indigo-400 hover:shadow-lg transition-all"
-              >
-                {/* SMALL ACTIONS BUTTONS (Hover Visible) */}
-                <div className="absolute top-1.5 right-1.5 flex gap-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => handleEdit(e, cat)}
-                    className="p-1 bg-white border border-slate-100 rounded hover:text-indigo-600 text-slate-400"
-                  >
-                    <Edit size={13} />
-                  </button>
-                  <button
-                    onClick={(e) => handleDelete(e, cat._id)}
-                    className="p-1 bg-white border border-slate-100 rounded hover:text-rose-600 text-slate-400"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+              <div className="relative z-10 space-y-8">
+                <div className="w-20 h-20 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100 group-hover:scale-110 transition-transform duration-500">
+                  <Layers size={44} />
                 </div>
-
-                {/* THUMBNAIL AREA (Clean Frame) */}
-                <div className="h-28 w-full bg-[#fbfcfd] flex items-center justify-center p-4">
-                  {thumbUrl ? (
-                    <img
-                      src={thumbUrl}
-                      alt={cat.name}
-                      className="w-full h-full object-contain grayscale-[0.3] group-hover:grayscale-0 transition duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="text-slate-200">
-                      <Layout size={24} strokeWidth={1} />
-                    </div>
-                  )}
+                <div>
+                  <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Mock Tests</h2>
+                  <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed">Perfect for practice sessions, unit-wise assessments, and subject revisions.</p>
                 </div>
-
-                {/* COMPACT LABEL AREA */}
-                <div className="px-3 py-2 border-t border-slate-100">
-                  <h3 className="font-bold text-slate-700 text-[13px] truncate tracking-tight uppercase group-hover:text-indigo-600">
-                    {cat.name}
-                  </h3>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    <span className="text-[10px] text-slate-400 font-bold tracking-tight">
-                      Active
-                    </span>
-                  </div>
+                <div className="flex items-center gap-3 text-indigo-600 font-black text-[11px] uppercase tracking-[0.2em] pt-4">
+                  Explore Categories <ArrowRight size={16} className="group-hover:translate-x-3 transition-transform" />
                 </div>
               </div>
-            );
-          })}
+            </div>
 
-          {/* NEW CARD IN GRID LOOK (Ghost Card) */}
-          <div
-            onClick={() => setShowAddForm(true)}
-            className="border-2 border-dashed border-slate-100 rounded-md h-[166px] flex flex-col items-center justify-center gap-2 hover:bg-indigo-50/50 hover:border-indigo-200 cursor-pointer text-slate-300 transition-colors"
-          >
-            <Plus size={20} />
-            <span className="text-[10px] font-bold uppercase tracking-widest">
-              New
-            </span>
+            {/* GRAND TEST CARD */}
+            <div 
+              onClick={() => setSearchParams({ type: 'grand' })}
+              className="group relative bg-white border border-slate-200 rounded-3xl p-10 cursor-pointer hover:border-amber-500 hover:shadow-[0_30px_60px_-15px_rgba(245,158,11,0.2)] transition-all duration-500"
+            >
+              <div className="relative z-10 space-y-8">
+                <div className="w-20 h-20 bg-amber-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-amber-100 group-hover:scale-110 transition-transform duration-500">
+                  <Trophy size={44} />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">Grand Tests</h2>
+                  <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed">Comprehensive, scheduled examinations with full-length syllabus coverage.</p>
+                </div>
+                <div className="flex items-center gap-3 text-amber-600 font-black text-[11px] uppercase tracking-[0.2em] pt-4">
+                  Explore Categories <ArrowRight size={16} className="group-hover:translate-x-3 transition-transform" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- VIEW 2: CATEGORY SELECTION (Type Pre-selected) ---
+  return (
+    <div className="bg-[#fafbfc] min-h-screen px-6 py-10">
+      <div className="max-w-[1500px] mx-auto space-y-12 animate-in fade-in transition-all duration-700">
+        
+        {/* REFINED HEADER */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 border-b border-slate-200/60 pb-10">
+          <div className="space-y-6">
+            <button
+              onClick={() => setSearchParams({})}
+              className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-indigo-600 transition-all uppercase tracking-[0.25em]"
+            >
+              <ArrowLeft size={16} /> Back
+            </button>
+            <div className="flex items-center gap-6">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-md ${selectedType === 'grand' ? 'bg-amber-500' : 'bg-indigo-600'}`}>
+                {selectedType === 'grand' ? <Trophy size={28} /> : <Layers size={28} />}
+              </div>
+              <div>
+                <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">
+                  {selectedType === 'grand' ? 'Grand Categories' : 'Mock Categories'}
+                </h1>
+                <p className="text-[12px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-3">Select a category to manage your trials</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+             <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
+                <input
+                  type="text"
+                  placeholder="Filter categories..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-2xl pl-12 pr-6 py-3.5 text-sm focus:ring-4 focus:ring-indigo-50 focus:border-indigo-400 outline-none shadow-sm w-72 transition-all font-medium"
+                />
+              </div>
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="bg-slate-900 text-white px-8 py-3.5 rounded-2xl text-[12px] font-black uppercase tracking-widest hover:bg-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-slate-200 flex items-center gap-2"
+              >
+                <Plus size={16} /> Register New
+              </button>
           </div>
         </div>
 
-        {/* EMPTY LIST STATE */}
+        {/* CATEGORY GRID */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+            {/* EXISTING CATEGORIES - REFINED IMAGE PROPORTIONS */}
+            {filteredCategories.map((cat) => (
+                <div
+                    key={cat._id}
+                    onClick={() => navigate(`/admin/mocktests/${cat.slug}?type=${selectedType}`)}
+                    className="group relative bg-white border border-slate-100 rounded-3xl p-6 cursor-pointer hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.08)] hover:border-indigo-100 hover:-translate-y-2 transition-all duration-700 min-h-[280px] flex flex-col"
+                >
+                    <div className="flex-1 w-full mb-6 flex items-center justify-center grayscale-[0.1] group-hover:grayscale-0 transition-all duration-500 group-hover:scale-[1.15]">
+                        <img 
+                            src={getImageUrl(cat.image)} 
+                            alt={cat.name}
+                            className="w-full h-full object-contain max-h-[140px]"
+                        />
+                    </div>
+                    
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-black text-center text-slate-800 uppercase tracking-tight group-hover:text-indigo-600 transition-colors line-clamp-1">
+                            {cat.name}
+                        </h3>
+                        <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-500">
+                            <button 
+                                onClick={(e) => handleEdit(e, cat)}
+                                className="p-2 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                            >
+                                <Edit size={16} />
+                            </button>
+                            <button 
+                                onClick={(e) => handleDelete(e, cat._id)}
+                                className="p-2 bg-rose-50 text-rose-300 hover:text-rose-600 hover:bg-rose-100 rounded-xl transition-all"
+                            >
+                                <Trash2 size={16} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+
+        {/* EMPTY STATE */}
         {!loading && filteredCategories.length === 0 && (
-          <div className="text-center py-16">
-            <p className="text-slate-300 text-sm italic font-medium">
-              Directory entries match failed or list empty.
-            </p>
+          <div className="text-center py-24 border border-slate-100 rounded-[2.5rem] bg-slate-50/50 flex flex-col items-center">
+             <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-slate-200 mb-6 shadow-sm">
+                <Search size={32} />
+             </div>
+             <h3 className="text-slate-400 font-black uppercase tracking-widest text-sm">No Results Found</h3>
+             <p className="text-slate-300 font-medium text-xs mt-2 uppercase tracking-tight">Try adjusting your filters or search terms</p>
           </div>
         )}
       </div>
 
+      {/* MODALS */}
+      {showAddForm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-xl bg-slate-900/10 animate-in fade-in duration-500">
+            <div className="absolute inset-0" onClick={() => setShowAddForm(false)} />
+            <div className="relative z-10 w-full max-w-lg scale-in shadow-2xl">
+                <AddCategory onClose={() => setShowAddForm(false)} />
+            </div>
+        </div>
+      )}
+
       {editingCategory && (
-        <EditCategoryModal
-          category={editingCategory}
-          onClose={() => setEditingCategory(null)}
-        />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-xl bg-slate-900/10 animate-in fade-in duration-500">
+           <div className="absolute inset-0" onClick={() => setEditingCategory(null)} />
+           <div className="relative z-10 w-full max-w-lg scale-in shadow-2xl">
+              <EditCategoryModal
+                category={editingCategory}
+                onClose={() => setEditingCategory(null)}
+              />
+           </div>
+        </div>
       )}
     </div>
   );

@@ -487,9 +487,12 @@ const ManageStudents = () => {
                                   </span>
                                </div>
                                <div className="bg-white/80 p-2 rounded border border-orange-100 text-center flex items-center justify-center">
-                                  <button className="text-[10px] text-orange-600 font-bold uppercase hover:underline flex items-center gap-1">
+                                  <Link 
+                                    to={`/student/review/${att._id}`}
+                                    className="text-[10px] text-orange-600 font-bold uppercase hover:underline flex items-center gap-1"
+                                  >
                                     Results <ExternalLink size={10} />
-                                  </button>
+                                  </Link>
                                </div>
                             </div>
                           </div>

@@ -13,7 +13,28 @@ export const getAllInstructors = async (req, res) => {
     const instructors = await User.find({ role: "instructor" })
       .select("-password")
       .sort({ createdAt: -1 });
-    res.status(200).json(instructors);
+
+    // Fetch doubt stats for each instructor
+    const enrichedInstructors = await Promise.all(
+      instructors.map(async (inst) => {
+        const [total, pending, resolved] = await Promise.all([
+          Doubt.countDocuments({ assignedInstructor: inst._id }),
+          Doubt.countDocuments({ assignedInstructor: inst._id, status: { $in: ["assigned", "pending"] } }), // counts both as pending if assigned
+          Doubt.countDocuments({ assignedInstructor: inst._id, status: "answered" }),
+        ]);
+
+        return {
+          ...inst.toObject(),
+          doubtStats: {
+            total,
+            pending,
+            resolved,
+          },
+        };
+      })
+    );
+
+    res.status(200).json(enrichedInstructors);
   } catch (error) {
     res.status(500).json({ message: `Server error: ${error.message}` });
   }
@@ -556,7 +577,7 @@ export const downloadStudentReport = async (req, res) => {
           status: "successful",
         });
         const attemptCount = await Attempt.countDocuments({
-          user: stu._id,
+          studentId: stu._id,
         });
         const doubtCount = await Doubt.countDocuments({
           student: stu._id,
@@ -647,5 +668,22 @@ export const getStudentActivity = async (req, res) => {
   } catch (error) {
     console.error("Get Student Activity Error:", error);
     res.status(500).json({ message: "Failed to fetch student activity" });
+  }
+};
+export const getInstructorDoubts = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Fetch all doubts assigned to this instructor
+    const doubts = await Doubt.find({ assignedInstructor: id })
+      .populate("student", "firstname lastname email")
+      .populate("mocktestId", "title")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.status(200).json(doubts);
+  } catch (error) {
+    console.error("Get Instructor Doubts Error:", error);
+    res.status(500).json({ message: "Failed to fetch instructor doubts" });
   }
 };

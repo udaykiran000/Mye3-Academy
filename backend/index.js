@@ -78,7 +78,6 @@ app.use("/api/instructor", instructorDashboardRoutes);
 
 // Auth & Public
 app.use("/api/auth", authRouter);
-app.use("/api/public/categories", publicRoutes);
 app.use("/api/public", publicRoutes);
 
 // Dashboard
