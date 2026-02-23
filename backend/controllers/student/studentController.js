@@ -143,8 +143,8 @@ export const getAttemptById = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Attempt not found" });
 
-    // Security check: Only the student who took the test can see their result
-    if (attempt.studentId.toString() !== userId.toString()) {
+    // Security check: Only the student who took the test (or an admin) can see their result
+    if (req.user.role !== "admin" && attempt.studentId.toString() !== userId.toString()) {
       return res
         .status(403)
         .json({

@@ -36,11 +36,20 @@ const fileStorage = multer.diskStorage({
 const docFileFilter = (req, file, cb) => {
   const allowed = [
     "text/csv",
+    "text/plain",            // Some browsers send CSV as text/plain
+    "application/csv",
+    "application/octet-stream", // Windows often sends CSV as octet-stream
     "application/vnd.ms-excel",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ];
-  if (allowed.includes(file.mimetype)) cb(null, true);
-  else cb(new Error("Only CSV or Excel files allowed!"), false);
+  // Also check file extension as fallback (MIME type can lie)
+  const ext = file.originalname.split(".").pop().toLowerCase();
+  const allowedExts = ["csv", "xlsx", "xls"];
+  if (allowed.includes(file.mimetype) || allowedExts.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`Only CSV or Excel files allowed! Got: ${file.mimetype}`), false);
+  }
 };
 
 export const uploadFile = multer({

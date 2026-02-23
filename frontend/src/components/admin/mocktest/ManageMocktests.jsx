@@ -1,7 +1,7 @@
 // frontend/src/components/admin/ManageMocktests.jsx
 import React, { useEffect, useState, useMemo } from "react"; // Added useState, useMemo
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 
 import {
   FaPlus,
@@ -35,9 +35,17 @@ const ManageMocktests = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // ------------------ LOCAL STATE FOR TYPE FILTER ------------------
+  const [searchParams] = useSearchParams();
+  const typeParam = searchParams.get("type")?.toUpperCase(); // 'MOCK' or 'GRAND'
+
   // Options: 'ALL', 'MOCK', 'GRAND'
-  const [filterType, setFilterType] = useState("ALL");
+  const [filterType, setFilterType] = useState(typeParam || "ALL");
+
+  useEffect(() => {
+    if (typeParam) {
+      setFilterType(typeParam);
+    }
+  }, [typeParam]);
 
   /* ---------------------- SELECTORS ---------------------- */
   const mocktests = useSelector((state) => state.mocktest.adminMocktests || []);

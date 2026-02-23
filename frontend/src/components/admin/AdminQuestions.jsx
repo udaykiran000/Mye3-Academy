@@ -37,6 +37,8 @@ export default function AdminQuestions() {
   const [bulkFree, setBulkFree] = useState(false);
   const [bulkPublish, setBulkPublish] = useState(false);
   const [bulkRows, setBulkRows] = useState([]);
+  const [bulkMarks, setBulkMarks] = useState("");
+  const [bulkNegative, setBulkNegative] = useState("");
 
   const [form, setForm] = useState({
     questionType: "mcq",
@@ -45,7 +47,9 @@ export default function AdminQuestions() {
     correct: [],
     correctManualAnswer: "",
     difficulty: "easy",
-    category: "",
+    category: "English",
+    marks: "",
+    negative: "",
   });
 
   const parseBulkCSV = (text) => {
@@ -68,13 +72,15 @@ export default function AdminQuestions() {
       ]);
 
       if (testRes.status === "fulfilled") {
-        setMocktest(testRes.value.data);
-        if (testRes.value.data?.subjects?.length > 0) {
-          setForm((f) => ({
-            ...f,
-            category: testRes.value.data.subjects[0].name,
-          }));
-        }
+        const testData = testRes.value.data;
+        setMocktest(testData);
+        
+        setForm((f) => ({
+          ...f,
+          category: testData?.subjects?.length > 0 ? testData.subjects[0].name : "English",
+          marks: testData?.marksPerQuestion || "",
+          negative: testData?.negativeMarking || "0",
+        }));
       }
       if (qRes.status === "fulfilled") {
         setAddedQuestions(qRes.value.data.questions || []);
@@ -116,30 +122,32 @@ export default function AdminQuestions() {
   }, [addedQuestions, mocktest]);
 
   const handleBulkSubmit = async () => {
-    if (!bulkFile) return toast.error("Select CSV file");
+    if (!bulkFile) return toast.error("Select a CSV file first");
+    if (!bulkMarks || Number(bulkMarks) <= 0) return toast.error("Marks per Question is required");
+    if (bulkNegative === "" || bulkNegative === null) return toast.error("Negative Marking is required (enter 0 for none)");
 
     setIsSubmitting(true);
 
     try {
       const fd = new FormData();
       fd.append("file", bulkFile);
-      fd.append("isFree", bulkFree);
-      fd.append("publish", bulkPublish);
+      fd.append("marks", bulkMarks);
+      fd.append("negative", bulkNegative);
 
       await api.post(`/api/admin/mocktests/${id}/questions/bulk-upload`, fd, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success("Bulk uploaded successfully");
-
+      toast.success("✅ Bulk uploaded successfully!");
       setBulkFile(null);
       setBulkRows([]);
+      setBulkMarks("");
+      setBulkNegative("");
       loadData();
     } catch (err) {
+      const msg = err.response?.data?.message || "Bulk upload failed";
       console.log(err.response?.data);
-      toast.error("Bulk upload failed");
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -148,26 +156,22 @@ export default function AdminQuestions() {
   const onAddQuestion = async (e) => {
     e.preventDefault();
 
-    if (addedQuestions.length >= stats.totalLimit) {
-      return toast.error("Question limit reached.");
+    // MANDATORY FIELD VALIDATION (STRICT)
+    if (!form.marks || Number(form.marks) <= 0) {
+      return toast.error("Marks per Question is mandatory.");
+    }
+    if (form.negative === "" || form.negative === null) {
+      return toast.error("Negative Marking is mandatory (Set 0 for none).");
     }
 
-    const subKey = form.category.toLowerCase().trim();
-    const subLimits = stats.limits[subKey];
-    const difficulty = form.difficulty.toLowerCase().trim();
-    
-    if (subLimits) {
-      const limit = subLimits[difficulty] || 0;
-      const current = stats.counts[subKey]?.[difficulty] || 0;
-      
-      // ✅ FIX: Only enforce if limit is set (> 0)
-      if (limit > 0 && current >= limit) {
-        return toast.error(`Limit reached for ${form.category} (${difficulty}). Allowed: ${limit}`);
-      }
+    if (form.questionType === "mcq") {
+      if (form.correct.length === 0) return toast.error("Select at least one correct option.");
+      const emptyOptions = form.options.some(opt => !opt.text.trim());
+      if (emptyOptions) return toast.error("All MCQ options must have text.");
     }
 
-    if (form.questionType === "mcq" && form.correct.length === 0) {
-      return toast.error("Select at least one correct option.");
+    if (form.questionType === "manual" && !form.correctManualAnswer.trim()) {
+      return toast.error("Correct answer is mandatory for manual entry.");
     }
 
     setIsSubmitting(true);
@@ -176,8 +180,8 @@ export default function AdminQuestions() {
     fd.append("questionType", form.questionType);
     fd.append("category", form.category);
     fd.append("difficulty", form.difficulty);
-    fd.append("marks", mocktest?.marksPerQuestion || 1);
-    fd.append("negative", mocktest?.negativeMarking || 0);
+    fd.append("marks", form.marks);
+    fd.append("negative", form.negative);
 
     const qImgFile = document.getElementById("fileInputRef")?.files[0];
     if (qImgFile) fd.append("questionImage", qImgFile);
@@ -215,7 +219,8 @@ export default function AdminQuestions() {
   const deleteQuestion = async (qId) => {
     if (!window.confirm("Delete this question?")) return;
     try {
-      await api.delete(`/api/admin/questions/${qId}`);
+      await api.delete(`/api/admin/mocktests/questions/${qId}`);
+
       // ✅ FIX: Use a more robust filter and ensure it matches 'id' or '_id'
       setAddedQuestions((prev) => prev.filter((q) => (q.id || q._id) !== qId));
       toast.success("Deleted");
@@ -250,7 +255,7 @@ export default function AdminQuestions() {
         <div className="bg-white border border-slate-200 px-6 py-4 rounded-lg flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate(`/admin/mocktests/${mocktest?.categorySlug || mocktest?.category?.slug}?type=${mocktest?.isGrandTest ? 'grand' : 'mock'}`)}
               className="p-2 border border-slate-200 rounded text-slate-00 hover:text-indigo-600 transition shadow-sm"
             >
               <ArrowLeft size={16} />
@@ -268,14 +273,23 @@ export default function AdminQuestions() {
 
           <button
             onClick={handleTogglePublish}
-            className={`px-4 py-2 rounded-md font-bold text-[10px] uppercase tracking-wider flex items-center gap-2 border transition-all ${
+            className={`px-6 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest flex items-center gap-3 border transition-all shadow-sm active:scale-95 ${
               mocktest?.isPublished
-                ? "bg-emerald-600 text-white border-emerald-700 shadow-md hover:bg-emerald-700"
-                : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+                ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300"
+                : "bg-slate-900 text-white border-slate-900 hover:bg-black"
             }`}
           >
-            {mocktest?.isPublished ? <Globe size={14} /> : <Lock size={14} />}
-            {mocktest?.isPublished ? "UNPUBLISH TEST" : "PUBLISH TEST"}
+            {mocktest?.isPublished ? (
+              <>
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                Status: Live (Unpublish)
+              </>
+            ) : (
+              <>
+                <Lock size={14} />
+                Status: Draft (Publish Test)
+              </>
+            )}
           </button>
         </div>
 
@@ -317,33 +331,41 @@ export default function AdminQuestions() {
 
             {entryMode === "manual" && (
               <form onSubmit={onAddQuestion} className="space-y-7">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   {[
                     {
-                      label: "Language / Subject",
+                      label: "Subject",
                       key: "category",
-                      options: mocktest?.subjects?.map((sub) => sub.name) || [
-                        "general",
-                      ],
+                      options:
+                        mocktest?.subjects?.length > 0
+                          ? mocktest.subjects.map((sub) => sub.name)
+                          : [
+                              "English",
+                              "Mathematics",
+                              "Physics",
+                              "Chemistry",
+                              "General Science",
+                              "Others",
+                            ],
                     },
                     {
-                      label: "Difficulty Level",
+                      label: "Difficulty",
                       key: "difficulty",
                       options: ["easy", "medium", "hard"],
                     },
                     {
-                      label: "Question Type",
+                      label: "Type",
                       key: "questionType",
                       options: ["mcq", "manual"],
                     },
                   ].map((config) => (
                     <div key={config.key} className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700 uppercase">
+                      <label className="text-[10px] font-bold text-slate-700 uppercase">
                         {config.label}
                       </label>
 
                       <select
-                        className="w-full bg-white border border-slate-300 rounded-md p-2.5 text-sm font-bold text-slate-700 outline-none"
+                        className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs font-bold text-slate-700 outline-none focus:ring-2 ring-indigo-50"
                         value={form[config.key]}
                         onChange={(e) =>
                           setForm({ ...form, [config.key]: e.target.value })
@@ -357,6 +379,33 @@ export default function AdminQuestions() {
                       </select>
                     </div>
                   ))}
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-700 uppercase">
+                      Marks <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g 1"
+                      className={`no-spinner w-full bg-white border rounded-lg p-2.5 text-xs font-bold outline-none focus:ring-2 ring-indigo-50 ${(!form.marks || Number(form.marks) <= 0) ? "border-rose-300 bg-rose-50/5" : "border-slate-300"}`}
+                      value={form.marks}
+                      onChange={(e) => setForm({ ...form, marks: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-700 uppercase">
+                      Neg <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.25"
+                      placeholder="e.g 0.25"
+                      className={`no-spinner w-full bg-white border rounded-lg p-2.5 text-xs font-bold outline-none focus:ring-2 ring-indigo-50 ${(form.negative === "" || form.negative === null) ? "border-rose-300 bg-rose-50/5" : "border-slate-300"}`}
+                      value={form.negative}
+                      onChange={(e) => setForm({ ...form, negative: e.target.value })}
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -449,143 +498,260 @@ export default function AdminQuestions() {
             )}
 
             {entryMode === "bulk" && (
-              <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
-                <input
-                  type="file"
-                  name="file"
-                  accept=".csv"
-                  onChange={(e) => {
-                    const f = e.target.files[0];
-                    setBulkFile(f);
-                    const reader = new FileReader();
-                    reader.onload = (ev) =>
-                      setBulkRows(parseBulkCSV(ev.target.result));
-                    reader.readAsText(f);
-                  }}
-                />
+              <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-5">
 
-                {bulkRows.length > 0 && (
-                  <p className="font-bold">Rows Loaded: {bulkRows.length}</p>
-                )}
-
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setBulkFree(!bulkFree)}
-                    className={`px-4 py-2 rounded font-bold ${
-                      bulkFree ? "bg-emerald-500 text-white" : "bg-slate-100"
-                    }`}
-                  >
-                    {bulkFree ? "FREE" : "PAID"}
-                  </button>
-
-                  <button
-                    onClick={() => setBulkPublish(!bulkPublish)}
-                    className={`px-4 py-2 rounded font-bold ${
-                      bulkPublish ? "bg-indigo-600 text-white" : "bg-slate-100"
-                    }`}
-                  >
-                    {bulkPublish ? "PUBLISH" : "DRAFT"}
-                  </button>
+                {/* FILE CHOOSER */}
+                <div>
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wide block mb-2">CSV File</label>
+                  {bulkFile ? (
+                    <div className="flex items-center gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                      <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                      <span className="text-xs font-bold text-emerald-700 flex-1 truncate">{bulkFile.name}</span>
+                      <span className="text-[10px] font-black text-emerald-500">{bulkRows.length} rows</span>
+                      <button
+                        onClick={() => { setBulkFile(null); setBulkRows([]); }}
+                        className="text-rose-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded transition-all"
+                        title="Remove file"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/30 transition-all">
+                      <Database size={24} className="text-slate-300 mb-2" />
+                      <span className="text-xs font-bold text-slate-500">Click to choose CSV file</span>
+                      <span className="text-[10px] text-slate-400 mt-0.5">.csv files only</span>
+                      <input
+                        type="file"
+                        name="file"
+                        accept=".csv,.xlsx,.xls"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files[0];
+                          if (!f) return;
+                          setBulkFile(f);
+                          const reader = new FileReader();
+                          reader.onload = (ev) => setBulkRows(parseBulkCSV(ev.target.result));
+                          reader.readAsText(f);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  )}
                 </div>
 
+                {/* MARKS & NEGATIVE — MANDATORY */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-black text-slate-700 uppercase tracking-wide block mb-1">
+                      Marks / Question <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.25"
+                      min="0.25"
+                      placeholder="e.g. 1"
+                      value={bulkMarks}
+                      onChange={(e) => setBulkMarks(e.target.value)}
+                      className={`w-full border rounded-lg p-2.5 text-xs font-bold outline-none focus:ring-2 ring-indigo-50 ${
+                        !bulkMarks ? "border-rose-300 bg-rose-50/20" : "border-slate-300"
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-black text-slate-700 uppercase tracking-wide block mb-1">
+                      Negative Marking <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.25"
+                      min="0"
+                      placeholder="0 for none"
+                      value={bulkNegative}
+                      onChange={(e) => setBulkNegative(e.target.value)}
+                      className={`w-full border rounded-lg p-2.5 text-xs font-bold outline-none focus:ring-2 ring-indigo-50 ${
+                        bulkNegative === "" ? "border-rose-300 bg-rose-50/20" : "border-slate-300"
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* CSV FORMAT HINT */}
+                <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Expected CSV columns</p>
+                  <p className="text-[10px] font-mono text-slate-500">question, subject, level, questiontype, optiona_text, optionb_text, optionc_text, optiond_text, correctindex</p>
+                </div>
+
+                {/* UPLOAD BUTTON */}
                 <button
                   onClick={handleBulkSubmit}
-                  disabled={isSubmitting}
-                  className="w-full bg-indigo-600 text-white py-3 rounded font-extrabold"
+                  disabled={isSubmitting || !bulkFile}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-3 rounded-xl font-extrabold text-sm transition-all"
                 >
-                  Upload CSV
+                  {isSubmitting ? "Uploading..." : `Upload ${bulkRows.length > 0 ? `(${bulkRows.length} questions)` : "CSV"}`}
                 </button>
               </div>
             )}
           </div>
 
-          {/* RIGHT */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* COMPLEATION STATUS TABLE */}
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <Library className="text-indigo-500" size={18} />
-                <h3 className="text-sm font-extrabold text-slate-700 uppercase">
-                  Questionare Status
-                </h3>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-slate-500 uppercase font-black">
-                      <th className="py-2">Subject</th>
-                      <th className="py-2 text-right">Progress</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {mocktest?.subjects?.map((sub) => {
-                      const name = sub.name.toLowerCase().trim();
-                      const limit = stats.limits[name] || {};
-                      const count = stats.counts[name] || {
-                        easy: 0,
-                        medium: 0,
-                        hard: 0,
-                        total: 0,
-                      };
-
-                      return (
-                        <tr key={sub._id}>
-                          <td className="py-2 font-bold text-slate-700 capitalize">
-                            {sub.name}
-                          </td>
-                          <td className="py-2 text-right font-black text-indigo-600">
-                             <span className={count.total >= limit.total ? "text-emerald-600" : ""}>
-                               {count.total}
-                             </span>
-                             <span className="mx-1 text-slate-300">/</span>
-                             {limit.total}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center bg-slate-50 p-3 rounded-lg">
-                <span className="text-[10px] font-black uppercase text-slate-500">
-                  Global Progress
-                </span>
-                <span className="text-sm font-black text-indigo-700">
-                  {addedQuestions.length} / {mocktest?.totalQuestions}
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="text-sm font-extrabold text-slate-700 mb-4 uppercase flex items-center gap-2">
-                <ChevronRight size={14} className="text-indigo-500" />
-                Preview List
-              </h3>
-
-            {addedQuestions.length === 0 ? (
-              <p className="text-sm font-bold text-slate-700">
-                No Questions Added
-              </p>
-            ) : (
-              addedQuestions.map((q) => (
-                <div key={q.id || q._id} className="border p-4 rounded mb-3">
-                  <div className="flex justify-between">
-                    <div className="space-y-1">
-                      <p className="font-bold text-slate-700">{q.title}</p>
-                      {/* Adding info labels for Admin clarity */}
-                      <p className="text-[10px] uppercase font-black text-indigo-500">
-                        {q.category} • {q.difficulty}
-                      </p>
-                    </div>
-                    <button onClick={() => deleteQuestion(q.id || q._id)}>
-                      <Trash2 size={14} className="text-rose-500" />
-                    </button>
-                  </div>
+          {/* RIGHT: QUESTION LIST & PREVIEW */}
+          <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-8">
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-140px)]">
+              <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Library className="text-indigo-600" size={20} />
+                  <h3 className="text-sm font-black text-slateate-800 uppercase tracking-tight">
+                    Review Questions ({addedQuestions.length})
+                  </h3>
                 </div>
-              ))
-            )}
+                <div className="flex items-center gap-2">
+                  {addedQuestions.length > 0 && (
+                    <>
+                      <span className="text-[10px] font-black bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full border border-indigo-200">
+                        {mocktest?.totalQuestions ? `${addedQuestions.length} / ${mocktest.totalQuestions}` : addedQuestions.length}
+                      </span>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`Delete ALL ${addedQuestions.length} questions? This cannot be undone.`)) return;
+                          try {
+                            await api.delete(`/api/admin/mocktests/${id}/questions/all`);
+                            setAddedQuestions([]);
+                            setPreview(null);
+                            toast.success(`🗑️ All questions cleared`);
+                          } catch (err) {
+                            toast.error(err.response?.data?.message || "Failed to clear questions");
+                          }
+                        }}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 text-rose-500 border border-rose-100 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all"
+                        title="Delete all questions"
+                      >
+                        <Trash2 size={11} /> Clear All
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar">
+                {addedQuestions.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center py-20 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 mx-1">
+                     <Database className="text-slate-300 mb-3" size={32} />
+                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center">No Questions Added Yet</p>
+                  </div>
+                ) : (
+                  addedQuestions.map((q, idx) => (
+                    <div 
+                      key={q.id || q._id} 
+                      onClick={() => setPreview(q)}
+                      className={`group relative border-2 rounded-2xl p-4 cursor-pointer transition-all duration-300 ${
+                        (preview?._id === (q.id || q._id) || preview?.id === (q.id || q._id))
+                          ? "bg-indigo-50 border-indigo-400 shadow-md ring-4 ring-indigo-50"
+                          : "bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex-1 space-y-2">
+                           <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-black text-indigo-600 w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center border border-indigo-200">
+                                {idx + 1}
+                              </span>
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">
+                                {q.category} • {q.difficulty}
+                              </span>
+                           </div>
+                           <p className="text-xs font-bold text-slate-800 line-clamp-2 leading-relaxed">
+                             {q.title}
+                           </p>
+                        </div>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteQuestion(q.id || q._id);
+                          }}
+                          className="p-1.5 text-rose-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* ACTIVE QUESTION PREVIEW OVERLAY / BOX */}
+              {preview && (
+                 <div className="absolute inset-0 bg-white z-20 flex flex-col animate-in slide-in-from-right duration-300">
+                    <div className="p-5 border-b border-slate-100 bg-slate-900 flex items-center justify-between">
+                       <div className="flex items-center gap-3">
+                          <CheckCircle2 className="text-emerald-400" size={18} />
+                          <h4 className="text-[11px] font-black text-white uppercase tracking-widest">
+                            Live Detail Preview
+                          </h4>
+                       </div>
+                       <button 
+                         onClick={() => setPreview(null)}
+                         className="text-[10px] font-black text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg transition-all"
+                       >
+                         CLOSE
+                       </button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                       <div className="space-y-3">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Question Text</span>
+                          <div className="text-sm font-bold text-slate-800 leading-loose bg-slate-50 p-6 rounded-2xl border-2 border-slate-100 shadow-sm">
+                             {preview.title}
+                          </div>
+                       </div>
+
+                       {preview.questionType === 'mcq' && (
+                          <div className="space-y-4">
+                             <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Options Breakdown</span>
+                                <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded">CORRECT ANSWER INDICATED</span>
+                             </div>
+                             <div className="grid gap-3">
+                                {preview.options?.map((opt, i) => {
+                                   const isCorrect = Array.isArray(preview.correct) && preview.correct.includes(i);
+                                   return (
+                                      <div 
+                                        key={i} 
+                                        className={`flex items-center gap-4 p-4 rounded-2xl border-2 text-xs font-bold transition-all ${
+                                          isCorrect 
+                                            ? "bg-emerald-50 border-emerald-500 text-emerald-800 shadow-md ring-4 ring-emerald-50" 
+                                            : "bg-white border-slate-100 text-slate-500"
+                                        }`}
+                                      >
+                                         <div className={`w-7 h-7 rounded-xl flex items-center justify-center border-2 text-[10px] font-black transition-all ${
+                                           isCorrect ? "bg-emerald-500 text-white border-emerald-500 rotate-12" : "bg-slate-50 text-slate-400 border-slate-200"
+                                         }`}>
+                                           {String.fromCharCode(65 + i)}
+                                         </div>
+                                         <span className="flex-1 leading-relaxed">{opt.text}</span>
+                                         {isCorrect && (
+                                           <div className="bg-emerald-600 text-white text-[8px] font-black px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                                             <CheckCircle2 size={10} />
+                                             CORRECT
+                                           </div>
+                                         )}
+                                      </div>
+                                   );
+                                })}
+                             </div>
+                          </div>
+                       )}
+
+                       {preview.questionType === 'manual' && (
+                          <div className="space-y-3">
+                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Expected Answer</span>
+                             <div className="p-5 bg-emerald-50 border-2 border-emerald-200 rounded-2xl shadow-sm">
+                                <p className="text-xs font-black text-emerald-800 text-center tracking-wide">{preview.correctManualAnswer}</p>
+                             </div>
+                          </div>
+                       )}
+                    </div>
+                 </div>
+              )}
             </div>
           </div>
         </div>

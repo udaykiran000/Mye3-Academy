@@ -128,6 +128,7 @@ export const submitMockTest = async (req, res) => {
     }
 
     attempt.score = score;
+    attempt.correctCount = correctCount;
     attempt.status = "completed";
     attempt.answers = processedAnswers;
     attempt.submittedAt = new Date();

@@ -1,103 +1,81 @@
 import Question from "../../models/Question.js";
 import MockTest from "../../models/MockTest.js";
+import GrandTest from "../../models/GrandTest.js";
 import fs from "fs";
 import xlsx from "xlsx";
-import csv from "csv-parser";
+
+// ✅ HELPER: Find test across both collections (returns { test, ModelUsed })
+const findTestById = async (id) => {
+  let test = await MockTest.findById(id);
+  let ModelUsed = MockTest;
+  if (!test) {
+    test = await GrandTest.findById(id);
+    ModelUsed = GrandTest;
+  }
+  return { test, ModelUsed };
+};
+
+// ✅ Sync stats helper — only overrides duration if it was never manually set (null = auto mode)
+const syncTestStats = (test) => {
+  test.totalQuestions = test.questions.length;
+  
+  // Calculate total marks based on embedded questions
+  test.totalMarks = test.questions.reduce((sum, q) => sum + (Number(q.marks) || 0), 0);
+
+  // If admin never set a duration (null = auto-mode), compute 2 mins per question
+  if (test.durationMinutes === null || test.durationMinutes === undefined) {
+    test.durationMinutes = null; // keep as null so frontend can compute live
+  }
+  // If it was set to 0 explicitly (shouldn't happen), treat as auto too
+  if (test.durationMinutes === 0) {
+    test.durationMinutes = null;
+  }
+  // If > 0, admin manually set it — leave it alone
+};
 
 /**
- * @desc    Get all questions for a mocktest in object format
- */
-
-/**
- * @desc    Get all questions - Synchronized for "Question Preview" list
- */
-/**
- * @desc    Get all questions - Synchronized for "Question Preview" list
+ * @desc    Get all questions for a mocktest (reads embedded array)
  */
 export const getMocktestQuestions = async (req, res) => {
   try {
-    // 1. Fetch test and populate the full question objects
-    const test = await MockTest.findById(req.params.id).populate("questionIds");
-
+    const { test } = await findTestById(req.params.id);
     if (!test) return res.status(404).json({ success: false, message: "Mocktest not found" });
 
-    // 2. Return the questions array in the 'questions' key 
-    // This matches your frontend: setAddedQuestions(qRes.value.data.questions || [])
     res.status(200).json({
       success: true,
-      questions: test.questionIds || [] 
+      questions: test.questions || [],
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Failed to load preview list" });
+    res.status(500).json({ success: false, message: "Failed to load question list" });
   }
 };
+
 /**
- * @desc    Add question with Descriptive Blueprint Validation
+ * @desc    Add a single question (embedded into test document)
  */
 export const addQuestion = async (req, res) => {
   try {
     const { id: testId } = req.params;
-    const mocktest = await MockTest.findById(testId);
+    const { test } = await findTestById(testId);
+    if (!test) return res.status(404).json({ success: false, message: "Test not found" });
 
-    // DEBUG 1: Check what subject is coming from frontend
     console.log("Adding Question for Subject:", req.body.category);
 
-    // 1. Data Parsing
-    if (typeof req.body.options === "string")
-      req.body.options = JSON.parse(req.body.options);
-    if (typeof req.body.correct === "string")
-      req.body.correct = JSON.parse(req.body.correct);
+    if (typeof req.body.options === "string") req.body.options = JSON.parse(req.body.options);
+    if (typeof req.body.correct === "string") req.body.correct = JSON.parse(req.body.correct);
 
-    // 2. Matching Subject in Blueprint
-    const subjectName = (req.body.category || "general").trim().toLowerCase();
-    const subjectBlueprint = mocktest.subjects.find(
-      (s) => s.name.toLowerCase().trim() === subjectName,
-    );
+    const questionData = { ...req.body };
+    if (req.file) questionData.questionImageUrl = "/uploads/images/" + req.file.filename;
 
-    // 3. Validation Logic
-    // A) Global Limit Check
-    if (mocktest.totalQuestions > 0 && mocktest.questionIds.length >= mocktest.totalQuestions) {
-      return res.status(400).json({
-        success: false,
-        message: `Total question limit for this test reached (${mocktest.totalQuestions}).`,
-      });
-    }
+    // Remove invalid fields that embed schema doesn't need
+    delete questionData._id;
 
-    // B) Strict Difficulty-Specific Limit Check
-    if (subjectBlueprint) {
-      const difficulty = (req.body.difficulty || "easy").toLowerCase();
-      const difficultyLimit = Number(subjectBlueprint[difficulty]) || 0;
+    test.questions.push(questionData);
+    syncTestStats(test);
+    await test.save();
 
-      // ✅ FIX: Only enforce if a limit is actually set (> 0)
-      if (difficultyLimit > 0) {
-        // Check current count for this specific subject AND difficulty
-        const currentDifficultyCount = await Question.countDocuments({
-          _id: { $in: mocktest.questionIds },
-          category: subjectName,
-          difficulty: difficulty,
-        });
-
-        if (currentDifficultyCount >= difficultyLimit) {
-          return res.status(400).json({
-            success: false,
-            message: `Limit reached for ${req.body.category} (${difficulty}). Allowed: ${difficultyLimit}.`,
-          });
-        }
-      }
-    }
-
-    // 4. Save Logic
-    const question = new Question({ ...req.body });
-    if (req.file)
-      question.questionImageUrl = "/uploads/images/" + req.file.filename;
-
-    await question.save();
-
-    // 5. Sync with Mocktest
-    mocktest.questionIds.push(question._id);
-    await mocktest.save();
-
-    res.status(201).json({ success: true, question });
+    const addedQuestion = test.questions[test.questions.length - 1];
+    res.status(201).json({ success: true, question: addedQuestion });
   } catch (err) {
     console.error("SERVER_ERROR:", err.message);
     res.status(500).json({ success: false, message: err.message });
@@ -106,15 +84,15 @@ export const addQuestion = async (req, res) => {
 
 export const getPassagesByCategory = async (req, res) => {
   try {
-    const { category } = req.query;
-    const query = { questionType: "passage" };
-    if (category) query.category = category;
-    const passages = await Question.find(query).select(
-      "title questionImageUrl category createdAt",
-    );
+    const { category, testId } = req.query;
+    const { test } = await findTestById(testId);
+    if (!test) return res.status(404).json({ success: false, message: "Test not found" });
+
+    let passages = test.questions.filter(q => q.questionType === "passage");
+    if (category) passages = passages.filter(q => q.category === category);
+
     res.json({ success: true, passages });
   } catch (err) {
-    console.error("Error in getPassagesByCategory:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -124,50 +102,45 @@ export const addPassageWithChildren = async (req, res) => {
     const { id } = req.params;
     const { passageTitle, passageText, subject, questions } = req.body;
 
-    const mt = await MockTest.findById(id);
-    if (!mt) return res.status(404).json({ message: "MockTest not found" });
+    const { test } = await findTestById(id);
+    if (!test) return res.status(404).json({ message: "MockTest not found" });
 
-    const passageCategory = subject || mt.subcategory || "General";
-    const finalPassageTitle =
-      passageTitle || passageText || "Reading Comprehension";
+    const passageCategory = subject || test.subcategory || "General";
+    const finalPassageTitle = passageTitle || passageText || "Reading Comprehension";
     const files = req.files || [];
     const findFile = (fieldname) => {
       const f = files.find((file) => file.fieldname === fieldname);
       return f ? f.path.replace(/\\/g, "/") : null;
     };
 
-    const passageDoc = new Question({
+    const passageObj = {
       questionType: "passage",
       title: finalPassageTitle,
       category: passageCategory,
       difficulty: "medium",
       questionImageUrl: findFile("passageImage"),
-    });
-    await passageDoc.save();
+    };
 
     let parsedQuestions = [];
     try {
-      parsedQuestions =
-        typeof questions === "string" ? JSON.parse(questions) : questions;
+      parsedQuestions = typeof questions === "string" ? JSON.parse(questions) : questions;
     } catch (e) {
       parsedQuestions = [];
     }
 
-    const createdChildIds = [];
-
+    const childObjs = [];
     for (let i = 0; i < parsedQuestions.length; i++) {
       const child = parsedQuestions[i];
       const childTitle = child.questionText || child.title;
       if (!childTitle) continue;
 
-      const childDoc = new Question({
+      childObjs.push({
         questionType: "mcq",
         title: childTitle,
         category: passageCategory,
         difficulty: (child.difficulty || "medium").toLowerCase(),
         marks: Number(child.marks || 1),
         negative: Number(child.negative || 0),
-        parentQuestionId: passageDoc._id,
         questionImageUrl: findFile(`questions[${i}][image]`),
         options: child.options?.map((opt, optIdx) => ({
           text: opt.text || "",
@@ -176,22 +149,15 @@ export const addPassageWithChildren = async (req, res) => {
         correct: child.correct || [],
         correctManualAnswer: child.correctManualAnswer,
       });
-
-      await childDoc.save();
-      createdChildIds.push(childDoc._id);
     }
 
-    const allIds = [passageDoc._id, ...createdChildIds];
-
-    // ✅ ONLY PUSH TO THIS TEST
-    await MockTest.findByIdAndUpdate(id, {
-      $push: { questionIds: { $each: allIds } },
-    });
+    test.questions.push(passageObj, ...childObjs);
+    syncTestStats(test);
+    await test.save();
 
     res.status(201).json({
       message: "Passage and questions added",
-      passageId: passageDoc._id,
-      childCount: createdChildIds.length,
+      childCount: childObjs.length,
     });
   } catch (err) {
     console.error("❌ Error in addPassageWithChildren:", err);
@@ -202,7 +168,7 @@ export const addPassageWithChildren = async (req, res) => {
 };
 
 /**
- * Bulk upload questions from Excel/CSV with blueprint validation
+ * Bulk upload questions from Excel with flexible column mapping
  */
 export const bulkUploadQuestions = async (req, res) => {
   try {
@@ -210,65 +176,105 @@ export const bulkUploadQuestions = async (req, res) => {
     const filePath = req.file?.path;
     if (!filePath) throw new Error("No file uploaded");
 
-    const mocktest = await MockTest.findById(testId);
-    let parsedRows = [];
+    const { test } = await findTestById(testId);
+    if (!test) return res.status(404).json({ success: false, message: "Test not found" });
 
-    if (filePath.endsWith(".xlsx") || filePath.endsWith(".xls")) {
-      const workbook = xlsx.readFile(filePath);
-      parsedRows = xlsx.utils.sheet_to_json(
-        workbook.Sheets[workbook.SheetNames[0]],
-      );
+    let parsedRows = [];
+    try {
+      // xlsx library handles .csv, .xlsx, and .xls — use it for all file types
+      const workbook = xlsx.readFile(filePath, { type: "file" });
+      parsedRows = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {
+        defval: "", // default empty string for missing cells 
+        raw: false, // return formatted strings, not raw numbers
+      });
+      console.log(`📄 Parsed ${parsedRows.length} rows from file`);
+    } catch (parseErr) {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      return res.status(400).json({ success: false, message: "Failed to parse file: " + parseErr.message });
     }
 
     const validQuestions = [];
-    const blueprintMap = {};
-    mocktest.subjects.forEach((s) => {
-      const sub = s.name.toLowerCase().trim();
-      blueprintMap[sub] = {
-        easy: Number(s.easy || 0),
-        medium: Number(s.medium || 0),
-        hard: Number(s.hard || 0),
-      };
-    });
-
+    const firstRow = parsedRows[0] || {};
+    const rawKeys = Object.keys(firstRow);
+    console.log("🔍 CSV Column Headers (raw):", rawKeys);
+    
     for (const row of parsedRows) {
+      // Normalize column keys: remove ALL spaces, dots, underscores, dashes → lowercase
       const clean = {};
       Object.keys(row).forEach((k) => {
-        clean[k.replace(/\s+/g, "").toLowerCase()] = row[k];
+        const normalizedKey = k.replace(/[^a-z0-9]/gi, "").toLowerCase();
+        clean[normalizedKey] = String(row[k] || "").trim();
       });
 
-      const sub = clean.subject?.toLowerCase().trim();
-      const diff = clean.level?.toLowerCase().trim() || "easy";
+      console.log("📝 Normalized keys:", Object.keys(clean));
 
-      if (blueprintMap[sub] && blueprintMap[sub][diff] > 0) {
-        validQuestions.push({
-          title: clean.question,
-          category: sub,
-          questionType: clean.questiontype || "mcq",
-          difficulty: diff,
-          marks: Number(clean.marks) || 1,
-          negative: Number(clean.negative) || 0,
-          options: [
-            { text: clean.optiona_text },
-            { text: clean.optionb_text },
-            { text: clean.optionc_text },
-            { text: clean.optiond_text },
-          ].filter((o) => o.text),
-          correct: String(clean.correctindex || "")
-            .split(",")
-            .map(Number),
-        });
-        blueprintMap[sub][diff]--;
+      // FLEXIBLE FIELD DETECTION — try many possible column name patterns
+      const title = 
+        clean.question || clean.questiontext || clean.qtext || clean.title ||
+        clean.q || clean.ques || clean.questiontitle || clean.stmt ||
+        // fallback: find any key that contains "question" or "q"
+        Object.entries(clean).find(([k]) => k.includes("question"))?.[1] ||
+        Object.entries(clean).find(([k]) => k.startsWith("q") && clean[k]?.length > 10)?.[1];
+
+      const sub = 
+        clean.subject || clean.category || clean.subjectname || clean.sub || 
+        clean.section || clean.topic || "general"; // default to general if no subject column
+      
+      const optionA = clean.optionatext || clean.optiona || clean.opta || clean.a || clean.option1 || clean.ans1 || clean.opt1 || clean.choice1 || "";
+      const optionB = clean.optionbtext || clean.optionb || clean.optb || clean.b || clean.option2 || clean.ans2 || clean.opt2 || clean.choice2 || "";
+      const optionC = clean.optionctext || clean.optionc || clean.optc || clean.c || clean.option3 || clean.ans3 || clean.opt3 || clean.choice3 || "";
+      const optionD = clean.optiondtext || clean.optiond || clean.optd || clean.d || clean.option4 || clean.ans4 || clean.opt4 || clean.choice4 || "";
+      
+      const correctIdx = clean.correctindex || clean.correct || clean.answer || 
+        clean.answerindex || clean.correctoption || clean.key || clean.ans || "0";
+      
+      const diff = (clean.level || clean.difficulty || clean.diff || clean.complexity || "easy").toLowerCase();
+
+      console.log(`  → title: "${title?.substring(0,30)}" | sub: "${sub}" | A:"${optionA}" B:"${optionB}"`);
+
+      if (!title) {
+        console.log("  ⚠️ Skipping row (no title found)");
+        continue;
       }
+
+      // Global marks/negative from frontend form — override per-row CSV values
+      const globalMarks = Number(req.body.marks) > 0 ? Number(req.body.marks) : null;
+      const globalNegative = req.body.negative !== undefined && req.body.negative !== "" ? Number(req.body.negative) : null;
+
+      validQuestions.push({
+        title,
+        category: sub.toLowerCase().trim(),
+        questionType: "mcq",
+        difficulty: diff,
+        marks: globalMarks ?? (Number(clean.marks) || 1),
+        negative: globalNegative ?? (Number(clean.negative || clean.negativemark || clean.negmarks) || 0),
+        options: [
+          { text: optionA },
+          { text: optionB },
+          { text: optionC },
+          { text: optionD },
+        ].filter((o) => o.text),
+        correct: String(correctIdx).split(",").map(s => Number(s.trim())).filter(n => !isNaN(n)),
+      });
+
     }
 
-    const inserted = await Question.insertMany(validQuestions);
-    await MockTest.findByIdAndUpdate(testId, {
-      $push: { questionIds: { $each: inserted.map((q) => q._id) } },
-    });
+    if (validQuestions.length === 0) {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      console.log("❌ No valid questions found from", parsedRows.length, "rows");
+      return res.status(400).json({
+        success: false,
+        message: `No valid questions found in ${parsedRows.length} rows. Column headers found: ${rawKeys.join(", ")}. Make sure your CSV has a 'question' column.`,
+      });
+    }
+
+
+    test.questions.push(...validQuestions);
+    syncTestStats(test);
+    await test.save();
 
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    res.status(201).json({ message: `${inserted.length} questions uploaded` });
+    res.status(201).json({ success: true, message: `${validQuestions.length} questions uploaded successfully` });
   } catch (err) {
     if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     res.status(500).json({ message: err.message });
@@ -276,25 +282,49 @@ export const bulkUploadQuestions = async (req, res) => {
 };
 
 /**
- * @desc    Delete question and remove reference from Mocktest
+ * @desc    Delete ALL questions from a test at once (clear all)
+ * @route   DELETE /api/admin/mocktests/:id/questions/all
  */
+export const clearAllQuestions = async (req, res) => {
+  try {
+    const { id: testId } = req.params;
+    const { test } = await findTestById(testId);
+    if (!test) return res.status(404).json({ success: false, message: "Test not found" });
+
+    const deletedCount = test.questions.length;
+    test.questions = [];
+    test.isPublished = false; // force to draft since no questions
+    syncTestStats(test);
+    await test.save();
+
+    res.status(200).json({ success: true, message: `${deletedCount} questions cleared`, deletedCount });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 export const deleteQuestion = async (req, res) => {
   try {
     const { qId } = req.params;
 
-    // 1. Delete from Question collection
-    const deletedQuestion = await Question.findByIdAndDelete(qId);
-    if (!deletedQuestion)
-      return res
-        .status(404)
-        .json({ success: false, message: "Question not found" });
+    // Search both collections
+    let test = await MockTest.findOne({ "questions._id": qId });
+    let ModelUsed = MockTest;
+    if (!test) {
+      test = await GrandTest.findOne({ "questions._id": qId });
+      ModelUsed = GrandTest;
+    }
 
-    // 2. Remove reference from ALL Mocktests (Sync logic)
-    await MockTest.updateMany({}, { $pull: { questionIds: qId } });
+    if (!test) return res.status(404).json({ success: false, message: "Question not found in any test" });
 
-    res
-      .status(200)
-      .json({ success: true, message: "Question deleted successfully" });
+    test.questions = test.questions.filter((q) => q._id.toString() !== qId);
+    syncTestStats(test);
+    await test.save();
+
+    // Also delete from standalone Question collection if it exists there (backwards compat)
+    await Question.findByIdAndDelete(qId).catch(() => {});
+
+    res.status(200).json({ success: true, message: "Question deleted successfully" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

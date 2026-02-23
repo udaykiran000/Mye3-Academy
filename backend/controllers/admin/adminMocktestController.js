@@ -1,20 +1,37 @@
 import MockTest from "../../models/MockTest.js";
+import GrandTest from "../../models/GrandTest.js";
 import Category from "../../models/Category.js";
 import fs from "fs";
 
+// ✅ HELPER: Selects correct model based on isGrandTest flag
+const getModel = (isGrand) =>
+  isGrand === true || String(isGrand) === "true" ? GrandTest : MockTest;
+
+// ✅ HELPER: Finds a test across both collections
+const findTestById = async (id) => {
+  let test = await MockTest.findById(id).populate("category", "name slug");
+  let ModelUsed = MockTest;
+  if (!test) {
+    test = await GrandTest.findById(id).populate("category", "name slug");
+    ModelUsed = GrandTest;
+  }
+  return { test, ModelUsed };
+};
+
 /**
- * @desc    Get all mock tests for Admin Registry table
+ * @desc    Get all mock tests (MockTests + GrandTests combined)
  * @route   GET /api/admin/mocktests
  */
 export const getAllAdminMocktests = async (req, res) => {
   try {
-    const tests = await MockTest.find({})
-      .populate("category", "name slug")
-      .sort({ createdAt: -1 });
+    const [mockTests, grandTests] = await Promise.all([
+      MockTest.find({}).populate("category", "name slug").sort({ createdAt: -1 }),
+      GrandTest.find({}).populate("category", "name slug").sort({ createdAt: -1 }),
+    ]);
 
     res.status(200).json({
       success: true,
-      mocktests: tests,
+      mocktests: [...mockTests, ...grandTests],
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -22,18 +39,17 @@ export const getAllAdminMocktests = async (req, res) => {
 };
 
 /**
- * @desc    Get mock tests filtered by category slug
+ * @desc    Get mock tests filtered by category slug & type
  * @route   GET /api/admin/mocktests/category
  */
 export const getMocktestsByCategory = async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, isGrandTest } = req.query;
     if (!category)
-      return res
-        .status(400)
-        .json({ success: false, message: "Category slug required" });
+      return res.status(400).json({ success: false, message: "Category slug required" });
 
-    const tests = await MockTest.find({ categorySlug: category })
+    const Model = getModel(isGrandTest);
+    const tests = await Model.find({ categorySlug: category })
       .populate("category", "name slug")
       .sort({ createdAt: -1 });
 
@@ -44,75 +60,96 @@ export const getMocktestsByCategory = async (req, res) => {
 };
 
 /**
- * @desc    Create a new Mock Test with blueprint calculation
+ * @desc    Create a new Mock Test or Grand Test
  * @route   POST /api/admin/mocktests
  */
 export const createMockTest = async (req, res) => {
   try {
-    // 1. Handle Thumbnail Path
     if (req.file) req.body.thumbnail = "/uploads/images/" + req.file.filename;
 
-    console.log("DEBUG: createMockTest body:", req.body);
+    // Mandatory field checks
+    if (!req.body.title || req.body.title.trim() === "") {
+      return res.status(400).json({ success: false, message: "Test Title is mandatory" });
+    }
+    if (!req.body.subcategory || req.body.subcategory.trim() === "") {
+      return res.status(400).json({ success: false, message: "Subcategory is mandatory" });
+    }
+    if (req.body.isFree === undefined || req.body.isFree === "null") {
+      return res.status(400).json({ success: false, message: "Access Mode (Free/Paid) is mandatory" });
+    }
 
-    // 2. Parse stringified FormData fields
     if (req.body.subjects) req.body.subjects = JSON.parse(req.body.subjects);
 
     const isTestFree = String(req.body.isFree) === "true";
     const isTestGrand = String(req.body.isGrandTest) === "true";
-    const isPublished = String(req.body.isPublished) === "true";
 
-    // 3. Category Validation
+    // Category Validation
+    if (!req.body.category || req.body.category === "null") {
+      return res.status(400).json({ success: false, message: "Category is mandatory." });
+    }
     const foundCategory = await Category.findOne({ slug: req.body.category });
-    console.log("DEBUG: foundCategory:", foundCategory);
-    
-    if (!foundCategory)
-      return res.status(400).json({ message: "Invalid category slug: " + req.body.category });
+    if (!foundCategory) {
+      return res.status(400).json({ success: false, message: `Invalid category: ${req.body.category}` });
+    }
 
-    // 4. Blueprint Processing (Total limit is stored in 'easy' field)
+    // Price validation for paid tests
+    if (!isTestFree && (!req.body.price || Number(req.body.price) <= 0)) {
+      return res.status(400).json({ success: false, message: "Price must be greater than 0 for Paid tests" });
+    }
+
     const parsedSubjects = (req.body.subjects || []).map((s) => ({
       name: (s.name || "").trim().toLowerCase(),
       easy: Number(s.easy) || 0,
-      medium: Number(s.medium) || 0,
-      hard: Number(s.hard) || 0,
+      medium: 0,
+      hard: 0,
     }));
+    const blueprintSum = parsedSubjects.reduce((sum, s) => sum + s.easy, 0);
 
-    // Calculate total questions from blueprint
-    const blueprintSum = parsedSubjects.reduce(
-      (sum, s) => sum + s.easy + s.medium + s.hard,
-      0,
-    );
-
-    // ✅ FIX: Robust Thumbnail Handling
     let finalThumbnail = null;
-    if (req.body.thumbnail) {
+    if (req.body.thumbnail && typeof req.body.thumbnail === "string") {
       finalThumbnail = req.body.thumbnail;
     }
 
-    // ✅ FIX: Handle Scheduled Date
     let finalScheduledFor = null;
-    if (isTestGrand && req.body.scheduledFor) {
-      finalScheduledFor = new Date(req.body.scheduledFor);
+    if (isTestGrand && req.body.scheduledFor && req.body.scheduledFor !== "null") {
+      const d = new Date(req.body.scheduledFor);
+      if (!isNaN(d.getTime())) finalScheduledFor = d;
     }
 
-    const mocktest = new MockTest({
-      ...req.body,
+    // null = auto-mode (frontend calculates: questions.length * 2)
+    // Only store a value if admin explicitly typed one > 0
+    const manualDuration = Number(req.body.durationMinutes);
+    const duration = manualDuration > 0 ? manualDuration : null;
+    const totalQns = Number(req.body.totalQuestions) || blueprintSum || 0;
+
+    const mockTestData = {
+      title: (req.body.title || "").trim(),
+      description: (req.body.description || "").trim(),
+      subcategory: (req.body.subcategory || "").trim(),
+      durationMinutes: duration,
+      totalQuestions: totalQns,
+      totalMarks: Number(req.body.totalMarks) || 0,
+      negativeMarking: Number(req.body.negativeMarking) || 0,
+      price: Number(req.body.price) || 0,
       isFree: isTestFree,
       isGrandTest: isTestGrand,
-      isPublished: isPublished,
-      scheduledFor: finalScheduledFor, // ✅ Added Missing Field
+      scheduledFor: finalScheduledFor,
       category: foundCategory._id,
       categorySlug: foundCategory.slug,
-      thumbnail: finalThumbnail, // ✅ Standardized Thumbnail
+      thumbnail: finalThumbnail,
       subjects: parsedSubjects,
-      totalQuestions:
-        blueprintSum > 0 ? blueprintSum : Number(req.body.totalQuestions) || 0,
-      questionIds: [],
-    });
+      questions: [], // Embedded, starts empty
+    };
 
+    // ✅ Use correct collection based on type
+    const Model = getModel(isTestGrand);
+    const mocktest = new Model(mockTestData);
     await mocktest.save();
+
     res.status(201).json({ success: true, mocktest });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("❌ CREATE_MOCKTEST_ERROR:", error);
+    res.status(500).json({ success: false, message: error.message, detail: error.stack });
   }
 };
 
@@ -123,13 +160,11 @@ export const createMockTest = async (req, res) => {
 export const updateMockTest = async (req, res) => {
   try {
     const { id } = req.params;
-    const mockTest = await MockTest.findById(id);
-    if (!mockTest)
-      return res.status(404).json({ message: "Mock test not found" });
+    const { test: mockTest } = await findTestById(id);
+    if (!mockTest) return res.status(404).json({ message: "Mock test not found" });
 
     if (req.file) mockTest.thumbnail = "/uploads/images/" + req.file.filename;
 
-    // Handle subjects update
     if (req.body.subjects) {
       const parsed = JSON.parse(req.body.subjects);
       let calcTotal = 0;
@@ -138,71 +173,48 @@ export const updateMockTest = async (req, res) => {
         const medium = Number(s.medium) || 0;
         const hard = Number(s.hard) || 0;
         calcTotal += easy + medium + hard;
-        
-        return {
-          name: (s.name || "").trim().toLowerCase(),
-          easy,
-          medium,
-          hard,
-        };
+        return { name: (s.name || "").trim().toLowerCase(), easy, medium, hard };
       });
-      // ✅ Sync totalQuestions based on blueprint ONLY if not explicitly provided
-      if (!req.body.totalQuestions) {
-        mockTest.totalQuestions = calcTotal;
-      }
+      if (!req.body.totalQuestions) mockTest.totalQuestions = calcTotal;
     }
 
-    // Update individual fields if provided
-    const fields = [
-      "title",
-      "description",
-      "subcategory",
-      "durationMinutes",
-      "totalMarks",
-      "totalQuestions",
-      "negativeMarking",
-      "price",
-      "discountPrice",
-    ];
+    const fields = ["title", "description", "subcategory", "totalMarks", "totalQuestions", "negativeMarking", "price", "discountPrice"];
     fields.forEach((field) => {
-      if (req.body[field] !== undefined) mockTest[field] = req.body[field];
+      if (req.body[field] !== undefined) {
+        mockTest[field] = req.body[field];
+      }
     });
 
-    if (req.body.isFree !== undefined)
-      mockTest.isFree = String(req.body.isFree) === "true";
-    if (req.body.isGrandTest !== undefined)
-      mockTest.isGrandTest = String(req.body.isGrandTest) === "true";
+    // Duration: store null for auto-mode, or manual value if > 0
+    if (req.body.durationMinutes !== undefined) {
+      const val = Number(req.body.durationMinutes);
+      mockTest.durationMinutes = val > 0 ? val : null;
+    }
+    if (req.body.isFree !== undefined) mockTest.isFree = String(req.body.isFree) === "true";
+    if (req.body.isGrandTest !== undefined) mockTest.isGrandTest = String(req.body.isGrandTest) === "true";
 
-    // ✅ FORCE UNPUBLISH ON ANY EDIT
-    // The user wants any change to return the test to Draft status for re-verification
-    mockTest.isPublished = false;
-
+    mockTest.isPublished = false; // Force draft on edit
     const updated = await mockTest.save();
-    res.status(200).json({ 
-      success: true, 
-      message: "Updated successfully (Draft mode)",
-      mocktest: updated 
-    });
+    res.status(200).json({ success: true, message: "Updated successfully (Draft mode)", mocktest: updated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
 /**
- * @desc    Delete a Mock Test
+ * @desc    Delete a Mock Test or Grand Test
  * @route   DELETE /api/admin/mocktests/:id
  */
 export const deleteMockTest = async (req, res) => {
   try {
-    const test = await MockTest.findById(req.params.id);
+    const { test, ModelUsed } = await findTestById(req.params.id);
     if (!test) return res.status(404).json({ message: "Test not found" });
 
-    // Clean up thumbnail file
     if (test.thumbnail && fs.existsSync("." + test.thumbnail)) {
       fs.unlinkSync("." + test.thumbnail);
     }
 
-    await MockTest.findByIdAndDelete(req.params.id);
+    await ModelUsed.findByIdAndDelete(req.params.id);
     res.status(200).json({ success: true, message: "Deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -215,19 +227,15 @@ export const deleteMockTest = async (req, res) => {
  */
 export const togglePublish = async (req, res) => {
   try {
-    const test = await MockTest.findById(req.params.id);
+    const { test } = await findTestById(req.params.id);
     if (!test) return res.status(404).json({ message: "Test not found" });
 
-    // ✅ VALIDATION: If attempting to publish (moving from draft to live or just staying live)
-    // We check if the question count matches the required total
     if (!test.isPublished) {
-      const addedCount = test.questionIds?.length || 0;
-      const requiredCount = test.totalQuestions || 0;
-
-      if (addedCount !== requiredCount) {
+      const questionCount = test.questions?.length || 0;
+      if (questionCount < 1) {
         return res.status(400).json({
           success: false,
-          message: `Cannot publish. Total questions needed: ${requiredCount}. Added so far: ${addedCount}.`
+          message: "Cannot publish an empty test. Please add at least one question.",
         });
       }
     }
@@ -246,42 +254,52 @@ export const togglePublish = async (req, res) => {
 };
 
 /**
- * @desc    Get a single Mock Test by ID
+ * @desc    Get a single test by ID (searches both collections)
  * @route   GET /api/admin/mocktests/:id
- */
-/**
- * @desc    Get single mocktest - Synchronized for AdminQuestions/FormMocktest
  */
 export const getMockTestById = async (req, res) => {
   try {
-    const test = await MockTest.findById(req.params.id).populate("category", "name slug");
-    
+    const { test } = await findTestById(req.params.id);
     if (!test) return res.status(404).json({ success: false, message: "Mocktest not found" });
 
-    // FIX: Sending the object directly so frontend setMocktest(res.data) works perfectly
-    // Adding success: true inside the object for compatibility
     const responseData = test.toObject();
     responseData.success = true;
-
     res.status(200).json(responseData);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 /**
  * @desc    Global filter for mock tests registry
  * @route   GET /api/admin/mocktests/filter
  */
 export const getFilteredMocktests = async (req, res) => {
   try {
-    const { category, search } = req.query;
+    const { category, search, isGrandTest } = req.query;
+    console.log(`\n🔍 GET /filter | cat: ${category}, search: ${search}, isGrand: ${isGrandTest}`);
+
     let query = {};
     if (category) query.categorySlug = category;
     if (search) query.title = { $regex: search, $options: "i" };
 
-    const tests = await MockTest.find(query)
-      .populate("category", "name slug")
-      .sort({ createdAt: -1 });
+    let tests = [];
+    if (isGrandTest === "true") {
+      tests = await GrandTest.find(query).populate("category", "name slug").sort({ createdAt: -1 });
+      console.log(`- GrandTests Only: ${tests.length}`);
+    } else if (isGrandTest === "false") {
+      tests = await MockTest.find(query).populate("category", "name slug").sort({ createdAt: -1 });
+      console.log(`- MockTests Only: ${tests.length}`);
+    } else {
+      // Both
+      const [m, g] = await Promise.all([
+        MockTest.find(query).populate("category", "name slug").sort({ createdAt: -1 }),
+        GrandTest.find(query).populate("category", "name slug").sort({ createdAt: -1 }),
+      ]);
+      console.log(`- Combined results: Mock(${m.length}), Grand(${g.length})`);
+      tests = [...m, ...g];
+    }
+
     res.status(200).json({ success: true, mocktests: tests });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -289,18 +307,17 @@ export const getFilteredMocktests = async (req, res) => {
 };
 
 /**
- * @desc    Get simple list of published mocktests (for dropdowns/filters)
+ * @desc    Get published tests (from both collections)
  * @route   GET /api/admin/mocktests/published/list
  */
 export const getPublishedMocktests = async (req, res) => {
   try {
-    const tests = await MockTest.find({ isPublished: true })
-      .select("title isGrandTest categorySlug") // Select only needed fields
-      .sort({ createdAt: -1 });
-
-    res.status(200).json(tests); // Return array directly as expected by frontend
+    const [mockTests, grandTests] = await Promise.all([
+      MockTest.find({ isPublished: true }).select("title isGrandTest categorySlug").sort({ createdAt: -1 }),
+      GrandTest.find({ isPublished: true }).select("title isGrandTest categorySlug").sort({ createdAt: -1 }),
+    ]);
+    res.status(200).json([...mockTests, ...grandTests]);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-

@@ -25,6 +25,7 @@ import {
   addQuestion,
   bulkUploadQuestions,
   deleteQuestion,
+  clearAllQuestions,
 } from "../../controllers/admin/adminQuestionController.js";
 
 // Apply Admin Security
@@ -53,5 +54,7 @@ router.post(
   bulkUploadQuestions,
 );
 router.delete("/questions/:qId", deleteQuestion);
+router.delete("/:id/questions/all", clearAllQuestions);
+
 
 export default router;

@@ -7,7 +7,7 @@ import {
 } from "../../../redux/instructorSlice";
 import api from "../../../api/axios";
 import { useNavigate, Link } from "react-router-dom";
-import { Search, User, Lock, Unlock, Pencil, Trash2, X, ArrowLeft, Plus, Download, MoreVertical } from "lucide-react";
+import { Search, User, Lock, Unlock, Pencil, Trash2, X, ArrowLeft, Plus, Download, MoreVertical, Calendar, Clock, MessageSquare, Info, ExternalLink } from "lucide-react";
 import { FaCheckCircle, FaBan, FaSpinner, FaExclamationTriangle } from "react-icons/fa";
 import toast from "react-hot-toast";
 
@@ -30,6 +30,25 @@ const ManageInstructors = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Modal State for Doubts
+  const [selectedInstForDoubts, setSelectedInstForDoubts] = useState(null);
+  const [doubtList, setDoubtList] = useState([]);
+  const [isDoubtLoading, setIsDoubtLoading] = useState(false);
+
+  const openDoubtModal = async (inst) => {
+    setSelectedInstForDoubts(inst);
+    setIsDoubtLoading(true);
+    setDoubtList([]);
+    try {
+      const { data } = await api.get(`/api/admin/users/instructors/${inst._id}/doubts`);
+      setDoubtList(data);
+    } catch (err) {
+      toast.error("Failed to fetch doubts");
+    } finally {
+      setIsDoubtLoading(false);
+    }
+  };
 
   // 1. Initial load
   useEffect(() => {
@@ -222,6 +241,7 @@ const ManageInstructors = () => {
                   <tr className="bg-gray-50/50 border-b border-gray-100 text-gray-500 uppercase text-[10px] font-bold tracking-widest">
                     <th className="p-4 pl-6">Instructor</th>
                     <th className="p-4">Contact Info</th>
+                    <th className="p-4">Doubt Progress</th>
                     <th className="p-4">Joined Date</th>
                     <th className="p-4 text-center">Status & Actions</th>
                   </tr>
@@ -271,6 +291,38 @@ const ManageInstructors = () => {
                           <p className="text-xs text-gray-500">
                             {inst.phoneNumber || "—"}
                           </p>
+                        </td>
+
+                        {/* DOUBT METRICS */}
+                        <td className="p-4">
+                          <div 
+                            onClick={() => openDoubtModal(inst)}
+                            className="flex flex-col gap-1.5 min-w-[120px] cursor-pointer group/metric hover:bg-cyan-50/50 p-2 rounded-lg transition-colors border border-transparent hover:border-cyan-100"
+                            title="Click to view details"
+                          >
+                            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-tight">
+                              <span className="text-gray-400 group-hover/metric:text-cyan-600 transition-colors">Response Rate</span>
+                              <span className="text-cyan-600">
+                                {inst.doubtStats?.resolved || 0} / {inst.doubtStats?.total || 0}
+                              </span>
+                            </div>
+                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+                              <div 
+                                className="h-full bg-cyan-500 rounded-full transition-all duration-1000"
+                                style={{ 
+                                  width: `${inst.doubtStats?.total > 0 ? (inst.doubtStats.resolved / inst.doubtStats.total) * 100 : 0}%` 
+                                }}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                               <span className="text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-black">
+                                 {inst.doubtStats?.pending || 0} PENDING
+                               </span>
+                               <span className="text-[9px] bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded border border-slate-100 font-bold">
+                                 {inst.doubtStats?.total || 0} TOTAL
+                               </span>
+                            </div>
+                          </div>
                         </td>
 
                         <td className="p-4 text-sm text-gray-600">
@@ -398,6 +450,134 @@ const ManageInstructors = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* DOUBT DETAILS MODAL */}
+      {selectedInstForDoubts && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">Doubt Details</h2>
+                <p className="text-sm text-gray-500">
+                  Instructor: <span className="font-semibold text-cyan-600">{selectedInstForDoubts.firstname} {selectedInstForDoubts.lastname}</span>
+                </p>
+              </div>
+              <button 
+                onClick={() => setSelectedInstForDoubts(null)}
+                className="p-2 hover:bg-gray-200 rounded-full transition text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 max-h-[70vh] overflow-y-auto">
+              {isDoubtLoading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <FaSpinner className="animate-spin text-4xl text-cyan-600 mb-4" />
+                  <p className="text-gray-500">Loading assigned doubts...</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {doubtList.length > 0 ? (
+                    doubtList.map((doubt, i) => (
+                      <div key={i} className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-cyan-200 transition-all duration-300 group">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex flex-col">
+                             <div className="flex items-center gap-2 mb-1">
+                               <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${
+                                 doubt.status === 'answered' 
+                                   ? 'bg-green-50 text-green-600 border-green-200' 
+                                   : 'bg-amber-50 text-amber-600 border-amber-200'
+                               }`}>
+                                 {doubt.status}
+                               </span>
+                               <span className="text-[10px] text-gray-400 font-bold font-mono">ID: {doubt._id.slice(-6)}</span>
+                             </div>
+                             <p className="text-xs text-gray-500 flex items-center gap-1">
+                               <Calendar size={12} className="text-gray-400" />
+                               Asked on {new Date(doubt.createdAt).toLocaleDateString()}
+                             </p>
+                          </div>
+                          
+                          <div className="text-right flex flex-col items-end">
+                            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-100 shadow-sm">
+                               <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 font-bold text-xs uppercase shadow-inner">
+                                 {doubt.student?.firstname?.[0] || "S"}
+                               </div>
+                               <div className="flex flex-col text-left">
+                                  <span className="text-xs font-black text-gray-800 tracking-tight leading-none capitalize">{doubt.student?.firstname} {doubt.student?.lastname}</span>
+                                  <span className="text-[9px] text-gray-400 font-medium leading-none mt-1">{doubt.student?.email}</span>
+                               </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-xl border border-slate-100 mb-4 shadow-sm group-hover:shadow-md transition-shadow">
+                           <div className="flex items-start gap-3">
+                              <MessageSquare size={16} className="text-cyan-500 mt-0.5 shrink-0" />
+                              <div>
+                                 <p className="text-[10px] text-gray-400 font-bold tracking-[2px] uppercase mb-1">Student's Question</p>
+                                 <p className="text-sm text-gray-800 font-medium leading-relaxed">{doubt.text}</p>
+                              </div>
+                           </div>
+                        </div>
+
+                        {doubt.mocktestId && (
+                           <div className="flex items-center gap-2 px-4 py-2 bg-blue-50/30 rounded-lg border border-blue-100/50 mb-4 w-fit">
+                              <Info size={12} className="text-blue-500" />
+                              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-tight">Linked Test:</span>
+                              <span className="text-[10px] font-black text-gray-700 uppercase tracking-tight">{doubt.mocktestId.title}</span>
+                              <ExternalLink size={10} className="text-gray-400" />
+                           </div>
+                        )}
+
+                        {doubt.status === 'answered' ? (
+                          <div className="bg-green-50/30 p-4 rounded-xl border border-green-100 relative overflow-hidden">
+                             <div className="absolute top-0 right-0 p-1 opacity-10">
+                                <FaCheckCircle size={40} className="text-green-500" />
+                             </div>
+                             <p className="text-[10px] text-green-600 font-black tracking-[2px] uppercase mb-1">Instructor's Answer</p>
+                             <p className="text-sm text-gray-700 leading-relaxed italic">"{doubt.answer}"</p>
+                             <div className="mt-2 flex items-center gap-1.5 text-[9px] text-gray-400 font-bold uppercase tracking-widest">
+                                <Clock size={10} /> {new Date(doubt.answeredAt).toLocaleString()}
+                             </div>
+                          </div>
+                        ) : (
+                          <div className="bg-amber-50/30 p-4 rounded-xl border border-amber-100 flex items-center gap-3">
+                             <Clock className="text-amber-500 animate-pulse" size={18} />
+                             <div>
+                                <p className="text-xs font-bold text-amber-700">Awaiting Response</p>
+                                <p className="text-[10px] text-amber-600 font-medium">This doubt is currently being reviewed by the instructor.</p>
+                             </div>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60">
+                      <MessageSquare size={64} strokeWidth={1} className="mb-4" />
+                      <h3 className="text-xl font-black uppercase tracking-[3px]">Clean Slate</h3>
+                      <p className="text-sm font-medium">No doubts have been assigned to this instructor yet.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-gray-50 px-6 py-4 border-t flex justify-end">
+              <button 
+                onClick={() => setSelectedInstForDoubts(null)}
+                className="px-8 py-2.5 bg-[#1e293b] text-white rounded-xl shadow-lg hover:bg-slate-800 transition-all font-black text-[10px] uppercase tracking-[2px]"
+              >
+                Close Gallery
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
