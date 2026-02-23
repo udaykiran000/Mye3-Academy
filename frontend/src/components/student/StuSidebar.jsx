@@ -148,7 +148,7 @@ const StuSidebar = ({ activeTab, setActiveTab }) => {
 
           <SidebarLink
             icon={<BookOpen size={20} />}
-            label="My Mocktests"
+            label="My Enrollments"
             isActive={activeTab === "my-tests"}
             onClick={() => {
               setActiveTab("my-tests");

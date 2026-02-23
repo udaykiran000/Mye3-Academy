@@ -1,4 +1,5 @@
 import MockTest from "../../models/MockTest.js";
+import GrandTest from "../../models/GrandTest.js";
 import Attempt from "../../models/Attempt.js";
 import Question from "../../models/Question.js";
 import User from "../../models/Usermodel.js";
@@ -13,9 +14,13 @@ export const startTestAttempt = async (req, res) => {
   try {
     const { mockTestId } = req.body;
     const studentId = req.user._id; 
-    const maxAttempts = 1;
 
-    const mocktest = await MockTest.findById(mockTestId).lean();
+    // Find test across both collections
+    let mocktest = await MockTest.findById(mockTestId).lean();
+    if (!mocktest) {
+      mocktest = await GrandTest.findById(mockTestId).lean();
+    }
+    
     if (!mocktest) return res.status(404).json({ success: false, message: "Mocktest not found" });
 
     // 1. Resume existing test check
@@ -25,19 +30,24 @@ export const startTestAttempt = async (req, res) => {
       return res.status(200).json({ success: true, attemptId: latestAttempt._id, endsAt: latestAttempt.endsAt });
     }
 
-    // 2. Purchase check
-    if (mocktest.price > 0) {
+    // 2. Purchase check (Price > 0 and not explicitly marked as free)
+    if (!mocktest.isFree && mocktest.price > 0) {
       const order = await Order.findOne({ user: studentId, items: mockTestId, status: "successful" });
       if (!order) return res.status(403).json({ success: false, message: "Please purchase the test to continue." });
     }
 
-    // 3. Question Selection Logic (Holistic priority based)
-    const allQuestions = await Question.find({ _id: { $in: mocktest.questionIds } }).lean();
-    shuffleArray(allQuestions);
-    const selected = allQuestions.slice(0, mocktest.totalQuestions);
+    // 3. Question Selection Logic (Using embedded questions)
+    let selected = [...(mocktest.questions || [])];
+    
+    shuffleArray(selected);
+    if (mocktest.totalQuestions > 0 && mocktest.totalQuestions < selected.length) {
+      selected = selected.slice(0, mocktest.totalQuestions);
+    }
 
     const now = new Date();
-    const endsAt = new Date(now.getTime() + Number(mocktest.durationMinutes) * 60000);
+    // Use admin-defined duration or fallback to auto-calc (2 mins per qn)
+    const durationMins = Number(mocktest.durationMinutes) || (selected.length * 2);
+    const endsAt = new Date(now.getTime() + durationMins * 60000);
 
     const attemptDoc = await Attempt.create({
       studentId,
@@ -52,6 +62,7 @@ export const startTestAttempt = async (req, res) => {
 
     return res.json({ success: true, attemptId: attemptDoc._id, endsAt, questions: selected });
   } catch (err) {
+    console.error("EXAM_START_ERROR:", err);
     res.status(500).json({ success: false, message: "Exam setup failed." });
   }
 };
@@ -61,12 +72,19 @@ export const startTestAttempt = async (req, res) => {
  */
 export const loadExamPaper = async (req, res) => {
   try {
-    const attempt = await Attempt.findById(attemptId).populate("mocktestId", "title totalMarks price negativeMarking");
+    const { attemptId } = req.params;
+    const attempt = await Attempt.findById(attemptId).lean();
     if (!attempt) return res.status(404).json({ message: "Attempt not found" });
+
+    // Fetch test details for metadata (check both collections)
+    let mocktest = await MockTest.findById(attempt.mocktestId).select("title totalMarks negativeMarking").lean();
+    if (!mocktest) {
+      mocktest = await GrandTest.findById(attempt.mocktestId).select("title totalMarks negativeMarking").lean();
+    }
 
     const isFinished = attempt.status === "completed" || attempt.status === "finished";
     
-    // Proactive: Remove correct answers if test is still in-progress
+    // Remove correct answers safely
     const sanitizedQuestions = attempt.questions.map(q => {
       if (!isFinished) {
         const { correct, correctManualAnswer, explanation, ...rest } = q;
@@ -80,9 +98,13 @@ export const loadExamPaper = async (req, res) => {
       questions: sanitizedQuestions, 
       endsAt: attempt.endsAt, 
       status: attempt.status,
-      totalMarks: attempt.mocktestId?.totalMarks || 0
+      testTitle: mocktest?.title || "Exam",
+      totalMarks: mocktest?.totalMarks || 0,
+      negativeMarking: mocktest?.negativeMarking || 0,
+      totalQuestions: mocktest?.totalQuestions || attempt.questions.length
     });
   } catch (err) {
+    console.error("LOAD_EXAM_ERROR:", err);
     res.status(500).json({ message: "Error loading exam paper." });
   }
 };
@@ -94,34 +116,49 @@ export const submitMockTest = async (req, res) => {
   try {
     const { id: attemptId } = req.params;
     const { answers } = req.body;
-    const attempt = await Attempt.findById(attemptId).populate("mocktestId", "totalMarks");
     
+    const attempt = await Attempt.findById(attemptId);
+    if (!attempt) return res.status(404).json({ message: "Attempt not found" });
     if (attempt.status === "completed") return res.status(400).json({ message: "Already submitted." });
+
+    // Get metadata for totalMarks (check both collections)
+    let mocktest = await MockTest.findById(attempt.mocktestId).select("totalMarks negativeMarking").lean();
+    if (!mocktest) {
+      mocktest = await GrandTest.findById(attempt.mocktestId).select("totalMarks negativeMarking").lean();
+    }
 
     let score = 0;
     let correctCount = 0;
     const processedAnswers = [];
 
     for (const q of attempt.questions) {
-      const userAns = answers.find(a => a.questionId === q._id.toString());
+      const userAns = (answers || []).find(a => a.questionId === q._id.toString());
       const selected = userAns ? userAns.selectedAnswer : null;
       let isCorrect = false;
 
+      // Handle marks and negative as valid numbers
+      const qMarks = Number(q.marks) || 0;
+      
+      // Use test-level global negative if > 0, else question default
+      const qNegative = (mocktest?.negativeMarking > 0) 
+        ? mocktest.negativeMarking 
+        : (Number(q.negative) || 0);
+
       if (q.questionType === "mcq") {
-        if (selected !== null && q.correct.includes(Number(selected))) {
-          score += q.marks;
+        if (selected !== null && selected !== undefined && q.correct.includes(Number(selected))) {
+          score += qMarks;
           correctCount++;
           isCorrect = true;
-        } else if (selected !== null) {
-          score -= q.negative;
+        } else if (selected !== null && selected !== undefined) {
+          score -= qNegative;
         }
       } else if (q.questionType === "manual") {
         if (selected?.toString().trim().toLowerCase() === q.correctManualAnswer?.trim().toLowerCase()) {
-          score += q.marks;
+          score += qMarks;
           correctCount++;
           isCorrect = true;
         } else if (selected) {
-          score -= q.negative;
+          score -= qNegative;
         }
       }
       processedAnswers.push({ questionId: q._id, selectedAnswer: selected, isCorrect });
@@ -139,9 +176,10 @@ export const submitMockTest = async (req, res) => {
       score, 
       correctCount, 
       attemptId: attempt._id,
-      totalMarks: attempt.mocktestId?.totalMarks || 0
+      totalMarks: mocktest?.totalMarks || 0
     });
   } catch (err) {
+    console.error("SUBMIT_EXAM_ERROR:", err);
     res.status(500).json({ message: "Submission failed." });
   }
 };

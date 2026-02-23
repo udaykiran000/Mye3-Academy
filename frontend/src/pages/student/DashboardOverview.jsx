@@ -1,300 +1,151 @@
 import React, { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux'; 
 import { fetchPerformanceHistory, fetchPublicMockTests } from '../../redux/studentSlice'; 
+import { fetchStudentDoubts } from '../../redux/doubtSlice';
 import {
-  BookOpen,
-  CheckCircle,
-  TrendingUp,
-  Clock,
-  Calendar,
-  AlertCircle,
-  Trophy
+  BookOpen,
+  CheckCircle,
+  TrendingUp,
+  MessageSquare,
+  Zap,
+  ArrowRight,
+  ShieldCheck,
+  Target,
+  Trophy
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from 'recharts';
 
-import { StatCard, ChartCard } from '../../components/student/DashboardUIKIt';
-import GrandTestRankers from '../../components/student/GrandTestRankers';
-
-// Custom Tooltip
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg text-sm">
-        <p className="font-bold text-gray-800 mb-1">{label}</p>
-        <p className="text-indigo-600 font-semibold">
-          Score: {payload[0].value}
-        </p>
-        <p className="text-gray-500 text-xs mt-1">
-          {payload[0].payload.date}
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
+import { StatCard } from '../../components/student/DashboardUIKIt';
 
 const DashboardOverview = () => {
-  const dispatch = useDispatch();
-  
-  // ✅ 1. Get Data from Redux
-  const { userData } = useSelector((state) => state.user);
-  const { 
-    attemptsHistory, 
-    attemptsHistoryStatus, 
-    publicMocktests, 
-    publicStatus    
-  } = useSelector((state) => state.students);
-  
-  // ✅ 2. Fetch Data on Mount
-  useEffect(() => {
-    // Always fetch latest public tests to check for upcoming grand tests
-    dispatch(fetchPublicMockTests());
+  const dispatch = useDispatch();
+  
+  const { userData } = useSelector((state) => state.user);
+  const { 
+    attemptsHistory, 
+    attemptsHistoryStatus, 
+  } = useSelector((state) => state.students);
+  const { myDoubts, myStatus } = useSelector((state) => state.doubts);
+  
+  useEffect(() => {
+    dispatch(fetchPublicMockTests());
+    if (attemptsHistoryStatus === 'idle') dispatch(fetchPerformanceHistory());
+    if (myStatus === 'idle') dispatch(fetchStudentDoubts());
+  }, [dispatch, attemptsHistoryStatus, myStatus]);
 
-    // Fetch history if not loaded
-    if (attemptsHistoryStatus === 'idle') {
-        dispatch(fetchPerformanceHistory());
-    }
-  }, [dispatch, attemptsHistoryStatus]);
+  const myTests = userData?.purchasedTests || [];
+  const myAttempts = attemptsHistory.length > 0 ? attemptsHistory : (userData?.attempts || []);
 
-  const myTests = userData?.purchasedTests || [];
-  const myAttempts = attemptsHistory.length > 0 ? attemptsHistory : (userData?.attempts || []);
+  const { grandAttempts } = useMemo(() => {
+    return myAttempts.reduce((acc, curr) => {
+      if (curr.mocktestId?.isGrandTest || curr.mocktestId?.title?.toLowerCase().includes("grand")) {
+        acc.grandAttempts.push(curr);
+      }
+      return acc;
+    }, { grandAttempts: [] });
+  }, [myAttempts]);
 
-  // Stats Calculation
-  const avgScore = myAttempts.length > 0
-    ? (myAttempts.reduce((acc, attempt) => acc + (attempt.score || 0), 0) / myAttempts.length).toFixed(0)
-    : 0;
+  const { pendingDoubts } = useMemo(() => {
+    return myDoubts.reduce((acc, curr) => {
+      if (curr.status !== 'answered' && curr.status !== 'resolved') acc.pendingDoubts++;
+      return acc;
+    }, { pendingDoubts: 0 });
+  }, [myDoubts]);
 
-  // Chart Data Preparation
-  const realScoreData = useMemo(() => {
-    if (!myAttempts || myAttempts.length === 0) return [];
-    return myAttempts
-      .filter(a => a.status === 'completed' || a.status === 'finished' || !a.status)
-      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-      .map((attempt) => {
-        const title = attempt.mocktestId?.title || "Test";
-        const shortName = title.length > 15 ? title.substring(0, 12) + '...' : title;
-        return {
-            name: shortName, 
-            fullName: title, 
-            score: attempt.score || 0, 
-            date: new Date(attempt.createdAt).toLocaleDateString() 
-        };
-      });
-  }, [myAttempts]);
+  const avgScore = myAttempts.length > 0
+    ? (myAttempts.reduce((acc, attempt) => acc + (attempt.score || 0), 0) / myAttempts.length).toFixed(1)
+    : "0";
 
-  // =================================================================================
-  // ⭐ FINDS LATEST GLOBAL GRAND TEST ID THAT IS COMPLETED/PAST 
-  // =================================================================================
-  const latestGrandTestIdForRankers = useMemo(() => {
-    if (!publicMocktests || publicMocktests.length === 0) return null;
+  return (
+    <div className="space-y-12 animate-in fade-in duration-700 pb-20">
+      
+      {/* 🚀 PRIMARY METRICS GRID - HIGH IMPACT */}
+      <section>
+        <div className="flex items-center justify-between mb-8">
+           <h2 className="text-sm font-black text-slate-400 uppercase tracking-[4px]">Performance Matrix</h2>
+           <div className="h-px flex-1 bg-slate-100 ml-6"></div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8">
+          <StatCard
+            icon={<BookOpen />}
+            title="Tests Enrolled"
+            value={myTests.length}
+            color="blue"
+          />
+          <StatCard
+            icon={<Zap />}
+            title="Grand Tests"
+            value={grandAttempts.length}
+            color="amber"
+            subValue="ATTEMPTS"
+          />
+          <StatCard
+            icon={<CheckCircle />}
+            title="Total Attempts"
+            value={myAttempts.length}
+            color="emerald"
+          />
+          <StatCard
+            icon={<Target />}
+            title="Avg. Score"
+            value={avgScore} 
+            color="indigo"
+            subValue="/ 100"
+          />
+          <StatCard
+            icon={<MessageSquare />}
+            title="My Doubts"
+            value={pendingDoubts} 
+            color="rose"
+            subValue="PENDING"
+          />
+        </div>
+      </section>
 
-    const now = new Date();
+      {/* ⚡ CLEAN PROGRESS SECTION */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+         <div className="bg-slate-900 rounded-[40px] p-10 text-white relative overflow-hidden group shadow-2xl shadow-indigo-200">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full blur-[120px] opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
+            <div className="relative z-10">
+               <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-indigo-500/20 p-3 rounded-2xl border border-indigo-500/30">
+                     <ShieldCheck className="text-indigo-400" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-[3px] text-indigo-300">Next Recommended Action</span>
+               </div>
+               <h3 className="text-3xl font-black mb-4 tracking-tight">Challenge Your Knowledge</h3>
+               <p className="text-slate-400 font-medium text-lg leading-relaxed mb-8">You have <span className="text-white font-bold">{myTests.length}</span> active test series. Take a mock test now to keep your performance trajectory ascending.</p>
+               <button className="flex items-center gap-3 bg-white text-slate-900 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-indigo-500 hover:text-white transition-all transform active:scale-95">
+                  Go to Mock Tests <ArrowRight size={18} />
+               </button>
+            </div>
+         </div>
 
-    // 1. Filter for all Grand Tests that are in the past
-    const completedGrandTests = publicMocktests.filter(test => {
-        const isGrand = test.isGrandTest === true || test.title?.toLowerCase().includes("grand");
-        if (!isGrand) return false;
-
-        const scheduledTime = new Date(test.scheduledFor || test.availableFrom);
-        
-        // Only include tests whose scheduled time has passed
-        return scheduledTime < now;
-    });
-
-    if (completedGrandTests.length === 0) return null;
-
-    // 2. Sort by scheduled date descending to find the latest completed event
-    const latestCompletedTest = completedGrandTests.sort((a, b) => {
-        const dateA = new Date(a.scheduledFor || a.availableFrom);
-        const dateB = new Date(b.scheduledFor || b.availableFrom);
-        
-        // Sort descending (latest date first)
-        return dateB.getTime() - dateA.getTime();
-    })[0];
-
-    // 3. Return the ID and title of the latest completed test
-    const scheduledTime = new Date(latestCompletedTest.scheduledFor || latestCompletedTest.availableFrom);
-
-    return {
-        id: latestCompletedTest._id,
-        title: latestCompletedTest.title,
-        date: scheduledTime,
-        isCompletedGlobally: true,
-    };
-
-  }, [publicMocktests]);
-// =================================================================================
-
-  // =================================================================================
-  // UPCOMING GRAND TEST LOGIC (FINDS LATEST FUTURE TEST)
-  // =================================================================================
-  const upcomingGrandTest = useMemo(() => {
-    if (!publicMocktests || publicMocktests.length === 0) return null;
-
-    const now = new Date();
-
-    const upcoming = publicMocktests.filter(test => {
-        // 1. Check if Grand Test
-        const isGrand = test.isGrandTest === true || test.title?.toLowerCase().includes("grand");
-        
-        // 2. Determine Event Date (Prefer scheduledFor, fallback to availableFrom)
-        const scheduledDate = test.scheduledFor ? new Date(test.scheduledFor) : null;
-        const availableDate = test.availableFrom ? new Date(test.availableFrom) : null;
-        const targetDate = scheduledDate || availableDate;
-
-        // 3. Strict Future Check
-        const isFuture = targetDate && targetDate > now;
-
-        return isGrand && isFuture;
-    });
-
-    // Sort: Nearest date first
-    const sorted = upcoming.sort((a, b) => {
-        const dateA = new Date(a.scheduledFor || a.availableFrom);
-        const dateB = new Date(b.scheduledFor || b.availableFrom);
-        return dateA - dateB;
-    });
-
-    return sorted[0] || null;
-  }, [publicMocktests]);
-// =================================================================================
-
-  // Helper date formatter
-  const formatDate = (dateString) => {
-    if(!dateString) return "";
-    return new Date(dateString).toLocaleString('en-IN', { 
-      day: 'numeric', month: 'short', year: 'numeric', 
-      hour: '2-digit', minute: '2-digit' 
-    });
-  };
-
-  return (
-    <div className="grid grid-cols-1 gap-8 animate-fade-in">
-      
-      {/* 🟢 UPCOMING GRAND TEST BANNER */}
-      {upcomingGrandTest && (
-         <div className="bg-gradient-to-r from-indigo-900 to-purple-800 rounded-2xl shadow-xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden border border-indigo-700/50">
-            {/* Background Decorations */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-            
-            <div className="flex items-start gap-5 z-10">
-                <div className="bg-white/10 p-4 rounded-xl backdrop-blur-md border border-white/10 shadow-inner">
-                    <Calendar className="w-8 h-8 text-yellow-400" />
-                </div>
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="bg-yellow-500 text-yellow-950 text-[10px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">
-                            Coming Soon
-                        </span>
-                        <span className="text-indigo-200 text-xs font-medium flex items-center gap-1">
-                            <AlertCircle size={12}/> Mark your calendar
-                        </span>
-                    </div>
-                    <h3 className="text-2xl font-bold text-white tracking-tight">{upcomingGrandTest.title}</h3>
-                    <p className="text-indigo-200 mt-1 text-sm">
-                        Scheduled for: <span className="font-bold text-white ml-1 text-lg">{formatDate(upcomingGrandTest.scheduledFor || upcomingGrandTest.availableFrom)}</span>
-                    </p>
-                </div>
-            </div>
-         </div>
-      )}
-
-      {/* 📊 STATS CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard
-          icon={<BookOpen className="text-blue-500" />}
-          title="Tests Enrolled"
-          value={myTests.length}
-          color="blue"
-        />
-        <StatCard
-          icon={<CheckCircle className="text-green-500" />}
-          title="Tests Completed"
-          value={myAttempts.length}
-          color="green"
-        />
-        <StatCard
-          icon={<TrendingUp className="text-indigo-500" />}
-          title="Average Score"
-          value={`${avgScore}`} 
-          color="indigo"
-        />
-      </div>
-
-      {/* 🏆 LATEST GRAND TEST RESULT */}
-      <section className="mb-2">
-          <div className="flex items-center justify-between mb-6">
-             <h2 className="text-xl font-bold text-gray-800 border-l-4 border-yellow-500 pl-3 flex items-center gap-2">
-                🏆 Latest Grand Test Result
-             </h2>
-             {latestGrandTestIdForRankers && (
-                <span className="text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                    Most Recent Event
-                </span>
-             )}
-          </div>
-          <div className="w-full">
-            {latestGrandTestIdForRankers ? (
-              <GrandTestRankers 
-                key={latestGrandTestIdForRankers.id} 
-                mockTestId={latestGrandTestIdForRankers.id} 
-                testTitle={latestGrandTestIdForRankers.title} 
-              />
-            ) : (
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center h-48 text-gray-500">
-                    <Trophy className="w-10 h-10 mb-2 opacity-50" />
-                    <p>No completed Grand Tests found to display ranks.</p>
-                </div>
-            )}
-          </div>
-        </section>
-      
-      {/* 📈 REAL SCORE CHART */}
-      <div className="w-full">
-        <ChartCard title="Mock Test Performance">
-          {realScoreData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={realScoreData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                <XAxis 
-                    dataKey="name" 
-                    stroke="#9ca3af" 
-                    tick={{fontSize: 12}}
-                    interval="preserveStartEnd"
-                />
-                <YAxis stroke="#9ca3af" unit="" />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ paddingTop: '20px' }}/>
-                <Line 
-                    type="monotone" 
-                    dataKey="score" 
-                    name="Score"
-                    stroke="#4f46e5" 
-                    strokeWidth={3} 
-                    dot={{ r: 4, fill: '#4f46e5', strokeWidth: 2, stroke: '#fff' }} 
-                    activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-[300px] flex flex-col items-center justify-center text-gray-400">
-                <Clock className="w-12 h-12 mb-2 opacity-50" />
-                <p>No mock test attempts yet.</p>
-            </div>
-          )}
-        </ChartCard>
-      </div>
-    </div>
-  );
+         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl transition-all group cursor-pointer">
+               <div className="bg-amber-50 w-14 h-14 rounded-2xl flex items-center justify-center text-amber-500 mb-6 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-500">
+                  <Trophy size={28} />
+               </div>
+               <h4 className="text-xl font-black text-slate-800 mb-2">Grand Rankings</h4>
+               <p className="text-slate-400 font-medium text-sm">Check your standing in recent state-level events.</p>
+               <div className="mt-6 flex items-center gap-2 text-amber-600 font-black uppercase tracking-widest text-[10px]">
+                  View Leaderboard <ArrowRight size={14} />
+               </div>
+            </div>
+            
+            <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl transition-all group cursor-pointer">
+               <div className="bg-rose-50 w-14 h-14 rounded-2xl flex items-center justify-center text-rose-500 mb-6 group-hover:bg-rose-500 group-hover:text-white transition-colors duration-500">
+                  <TrendingUp size={28} />
+               </div>
+               <h4 className="text-xl font-black text-slate-800 mb-2">History Matrix</h4>
+               <p className="text-slate-400 font-medium text-sm">Analyze every attempt and fix weak areas.</p>
+               <div className="mt-6 flex items-center gap-2 text-rose-600 font-black uppercase tracking-widest text-[10px]">
+                  Analyze History <ArrowRight size={14} />
+               </div>
+            </div>
+         </div>
+      </section>
+    </div>
+  );
 };
 
 export default DashboardOverview;

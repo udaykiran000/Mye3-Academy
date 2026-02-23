@@ -5,6 +5,7 @@ import { fetchPublicTestById } from "../redux/mockTestSlice";
 import { addItemToCart } from "../redux/cartSlice";
 import { toast } from "react-toastify";
 import { CgSpinner } from "react-icons/cg";
+import api from "../api/axios";
 import {
     FaClock,
     FaQuestionCircle,
@@ -31,9 +32,14 @@ export default function MockTestDetail() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const userData = useSelector((state) => state.user.userData);
+    const { userData, myMockTests } = useSelector((state) => state.user);
     const cartItems = useSelector((state) => state.cart.cartItems || []);
     const isAlreadyInCart = cartItems.some((item) => item._id === id);
+
+    // Ownership Check
+    const isPurchased = userData?.purchasedTests?.some(pid => 
+        pid === id || (pid._id && pid._id === id)
+    ) || myMockTests?.some(t => t._id === id);
 
     const test = useSelector((state) => state.mocktest.selectedMocktest);
     const status = useSelector((state) => state.mocktest.selectedStatus);
@@ -79,10 +85,13 @@ export default function MockTestDetail() {
     if (!test) return null;
 
     // FINAL FIXED IMAGE URL
-    const imageURL =
-        test.thumbnail?.startsWith("http")
-            ? test.thumbnail
-            : `${import.meta.env.VITE_SERVER_URL}/${test.thumbnail?.replace(/\\/g, "/")}`;
+    const imageURL = test.thumbnail
+        ? (
+            test.thumbnail.startsWith("http")
+                ? test.thumbnail
+                : (api.defaults.baseURL?.replace(/\/api$/, "") || "") + (test.thumbnail.startsWith("/") ? "" : "/") + test.thumbnail
+        )
+        : "https://placehold.co/600x400?text=Image+Not+Found";
 
     return (
         <div className="bg-gray-50 min-h-screen pt-24 pb-16 text-gray-900">
@@ -124,11 +133,11 @@ export default function MockTestDetail() {
 
                         {/* DETAILS */}
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-                            <DetailItem icon={<FaQuestionCircle />} label="Questions" value={test.totalQuestions} />
-                            <DetailItem icon={<FaClock />} label="Duration" value={`${test.durationMinutes} min`} />
-                            <DetailItem icon={<FaCheck />} label="Marks" value={test.totalMarks} />
-                            <DetailItem icon={<FaMinusCircle />} label="Negative Marking" value={test.negativeMarking} />
-                            <DetailItem icon={<FaBook />} label="Subjects" value={test.subjects?.map((s) => s.name).join(", ")} />
+                            <DetailItem icon={<FaQuestionCircle />} label="Questions" value={test.totalQuestions || 0} />
+                            <DetailItem icon={<FaClock />} label="Duration" value={`${Number(test.durationMinutes) || (Number(test.totalQuestions) * 2) || 30} min`} />
+                            <DetailItem icon={<FaCheck />} label="Marks" value={test.totalMarks || 0} />
+                            <DetailItem icon={<FaMinusCircle />} label="Negative Marking" value={test.negativeMarking || 0} />
+                            <DetailItem icon={<FaBook />} label="Subjects" value={test.subjects?.map((s) => s.name).join(", ") || "General"} />
                         </div>
 
                         <h2 className="text-2xl font-bold mb-3 text-gray-900">Description</h2>
@@ -138,10 +147,9 @@ export default function MockTestDetail() {
                     {/* RIGHT SIDE */}
                     <aside className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xl sticky top-24 h-fit text-center">
 
-                        {/* FINAL PRICE FIX - CORRECTED LOGIC */}
+                        {/* FINAL PRICE FIX */}
                         <div className="mb-6">
                             {test.price > 0 ? (
-                                // Check for a valid discount price
                                 test.discountPrice > 0 && test.discountPrice < test.price ? (
                                     <>
                                         <span className="text-lg text-gray-400 line-through block mb-1">
@@ -152,27 +160,34 @@ export default function MockTestDetail() {
                                         </span>
                                     </>
                                 ) : (
-                                    // No discount, display original price
                                     <span className="text-4xl font-extrabold text-indigo-600">
                                         ₹{test.price}
                                     </span>
                                 )
                             ) : (
-                                // Price is 0 or less, display FREE
                                 <span className="text-4xl font-extrabold text-green-600">FREE</span>
                             )}
                         </div>
 
-                        <button
-                            onClick={handleAddToCart}
-                            className={`w-full py-4 rounded-xl text-lg font-bold text-white shadow-lg transition transform hover:scale-[1.02] ${
-                                isAlreadyInCart
-                                    ? "bg-green-600 hover:bg-green-700"
-                                    : "bg-indigo-600 hover:bg-indigo-700"
-                            }`}
-                        >
-                            {isAlreadyInCart ? "Go to Cart" : "Add to Cart"}
-                        </button>
+                        {(test.price > 0 && !isPurchased) ? (
+                            <button
+                                onClick={handleAddToCart}
+                                className={`w-full py-4 rounded-xl text-lg font-bold text-white shadow-lg transition transform hover:scale-[1.02] ${
+                                    isAlreadyInCart
+                                        ? "bg-green-600 hover:bg-green-700"
+                                        : "bg-indigo-600 hover:bg-indigo-700"
+                                }`}
+                            >
+                                {isAlreadyInCart ? "Go to Cart" : "Add to Cart"}
+                            </button>
+                        ) : (
+                            <Link
+                                to={`/student/instructions/${test._id}`}
+                                className="inline-block w-full py-4 rounded-xl text-lg font-bold text-white shadow-lg transition transform hover:scale-[1.02] bg-emerald-600 hover:bg-emerald-700 text-center"
+                            >
+                                Start Exam Now
+                            </Link>
+                        )}
                     </aside>
                 </div>
             </div>

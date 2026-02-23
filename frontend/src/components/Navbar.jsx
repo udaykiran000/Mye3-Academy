@@ -85,6 +85,9 @@ const Navbar = () => {
   } else if (role === "instructor") {
     dashboardPath = "/instructor-dashboard";
     dashboardLabel = "Instructor Panel";
+  } else if (role === "institution") {
+    dashboardPath = "/institution-dashboard";
+    dashboardLabel = "Institution Portal";
   }
 
   const currentCategoryName =

@@ -1,121 +1,93 @@
-import React, { useState, useEffect } from "react";
-import { FaUserGraduate, FaBook, FaCheckCircle } from "react-icons/fa";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  FaUserGraduate,
+  FaClipboardList,
+  FaQuestionCircle,
+} from "react-icons/fa";
 import { ClipLoader } from "react-spinners";
-import api from "../../api/axios";
+
 import StatCard from "../../components/admin/StatCard";
+import { fetchInstitutionStats } from "../../redux/institutionDashboardSlice";
 
 const InstitutionDashboardPage = () => {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+
+  const { stats, loading, error } = useSelector(
+    (state) => state.institutionDashboard || {}
+  );
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await api.get("/api/institution/dashboard-stats");
-        setStats(response.data);
-      } catch (err) {
-        setError("Failed to fetch dashboard data");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, []);
+    dispatch(fetchInstitutionStats());
+  }, [dispatch]);
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center h-[80vh]">
-        <ClipLoader size={60} color={"#ffffff"} />
-        <p className="mt-4 text-white font-medium">Loading institution dashboard...</p>
+      <div className="flex justify-center items-center h-screen bg-gray-50">
+        <ClipLoader size={60} color={"#4f46e5"} />
+        <p className="ml-4 text-indigo-600 font-medium">
+          Loading institution dashboard...
+        </p>
       </div>
     );
   }
 
-  if (error) {
+  if (error || !stats) {
     return (
-      <div className="bg-red-500/10 border border-red-500 text-red-500 p-6 rounded-xl text-center">
-        {error}
+      <div className="text-red-500 text-center p-6 bg-red-50 border rounded-xl m-10">
+        Dashboard Error: {error || "Failed to load statistics"}
       </div>
     );
   }
 
   return (
-    <div className="py-6">
-      <div className="mb-8">
-        <h1 className="text-4xl font-extrabold text-white mb-2">Institution Dashboard</h1>
-        <p className="text-white/70">Overview of your registered students and performance</p>
-      </div>
+    <div className="p-4 bg-gray-50 md:p-10 min-h-screen">
+      <h1 className="text-4xl font-extrabold mb-2 text-slate-900">
+        Institution Overview
+      </h1>
+      <p className="text-lg text-indigo-600 mb-10">
+        Monitor your campus student activity and performance.
+      </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         <StatCard
-          title="Our Students"
-          value={stats?.students || 0}
+          title="Campus Students"
+          value={stats.students || 0}
           icon={<FaUserGraduate />}
-          bgColor="bg-white/10 backdrop-blur-md border border-white/20"
-          iconColor="text-white"
+          bgColor="bg-white border border-slate-100 shadow-sm"
+          iconColor="text-indigo-600 bg-indigo-50 p-3 rounded-xl"
         />
-        <StatCard
-          title="Available Tests"
-          value={stats?.tests || 0}
-          icon={<FaBook />}
-          bgColor="bg-white/10 backdrop-blur-md border border-white/20"
-          iconColor="text-white"
-        />
+
         <StatCard
           title="Total Attempts"
-          value={stats?.attempts || 0}
-          icon={<FaCheckCircle />}
-          bgColor="bg-white/10 backdrop-blur-md border border-white/20"
-          iconColor="text-white"
+          value={stats.attempts || 0}
+          icon={<FaClipboardList />}
+          bgColor="bg-white border border-slate-100 shadow-sm"
+          iconColor="text-orange-600 bg-orange-50 p-3 rounded-xl"
+        />
+
+        <StatCard
+          title="Raised Doubts"
+          value={stats.doubts || 0}
+          icon={<FaQuestionCircle />}
+          bgColor="bg-white border border-slate-100 shadow-sm"
+          iconColor="text-purple-600 bg-purple-50 p-3 rounded-xl"
         />
       </div>
 
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-800">Recently Registered Students</h2>
+      <div className="mt-12 p-8 bg-indigo-600 rounded-3xl shadow-2xl relative overflow-hidden">
+        <div className="relative z-10 w-full md:w-2/3">
+           <h2 className="text-3xl font-black text-white mb-4">Empower Your Campus</h2>
+           <p className="text-indigo-100 text-lg leading-relaxed mb-6">
+             Manage your students effortlessly. Track their progress through mock tests, monitor their doubts, and ensure they are ready for their exams.
+           </p>
+           <div className="flex gap-4">
+              <button className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition-colors shadow-lg">
+                View Performance
+              </button>
+           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50/50">
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Student Name</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Phone</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {stats?.studentList?.map((student) => (
-                <tr key={student._id} className="hover:bg-gray-50 transition duration-150">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="h-10 w-10 flex-shrink-0 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
-                        {student.firstname.charAt(0)}
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-bold text-gray-900">{student.firstname} {student.lastname}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{student.email}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{student.phoneNumber}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${student.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {student.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {(!stats?.studentList || stats.studentList.length === 0) && (
-                <tr>
-                  <td colSpan="4" className="px-6 py-10 text-center text-gray-500 italic">No students registered under your institution yet.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
       </div>
     </div>
   );

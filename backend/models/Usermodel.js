@@ -53,8 +53,8 @@ const userSchema = new mongoose.Schema(
     },
 
     // 🛒 Cart & Tests
-    cart: [{ type: mongoose.Schema.Types.ObjectId, ref: "MockTest" }],
-    purchasedTests: [{ type: mongoose.Schema.Types.ObjectId, ref: "MockTest" }],
+    cart: [{ type: mongoose.Schema.Types.ObjectId }],
+    purchasedTests: [{ type: mongoose.Schema.Types.ObjectId }],
     attempts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Attempt" }],
     
     // 🚩 Tracking Fields

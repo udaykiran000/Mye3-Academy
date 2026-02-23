@@ -1,18 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../api/axios";
 import toast from "react-hot-toast";
 import { clearCart } from "../redux/cartSlice";
-import { setUserData } from "../redux/userSlice";
+import { setUserData, fetchMyMockTests } from "../redux/userSlice";
 import { ShoppingCart, User, Mail, Phone, Loader } from "lucide-react";
 
 export default function Checkout() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const location = useLocation();
 
-    const cartItems = useSelector((state) => state.cart.cartItems || []);
+    const allCartItems = useSelector((state) => state.cart.cartItems || []);
     const user = useSelector((state) => state.user.userData);
+
+    // Filter to selected items if state exists
+    const selectedIds = location.state?.selectedIds || [];
+    const cartItems = selectedIds.length > 0
+        ? allCartItems.filter(item => selectedIds.includes(item._id))
+        : allCartItems;
     
     // STATE FOR DYNAMIC CONFIG
     const [paymentConfig, setPaymentConfig] = useState(null);
@@ -35,10 +42,18 @@ export default function Checkout() {
     }, []);
 
     // ---------- PRICE LOGIC ----------
-    const subtotal = cartItems.reduce((acc, item) => acc + (item.discountPrice > 0 ? item.discountPrice : item.price), 0);
+    const subtotal = cartItems.reduce((acc, item) => {
+        const itemPrice = Number(item.discountPrice) > 0 && Number(item.discountPrice) < Number(item.price) 
+            ? Number(item.discountPrice) 
+            : Number(item.price);
+        return acc + (itemPrice > 0 ? itemPrice : 0);
+    }, 0);
+
     const discount = cartItems.reduce((acc, item) => {
-        const fullPrice = item.price || 0;
-        const finalPrice = item.discountPrice > 0 ? item.discountPrice : item.price;
+        const fullPrice = Number(item.price) || 0;
+        const finalPrice = (Number(item.discountPrice) > 0 && Number(item.discountPrice) < fullPrice) 
+            ? Number(item.discountPrice) 
+            : fullPrice;
         return acc + (fullPrice - finalPrice);
     }, 0);
 
@@ -92,6 +107,8 @@ export default function Checkout() {
                 toast.success("Mock Payment Successful!");
                 dispatch(setUserData(verify.data.user));
                 dispatch(clearCart());
+                // 🔄 REFRESH Enrolled Tests immediately
+                await dispatch(fetchMyMockTests()); 
                 navigate("/student-dashboard");
             } else {
                 toast.error("Mock Verification failed");
@@ -118,6 +135,8 @@ export default function Checkout() {
                     toast.success("Enrolled Successfully!", { id: toastId });
                     dispatch(setUserData(res.data.user));
                     dispatch(clearCart());
+                    // 🔄 REFRESH
+                    await dispatch(fetchMyMockTests());
                     navigate("/student-dashboard");
                 } else {
                     toast.error("Enrollment failed", { id: toastId });
@@ -159,12 +178,12 @@ export default function Checkout() {
 
 
                 const options = {
-                    key: paymentConfig.keyId, // <--- DYNAMIC KEY FROM DB
+                    key: paymentConfig.keyId,
                     amount: order.amount,
-                    currency: paymentConfig.currency,
-                    name: "GrandTest Store",
-                    description: "Mock Test Purchase",
-                    order_id: order.id,
+                    currency: paymentConfig.currency || "INR",
+                    name: "MYE 3 Academy",
+                    description: "Test Purchase",
+                    order_id: order.id, // Now matches backend "id"
                     handler: async function (response) {
                         try {
                             const verify = await api.post("/api/payment/verify-payment", {
@@ -179,6 +198,8 @@ export default function Checkout() {
                                 toast.success("Payment Successful!", { id: toastId });
                                 dispatch(setUserData(verify.data.user));
                                 dispatch(clearCart());
+                                // 🔄 REFRESH
+                                await dispatch(fetchMyMockTests());
                                 navigate("/student-dashboard");
                             } else {
                                 toast.error("Verification failed", { id: toastId });
@@ -197,7 +218,6 @@ export default function Checkout() {
 
                 toast.dismiss(toastId);
                 const rp = new window.Razorpay(options);
-                rp.open();
                 rp.open();
             } catch (err) {
                 console.error("Payment Init Error:", err);
@@ -281,12 +301,21 @@ export default function Checkout() {
                     <div className="md:col-span-2 bg-white p-5 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
                         <h2 className="text-xl sm:text-2xl font-bold mb-4 border-b border-gray-100 pb-2">Items ({cartItems.length})</h2>
                         <div className="space-y-2 max-h-72 sm:max-h-80 overflow-y-auto pr-1">
-                            {cartItems.map((item) => (
-                                <div key={item._id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                                    <span className="text-sm sm:text-base text-gray-700">{item.title}</span>
-                                    <span className="font-bold text-sm text-indigo-600">{item.discountPrice === 0 ? "FREE" : `₹${item.discountPrice > 0 ? item.discountPrice : item.price}`}</span>
-                                </div>
-                            ))}
+                            {cartItems.map((item) => {
+                                const itemPrice = Number(item.discountPrice) > 0 && Number(item.discountPrice) < Number(item.price) 
+                                    ? Number(item.discountPrice) 
+                                    : Number(item.price);
+                                const isItemFree = itemPrice <= 0;
+
+                                return (
+                                    <div key={item._id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                        <span className="text-sm sm:text-base text-gray-700">{item.title}</span>
+                                        <span className="font-bold text-sm text-indigo-600">
+                                            {isItemFree ? "FREE" : `₹${itemPrice}`}
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </div>
                         <div className="mt-6 pt-4 border-t border-gray-100 space-y-2 text-sm sm:text-base">
                             <div className="flex justify-between text-gray-600"><span>Subtotal:</span><span>₹{subtotal.toFixed(2)}</span></div>

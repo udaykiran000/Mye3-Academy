@@ -1,4 +1,5 @@
 import MockTest from "../../models/MockTest.js";
+import GrandTest from "../../models/GrandTest.js";
 import Category from "../../models/Category.js";
 
 /**
@@ -16,32 +17,40 @@ export const getAllCategories = async (req, res) => {
 };
 
 /**
- * 2. Get All Published Mock Tests
+ * 2. Get All Published Mock Tests (Combined)
  */
 export const getPublishedMockTests = async (req, res) => {
   try {
-    // 1. Capture the category slug from the query string (?category=banking)
     const { category } = req.query;
-
-    // 2. Setup base filter for published tests
     let filter = { isPublished: true };
 
-    // 3. If a specific category is requested (and not 'all'), add to filter
-    // We trim and lowercase to prevent matching errors
     if (category && category.toLowerCase() !== "all") {
       filter.categorySlug = category.toLowerCase().trim();
     }
 
-    // 4. Execute query with population
-    const tests = await MockTest.find(filter)
-      .populate("category", "name slug")
-      .select("-questionIds -attempts") // Optimized: Exclude unnecessary data
-      .sort({ createdAt: -1 });
+    // Fetch from both collections in parallel
+    const [mockTests, grandTests] = await Promise.all([
+      MockTest.find(filter)
+        .populate("category", "name slug")
+        .select("-questions -attempts")
+        .lean(),
+      GrandTest.find(filter)
+        .populate("category", "name slug")
+        .select("-questions -attempts")
+        .lean(),
+    ]);
 
-    // 5. Standardized response key 'mocktests' for frontend sync
+    // Robustness: Ensure grand tests have the flag
+    const processedGrand = grandTests.map(t => ({ ...t, isGrandTest: true }));
+
+    // Combine and sort by newest first
+    const combined = [...mockTests, ...processedGrand].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
     res.status(200).json({
       success: true,
-      mocktests: tests,
+      mocktests: combined,
     });
   } catch (err) {
     console.error("PUBLIC_MOCKTEST_FETCH_ERROR:", err.message);
@@ -54,13 +63,21 @@ export const getPublishedMockTests = async (req, res) => {
  */
 export const getMockTestById = async (req, res) => {
   try {
-    console.log("DEBUG: getMockTestById params:", req.params);
-    const test = await MockTest.findById(req.params.id)
-      .populate("category", "name slug")
-      .select("-questionIds");
-    console.log("DEBUG: getMockTestById result:", test ? "Found" : "Not Found");
+    const { id } = req.params;
     
-    if (!test) return res.status(404).json({ message: "MockTest not found" });
+    // Search both collections
+    let test = await MockTest.findById(id)
+      .populate("category", "name slug")
+      .select("-questions -attempts"); 
+      
+    if (!test) {
+      test = await GrandTest.findById(id)
+        .populate("category", "name slug")
+        .select("-questions -attempts");
+    }
+
+    if (!test) return res.status(404).json({ message: "Mocktest not found" });
+    
     res.status(200).json({ success: true, test });
   } catch (err) {
     console.error("GET_MOCKTEST_BY_ID_ERROR:", err);

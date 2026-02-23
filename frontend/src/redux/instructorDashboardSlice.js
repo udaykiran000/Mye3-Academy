@@ -9,7 +9,7 @@ export const fetchInstructorStats = createAsyncThunk(
   "instructorDashboard/fetchStats",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await api.get("/api/instructor/dashboard-stats");
+      const res = await api.get("/api/instructor/stats");
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Stats fetch failed");

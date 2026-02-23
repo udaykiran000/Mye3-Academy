@@ -1,12 +1,32 @@
 import User from "../../models/Usermodel.js";
 import MockTest from "../../models/MockTest.js";
+import GrandTest from "../../models/GrandTest.js";
+
+/**
+ * Helper: Find a test by ID in both collections
+ */
+const findTestById = async (id) => {
+  let test = await MockTest.findById(id).select('title price discountPrice thumbnail imageUrl categorySlug');
+  if (!test) {
+    test = await GrandTest.findById(id).select('title price discountPrice thumbnail imageUrl categorySlug');
+    if (test) {
+      test = test.toObject();
+      test.isGrandTest = true; // Flag for frontend
+    }
+  } else {
+    test = test.toObject();
+  }
+  return test;
+};
 
 // Helper: ensure each cart item has imageUrl (fallback to thumbnail)
-const normalizeCartItems = (cartArr) => {
-  // cartArr: array of MockTest documents (populated)
-  // convert to plain objects and ensure imageUrl exists
-  return cartArr.map((doc) => {
-    const obj = (doc && doc.toObject) ? doc.toObject() : doc;
+const normalizeCartItems = async (cartIds) => {
+  if (!cartIds || cartIds.length === 0) return [];
+  
+  // Resolve each ID to a full object from its respective collection
+  const items = await Promise.all(cartIds.map(id => findTestById(id)));
+  
+  return items.filter(Boolean).map((obj) => {
     // prefer existing imageUrl, otherwise use thumbnail if present
     if (!obj.imageUrl && obj.thumbnail) {
       obj.imageUrl = obj.thumbnail;
@@ -20,17 +40,13 @@ const normalizeCartItems = (cartArr) => {
 // @access  Private
 export const getCart = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).populate({
-      path: 'cart',
-      model: 'MockTest',
-      select: 'title price discountPrice thumbnail imageUrl categorySlug' // include thumbnail
-    });
+    const user = await User.findById(req.user.id).select('cart');
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const normalized = normalizeCartItems(user.cart || []);
+    const normalized = await normalizeCartItems(user.cart || []);
     return res.json(normalized);
   } catch (error) {
     console.error("GET_CART_ERROR:", error);
@@ -51,27 +67,24 @@ export const addToCart = async (req, res) => {
 
     const userId = req.user.id;
 
-    // Check test exists
-    const test = await MockTest.findById(mockTestId).select('title price discountPrice thumbnail imageUrl categorySlug');
+    // Check test exists in either collection
+    const test = await findTestById(mockTestId);
     if (!test) {
-      return res.status(404).json({ message: "Mock test not found" });
+      return res.status(404).json({ message: "Mock test not found in registry" });
     }
 
     const user = await User.findByIdAndUpdate(
       userId,
       { $addToSet: { cart: mockTestId } },   
       { new: true }
-    ).populate({
-      path: 'cart',
-      model: 'MockTest',
-      select: 'title price discountPrice thumbnail imageUrl categorySlug'
-    });
+    );
 
-    const normalized = normalizeCartItems(user.cart || []);
+    const normalized = await normalizeCartItems(user.cart || []);
+    
     // Return both the new item and the updated cart (frontend expects newItem)
     return res.json({
       message: "Added to cart",
-      newItem: (test && test.toObject) ? (() => { const o = test.toObject(); if(!o.imageUrl && o.thumbnail) o.imageUrl = o.thumbnail; return o; })() : test,
+      newItem: test,
       cart: normalized
     });
 
@@ -82,24 +95,25 @@ export const addToCart = async (req, res) => {
 };
 
 // @desc    Remove item from cart
-// @route   DELETE /api/cart/remove/:mocktestId
+// @route   DELETE /api/cart/remove/:id
 // @access  Private
 export const removeFromCart = async (req, res) => {
   try {
-    const { mocktestId } = req.params;
+    // Route uses :id, so use req.params.id
+    const { id } = req.params;
     const userId = req.user.id;
+
+    if (!id) {
+        return res.status(400).json({ success: false, message: "Item ID required" });
+    }
 
     const user = await User.findByIdAndUpdate(
       userId,
-      { $pull: { cart: mocktestId } }, // $pull removes the item
+      { $pull: { cart: id } }, 
       { new: true }
-    ).populate({
-      path: 'cart',
-      model: 'MockTest',
-      select: 'title price discountPrice thumbnail imageUrl categorySlug'
-    });
+    );
 
-    const normalized = normalizeCartItems(user.cart || []);
+    const normalized = await normalizeCartItems(user.cart || []);
     return res.json(normalized);
   } catch (error) {
     console.error("REMOVE_FROM_CART_ERROR:", error);

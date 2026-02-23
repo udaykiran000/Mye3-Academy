@@ -204,7 +204,7 @@ const InstructionsPage = () => {
             },
             {
               label: "Time Limit",
-              value: `${durationMinutes} Mins`,
+              value: `${Number(durationMinutes) || (Number(totalQuestions) * 2) || 30} Mins`,
               icon: Clock,
               color: "text-blue-500",
             },
@@ -275,7 +275,9 @@ const InstructionsPage = () => {
                     <p className="text-[10px] font-bold text-emerald-600 uppercase">
                       Correct
                     </p>
-                    <p className="text-sm font-bold text-emerald-700">+1</p>
+                    <p className="text-sm font-bold text-emerald-700">
+                      +{totalQuestions > 0 ? (totalMarks / totalQuestions).toFixed(1).replace(/\.0$/, '') : 1}
+                    </p>
                   </div>
                   <div className="bg-red-50 p-2 rounded border border-red-100">
                     <p className="text-[10px] font-bold text-red-600 uppercase">

@@ -47,13 +47,9 @@ const MyTestCard = ({ test }) => {
             : { bg: isGrandTest ? "from-indigo-500 to-purple-400" : "from-cyan-500 to-teal-400", text: isGrandTest ? "text-indigo-400" : "text-cyan-400" };
 
     const handleStart = () => {
-        // Prioritize START/RESUME over View Report
-        if (isReadyForNewAttempt || test.status === 'not_started' || test.status === 'in-progress') {
+        // Prioritize START/RESUME/RE-ATTEMPT over View Report
+        if (isReadyForNewAttempt || test.status === 'not_started' || test.status === 'in-progress' || isCompleted) {
             navigate(`/student/instructions/${test._id}`);
-        } else if (isCompleted) {
-            // If completed AND no new purchase is available, navigate to the general performance page
-            // ⭐ FIX: Change navigation target to the general student dashboard route.
-            navigate(`/student-dashboard`); 
         }
     };
     
@@ -62,7 +58,7 @@ const MyTestCard = ({ test }) => {
     let bannerStatus = "READY";
     
     if (isCompleted && !isReadyForNewAttempt) {
-        buttonText = "Completed";
+        buttonText = "Re-attempt Exam";
         bannerStatus = "COMPLETED";
     } else if (isInProgress) {
         buttonText = "Resume Exam";
@@ -114,8 +110,8 @@ const MyTestCard = ({ test }) => {
                 </h3>
 
                 <div className="grid grid-cols-3 gap-x-2 py-4 mt-4 border-t border-b border-gray-700/40">
-                    <StatItem icon={Clock} value={test.durationMinutes} label="Min" accentColorClass={accent.text} />
-                    <StatItem icon={BookOpen} value={test.totalQuestions} label="Questions" accentColorClass={accent.text} />
+                    <StatItem icon={Clock} value={Number(test.durationMinutes) || (Number(test.totalQuestions) * 2) || 30} label="Min" accentColorClass={accent.text} />
+                    <StatItem icon={BookOpen} value={test.totalQuestions || 0} label="Questions" accentColorClass={accent.text} />
                     <StatItem icon={BarChart2} value={test.attemptsMade || 0} label="Attempts" accentColorClass={accent.text} />
                 </div>
             </div>
