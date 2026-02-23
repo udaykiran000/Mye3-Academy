@@ -5,7 +5,11 @@ const router = express.Router();
 import { isAuth } from "../../middleware/isAuth.js";
 
 // Controllers - Go up 2 levels to reach controllers/instructor folder
-import { getInstructorDashboardStats } from "../../controllers/instructor/instructorDashboardController.js";
+import { 
+    getInstructorDashboardStats,
+    getAllStudentsForInstructor,
+    getStudentActivityForInstructor
+} from "../../controllers/instructor/instructorDashboardController.js";
 
 /* ============================================================
    INSTRUCTOR DASHBOARD ROUTES
@@ -17,5 +21,17 @@ import { getInstructorDashboardStats } from "../../controllers/instructor/instru
  * @access  Private (Instructor only)
  */
 router.get("/stats", isAuth, getInstructorDashboardStats);
+
+/**
+ * @route   GET /api/instructor/students
+ * @desc    Get all students with metrics (Read-only)
+ */
+router.get("/students", isAuth, getAllStudentsForInstructor);
+
+/**
+ * @route   GET /api/instructor/students/:id/activity
+ * @desc    Get detailed activity for a specific student
+ */
+router.get("/students/:id/activity", isAuth, getStudentActivityForInstructor);
 
 export default router;

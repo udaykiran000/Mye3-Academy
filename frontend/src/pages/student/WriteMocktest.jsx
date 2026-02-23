@@ -244,14 +244,18 @@ const QuestionRenderer = ({ question, answers, handleAnswer }) => {
         )}
       </div>
 
-      {/* FOOTER (marks / negative) */}
+      {/* FOOTER (dynamic markings) */}
       <div className="flex justify-between items-center text-sm font-medium text-gray-600 pt-3 border-t border-gray-100">
         <span>
-          Marks: <strong>{question.marks || 1}</strong>
+          Marks: <strong>{question.marksPerQuestion || question.marks || 1}</strong>
         </span>
         <span>
           Negative:{" "}
-          <strong className="text-red-500">{question.negative || 0}</strong>
+          <strong className="text-red-500">
+            {question.globalNegative !== undefined && question.globalNegative > 0 
+                ? question.globalNegative 
+                : (question.negative || 0)}
+          </strong>
         </span>
       </div>
     </div>
@@ -735,7 +739,13 @@ const WriteMocktest = () => {
             {current && (current.id || current._id) ? (
               <div className="bg-white p-6 rounded-xl shadow-lg">
                 <QuestionRenderer
-                  question={current}
+                  question={{
+                    ...current,
+                    marksPerQuestion: attempt.totalQuestions > 0 
+                        ? (attempt.totalMarks / attempt.totalQuestions).toFixed(1).replace(/\.0$/, '') 
+                        : current.marks,
+                    globalNegative: attempt.negativeMarking
+                  }}
                   answers={answers}
                   handleAnswer={handleAnswer}
                 />

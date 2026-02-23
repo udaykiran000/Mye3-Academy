@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const AttemptSchema = new mongoose.Schema(
   {
     studentId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    mocktestId: { type: mongoose.Schema.Types.ObjectId, ref: "MockTest", required: true },
+    mocktestId: { type: mongoose.Schema.Types.ObjectId, required: true },
 
     questions: Array,
 

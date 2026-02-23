@@ -1,8 +1,10 @@
 import MockTest from "../../models/MockTest.js";
+import GrandTest from "../../models/GrandTest.js";
+import Category from "../../models/Category.js";
 import Attempt from "../../models/Attempt.js";
 
 import mongoose from "mongoose";
-import User from "../../models/Usermodel.js"; // Note: Imported as 'User' here
+import User from "../../models/Usermodel.js";
 import Order from "../../models/Order.js";
 
 /**
@@ -35,15 +37,44 @@ export const getAvailableMocktests = async (req, res) => {
 export const getMyPurchasedTests = async (req, res) => {
   try {
     const userId = req.user._id;
-    const user = await User.findById(userId).populate({
-      path: "purchasedTests",
-      populate: { path: "category", select: "name slug" },
-    });
+    const user = await User.findById(userId).select("purchasedTests");
 
     if (!user)
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({ success: false, message: "User not found" });
+
+    // 1. Manually populate bought tests from both collections
+    const testIds = user.purchasedTests || [];
+
+
+    const populatedTests = await Promise.all(testIds.map(async (id) => {
+        try {
+            if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+
+                return null;
+            }
+
+            let test = await MockTest.findById(id).populate("category", "name slug").lean();
+            if (test) {
+
+                return { ...test, isGrandTest: false };
+            }
+            
+            test = await GrandTest.findById(id).populate("category", "name slug").lean();
+            if (test) {
+
+                return { ...test, isGrandTest: true };
+            }
+            
+
+            return null;
+        } catch (err) {
+            console.error(`[MY_TESTS] Error populating test ID ${id}:`, err);
+            return null;
+        }
+    }));
+
+    const validTests = populatedTests.filter(Boolean);
+
 
     // Fetch all attempts for this user
     const attempts = await Attempt.find({ studentId: userId });
@@ -51,17 +82,26 @@ export const getMyPurchasedTests = async (req, res) => {
     // Create a map for quick lookup of attempts by mockTestId
     const attemptMap = {};
     attempts.forEach(attempt => {
-       // Store the most relevant attempt (e.g. latest or based on status)
-       // Here we store the attempt object itself
-       if (!attemptMap[attempt.mocktestId.toString()] || new Date(attempt.updatedAt) > new Date(attemptMap[attempt.mocktestId.toString()].updatedAt)) {
-           attemptMap[attempt.mocktestId.toString()] = attempt;
+       try {
+           if (!attempt.mocktestId) return;
+           
+           const mtId = attempt.mocktestId.toString();
+           if (!attemptMap[mtId] || new Date(attempt.updatedAt) > new Date(attemptMap[mtId].updatedAt)) {
+               attemptMap[mtId] = attempt;
+           }
+       } catch (e) {
+           console.error("Error processing attempt for map:", e);
        }
     });
 
     // Inject status into each purchased test
-    const purchasedTestsWithStatus = user.purchasedTests.map(test => {
-        const testObj = test.toObject(); // Convert Mongoose doc to plain object
-        const latestAttempt = attemptMap[test._id.toString()];
+    const purchasedTestsWithStatus = validTests.map(test => {
+        try {
+            const testObj = { ...test }; 
+            const testIdStr = test._id?.toString();
+            if (!testIdStr) return null;
+
+            const latestAttempt = attemptMap[testIdStr];
         
         // Default status
         let status = 'not_started';
@@ -81,12 +121,16 @@ export const getMyPurchasedTests = async (req, res) => {
             if (status === 'completed') progress = 100;
         }
 
-        return {
-            ...testObj,
-            status, 
-            progress
-        };
-    });
+            return {
+                ...testObj,
+                status, 
+                progress
+            };
+        } catch (e) {
+            console.error("Error processing final test object:", e);
+            return null;
+        }
+    }).filter(Boolean);
 
     res.status(200).json({
       success: true,
@@ -108,14 +152,35 @@ export const getMyAttempts = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Fetch attempts and populate test title for the UI table
+    // Fetch attempts
     const attempts = await Attempt.find({ studentId: userId })
-      .populate("mocktestId", "title totalMarks")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Manually populate mocktestId details from both collections
+    const populatedAttempts = await Promise.all(attempts.map(async (attempt) => {
+        try {
+            if (!attempt.mocktestId || !mongoose.Types.ObjectId.isValid(attempt.mocktestId)) {
+                return { ...attempt, mocktestId: { title: "Invalid Test Reference", totalMarks: 0 }};
+            }
+
+            let test = await MockTest.findById(attempt.mocktestId).select("title totalMarks").lean();
+            if (!test) {
+                test = await GrandTest.findById(attempt.mocktestId).select("title totalMarks").lean();
+            }
+
+            return {
+                ...attempt,
+                mocktestId: test || { title: "Deleted Test", totalMarks: 0 }
+            };
+        } catch (err) {
+            return { ...attempt, mocktestId: { title: "Error Loading Title", totalMarks: 0 }};
+        }
+    }));
 
     res.status(200).json({
       success: true,
-      attempts: attempts,
+      attempts: populatedAttempts,
     });
   } catch (err) {
     res
@@ -133,18 +198,39 @@ export const getAttemptById = async (req, res) => {
     const { attemptId } = req.params;
     const userId = req.user._id;
 
-    const attempt = await Attempt.findById(attemptId).populate(
-      "mocktestId",
-      "title totalMarks",
-    );
+    const attempt = await Attempt.findById(attemptId).lean();
 
     if (!attempt)
-      return res
-        .status(404)
-        .json({ success: false, message: "Attempt not found" });
+      return res.status(404).json({ success: false, message: "Attempt not found" });
 
-    // Security check: Only the student who took the test (or an admin) can see their result
-    if (req.user.role !== "admin" && attempt.studentId.toString() !== userId.toString()) {
+    // Manually populate test details
+    try {
+        if (attempt.mocktestId && mongoose.Types.ObjectId.isValid(attempt.mocktestId)) {
+            let test = await MockTest.findById(attempt.mocktestId).select("title totalMarks").lean();
+            if (!test) {
+                test = await GrandTest.findById(attempt.mocktestId).select("title totalMarks").lean();
+            }
+            attempt.mocktestId = test || { title: "Deleted Test", totalMarks: 0 };
+        } else {
+            attempt.mocktestId = { title: "Invalid Reference", totalMarks: 0 };
+        }
+    } catch (err) {
+        attempt.mocktestId = { title: "Error Loading Test", totalMarks: 0 };
+    }
+
+    // Security check: Only the student who took the test, an admin, OR their institution can see the result
+    const isOwner = attempt.studentId.toString() === userId.toString();
+    const isAdmin = req.user.role === "admin";
+    
+    let isInstitutionOfStudent = false;
+    if (req.user.role === "institution") {
+        const student = await User.findById(attempt.studentId);
+        if (student && student.addedBy?.toString() === userId.toString()) {
+            isInstitutionOfStudent = true;
+        }
+    }
+
+    if (!isOwner && !isAdmin && !isInstitutionOfStudent) {
       return res
         .status(403)
         .json({

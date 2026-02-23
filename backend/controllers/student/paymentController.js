@@ -1,9 +1,19 @@
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import MockTest from "../../models/MockTest.js";
+import GrandTest from "../../models/GrandTest.js";
 import User from "../../models/Usermodel.js";
 import Order from "../../models/Order.js";
 import PaymentGateway from "../../models/PaymentGateway.js";
+
+/**
+ * Helper to find a test across both collections
+ */
+const findTestById = async (id) => {
+  let test = await MockTest.findById(id);
+  if (!test) test = await GrandTest.findById(id);
+  return test;
+};
 
 /**
  * @desc    Get active payment gateway configuration (Key ID, Currency)
@@ -36,7 +46,7 @@ export const getPaymentConfig = async (req, res) => {
  */
 export const createOrder = async (req, res) => {
   try {
-    const { cartItems: itemIds } = req.body; // Expecting array of MockTest IDs
+    const { cartItems: itemIds } = req.body; 
     const userId = req.user._id;
 
     if (!itemIds || itemIds.length === 0) {
@@ -45,48 +55,49 @@ export const createOrder = async (req, res) => {
 
     // 1. Fetch active gateway
     const activeGateway = await PaymentGateway.findOne({ isActive: true });
-    console.log("DEBUG: createOrder - Active Gateway:", activeGateway ? activeGateway.name : "None");
-    if (activeGateway) {
-        console.log("DEBUG: Full Gateway Object:", JSON.stringify(activeGateway, null, 2));
-    }
-    
     if (!activeGateway) {
-      console.error("DEBUG: createOrder - No active gateway found");
       return res.status(400).json({ success: false, message: "Payment service unavailable" });
     }
 
     // 2. Calculate Total Amount from DB (Security)
-    const mockTests = await MockTest.find({ _id: { $in: itemIds } });
-    if (mockTests.length !== itemIds.length) {
-      return res.status(400).json({ success: false, message: "Some items not found" });
+    // We must search both collections for each itemId
+    const tests = await Promise.all(itemIds.map(id => findTestById(id)));
+    
+    if (tests.some(t => !t)) {
+      return res.status(400).json({ success: false, message: "Some items not found in registry" });
     }
 
     let totalAmount = 0;
-    mockTests.forEach(test => {
-      totalAmount += test.price;
+    tests.forEach(test => {
+      // Use discountPrice if available, else price
+      const priceToCharge = (test.discountPrice > 0 && test.discountPrice < test.price) 
+        ? test.discountPrice 
+        : test.price;
+      totalAmount += Number(priceToCharge) || 0;
     });
 
     // 3. Initialize Razorpay or Mock
     let orderId;
     
-    // MOCK MODE CHECK
-    if (activeGateway.credentials.keyId === "test") {
-        console.log("DEBUG: MOCK MODE ENABLED");
+    // Fallback logic: if keyId is "test", name is "Mock", or keyId is EMPTY, use mock branch
+    const isMock = activeGateway.credentials.keyId === "test" || 
+                   activeGateway.name === "Mock" || 
+                   !activeGateway.credentials.keyId;
+
+    if (isMock) {
         orderId = `mock_order_${Date.now()}`;
     } else {
-        // REAL RAZORPAY
         const instance = new Razorpay({
             key_id: activeGateway.credentials.keyId,
             key_secret: activeGateway.credentials.keySecret,
         });
 
         const options = {
-            amount: totalAmount * 100, // Amount in paise
-            currency: activeGateway.currency,
+            amount: Math.round(totalAmount * 100), // Amount in paise
+            currency: activeGateway.currency || "INR",
             receipt: `receipt_${Date.now()}_${userId}`,
         };
 
-        // 4. Create Order on Razorpay
         const order = await instance.orders.create(options);
         if (!order) {
             return res.status(500).json({ success: false, message: "Gateway order creation failed" });
@@ -103,19 +114,30 @@ export const createOrder = async (req, res) => {
       status: "created",
     });
 
+    console.log(`[PAYMENT] Creating order for user ${userId} with items:`, itemIds);
     await newOrder.save();
+
+    console.log(`✅ Order Created in DB: ${orderId}`);
 
     res.status(200).json({
       success: true,
-      orderId: orderId,
-      amount: totalAmount * 100,
-      currency: activeGateway.currency,
+      id: orderId, // Changed from orderId to id to be consistent with common use
+      orderId: orderId, // Keeping both for safety during migration
+      amount: Math.round(totalAmount * 100),
+      currency: activeGateway.currency || "INR",
       keyId: activeGateway.credentials.keyId
     });
 
   } catch (error) {
-    console.error("Create Order Error:", error);
-    res.status(500).json({ success: false, message: "Order creation failed", error: error.message });
+    console.error("❌ CREATE_ORDER_CRITICAL_FAILURE:");
+    console.error("Error Message:", error.message);
+    console.error("Stack:", error.stack);
+    
+    res.status(500).json({ 
+      success: false, 
+      message: "Order creation failed", 
+      error: error.message 
+    });
   }
 };
 
@@ -132,18 +154,14 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: "Missing payment details" });
     }
 
-    // 1. Fetch active gateway for secret
     const activeGateway = await PaymentGateway.findOne({ isActive: true });
     if (!activeGateway) {
        return res.status(500).json({ success: false, message: "Payment setup invalid" });
     }
 
-    // 2. Verify Signature
     let isAuthentic = false;
 
-    if (activeGateway.credentials.keyId === "test") {
-       console.log("DEBUG: MOCK MODE VERIFICATION");
-       // In mock mode, we trust the client's "success" signal if order ID matches our mock pattern
+    if (activeGateway.credentials.keyId === "test" || activeGateway.name === "Mock") {
        if (razorpay_order_id.startsWith("mock_order_")) {
            isAuthentic = true;
        }
@@ -158,39 +176,28 @@ export const verifyPayment = async (req, res) => {
     }
 
     if (isAuthentic) {
-      // 3. Fulfill Order
-      // Find the order by Razorpay Order ID
       const order = await Order.findOne({ "razorpay.order_id": razorpay_order_id });
+      if (!order) return res.status(404).json({ success: false, message: "Order not found" });
 
-      if (!order) {
-         return res.status(404).json({ success: false, message: "Order not found" });
-      }
-
-      // Update Order Status
       order.razorpay.payment_id = razorpay_payment_id;
       order.razorpay.signature = razorpay_signature;
       order.status = "successful";
       await order.save();
 
-      // Enroll User (Add items to purchasedTests)
+      // 3. Update User: Add to purchased tests AND clear cart
       const updatedUser = await User.findByIdAndUpdate(userId, {
-        $addToSet: { purchasedTests: { $each: order.items } }
-      }, { new: true })
-      .populate({
-          path: "purchasedTests",
-          populate: { path: "category", select: "name slug" }
-      });
+        $addToSet: { purchasedTests: { $each: order.items } },
+        $set: { cart: [] } // 🛒 Clear backend cart after purchase
+      }, { new: true });
 
       res.status(200).json({ 
           success: true, 
           message: "Payment verified successfully",
           user: updatedUser 
       });
-
     } else {
       res.status(400).json({ success: false, message: "Invalid payment signature" });
     }
-
   } catch (error) {
     console.error("Verify Payment Error:", error);
     res.status(500).json({ success: false, message: "Verification failed", error: error.message });
@@ -203,44 +210,36 @@ export const verifyPayment = async (req, res) => {
  */
 export const enrollFree = async (req, res) => {
   try {
-    const { cartItems } = req.body; // Expecting array of IDs
+    const { cartItems } = req.body; 
     const userId = req.user._id;
 
     if (!cartItems || cartItems.length === 0) {
       return res.status(400).json({ success: false, message: "No items provided" });
     }
 
-    // 🔒 SECURITY: Verify items are actually free
-    const freeTests = await MockTest.find({
-      _id: { $in: cartItems },
-      isFree: true
-    });
+    // Verify items are free across both collections
+    const tests = await Promise.all(cartItems.map(id => findTestById(id)));
+    const freeTestIds = tests
+      .filter(t => t && (t.isFree || Number(t.price) <= 0))
+      .map(t => t._id.toString());
 
-    if (freeTests.length === 0) {
+    if (freeTestIds.length === 0) {
       return res.status(400).json({ success: false, message: "No free tests found in request" });
     }
 
-    const freeTestIds = freeTests.map(t => t._id.toString());
-    const user = await User.findById(userId);
+    // 🛒 Update User: Add to purchased tests AND clear cart
+    const updatedUser = await User.findByIdAndUpdate(userId, {
+      $addToSet: { purchasedTests: { $each: freeTestIds } },
+      $set: { cart: [] } // Clear backend cart
+    }, { new: true });
 
-    freeTestIds.forEach(id => {
-      if (!user.purchasedTests.includes(id)) {
-        user.purchasedTests.push(id);
-      }
+    res.status(200).json({ 
+      success: true, 
+      message: "Free tests enrolled successfully", 
+      user: updatedUser 
     });
-
-    await user.save();
-    
-    // Check if some items were skipped (paid items in free request)
-    if (freeTests.length !== cartItems.length) {
-       return res.status(200).json({ 
-         success: true, 
-         message: "Enrolled in free tests only. Paid items were skipped." 
-       });
-    }
-
-    res.status(200).json({ success: true, message: "Free tests enrolled successfully" });
   } catch (error) {
+    console.error("Enroll Free Error:", error);
     res.status(500).json({ success: false, message: "Enrollment failed", error: error.message });
   }
 };

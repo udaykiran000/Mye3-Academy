@@ -25,6 +25,7 @@ import doubtAdminRoutes from "./routes/admin/doubtAdminRoutes.js";
 // Instructor Section
 import instructorDashboardRoutes from "./routes/instructor/instructorDashboardRoutes.js";
 import doubtInstructorRoutes from "./routes/instructor/doubtInstructorRoutes.js";
+import institutionDashboardRoutes from "./routes/institution/institutionDashboardRoutes.js";
 
 // Student Section
 import studentRoute from "./routes/student/studentRoute.js";        
@@ -94,6 +95,7 @@ app.use("/api/admin", adminRoutes);
 // Instructor Section
 app.use("/api/instructor", instructorDashboardRoutes);
 app.use("/api/instructor/doubts", doubtInstructorRoutes);
+app.use("/api/institution", institutionDashboardRoutes);
 
 // Student Section
 app.use("/api/student", studentRoute);

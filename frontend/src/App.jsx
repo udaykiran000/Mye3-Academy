@@ -2,6 +2,7 @@ import React from "react";
 import InstructorDashboardPage from "./pages/instructor/InstructorDashboardPage";
 
 import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import ScrollToTop from "./components/ScrollToTop";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -48,6 +49,12 @@ import StudentDoubts from "./pages/student/StudentDoubts";
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
 import InstructorDoubts from "./pages/instructor/InstructorDoubts";
 import InstructorProfileSettings from "./pages/instructor/InstructorProfileSettings";
+import InstructorStudents from "./pages/instructor/InstructorStudents";
+
+import InstitutionDashboard from "./pages/institution/InstitutionDashboard";
+import InstitutionDashboardPage from "./pages/institution/InstitutionDashboardPage";
+import InstitutionStudents from "./pages/institution/InstitutionStudents";
+import InstitutionProfileSettings from "./pages/institution/InstitutionProfileSettings";
 
 // PROTECTED ROUTE
 import ProtectedRoute from "./components/student/ProtectedRoute";
@@ -62,6 +69,7 @@ const MainLayout = ({ children }) => {
     location.pathname.startsWith("/admin") ||
     location.pathname.startsWith("/student-dashboard") ||
     location.pathname.startsWith("/instructor-dashboard") ||
+    location.pathname.startsWith("/institution-dashboard") ||
     location.pathname.startsWith("/student/write-test") ||
     location.pathname.startsWith("/student/review") ||
     location.pathname.startsWith("/student/instructions") ||
@@ -166,6 +174,21 @@ const App = () => {
             <Route index element={<InstructorDashboardPage />} />
             <Route path="doubts" element={<InstructorDoubts />} />
             <Route path="profile" element={<InstructorProfileSettings />} />
+            <Route path="students" element={<InstructorStudents />} />
+          </Route>
+
+          {/* ---------------- INSTITUTION DASHBOARD ---------------- */}
+          <Route
+            path="/institution-dashboard"
+            element={
+              <ProtectedRoute role="institution">
+                <InstitutionDashboard />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<InstitutionDashboardPage />} />
+            <Route path="students" element={<InstitutionStudents />} />
+            <Route path="profile" element={<InstitutionProfileSettings />} />
           </Route>
 
           {/* ---------------- ADMIN ROUTES (Holistic & Clean) ---------------- */}

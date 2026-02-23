@@ -30,23 +30,6 @@ const navItems = [
 
   { name: "Dashboard", path: "/instructor-dashboard", icon: Home },
 
-  {
-    name: "TESTS",
-    key: "tests",
-    icon: FileText,
-    children: [
-      {
-        name: "Categories",
-        path: "/instructor-dashboard/tests/categories",
-        icon: Plus,
-      },
-      {
-        name: "Manage Categories",
-        path: "/instructor-dashboard/tests/manage",
-        icon: BarChart3,
-      },
-    ],
-  },
 
   {
     name: "Doubts",

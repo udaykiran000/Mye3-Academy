@@ -29,11 +29,24 @@ const StatItem = ({ icon: Icon, value, label }) => (
 const MockTestCard = ({ test, isEmbedded = false }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { userData } = useSelector((state) => state.user);
+  const { userData, myMockTests } = useSelector((state) => state.user);
+  
+  // Ownership Check: Check both raw IDs in userData and populated tests in myMockTests
+  const isPurchased = userData?.purchasedTests?.some(id => 
+    id === test._id || (id._id && id._id === test._id)
+  ) || myMockTests?.some(t => t._id === test._id);
 
+  // Robust Free Check: support flag, zero price, or zero discount price
+  const effectivePrice = (test.discountPrice > 0 && Number(test.discountPrice) < Number(test.price)) 
+    ? Number(test.discountPrice) 
+    : Number(test.price);
+  
+  const isFree = test.isFree === true || effectivePrice <= 0 || isPurchased;
 
-  const isFree = test.isFree === true;
-  const enrolledCount = test.totalQuestions * 12 + 150; // Dynamic mock count
+  // Metadata Fallbacks: Ensure duration is never 'nullm'
+  const duration = Number(test.durationMinutes) || (Number(test.totalQuestions) * 2) || 30;
+  
+  const enrolledCount = (test.totalQuestions || 0) * 12 + 150; // Dynamic mock count
 
   const handleAction = (type) => {
     if (!userData) {
@@ -76,7 +89,7 @@ const MockTestCard = ({ test, isEmbedded = false }) => {
         </div>
 
         {/* Price Tag */}
-        {!isFree && (
+        {!isFree && test.price > 0 && (
           <div className="absolute bottom-0 right-0 bg-slate-900 text-white px-3 py-1 font-bold text-sm rounded-tl-lg">
             ₹{test.price}
           </div>
@@ -100,10 +113,10 @@ const MockTestCard = ({ test, isEmbedded = false }) => {
         <div className="grid grid-cols-3 gap-0 py-3 mt-auto border-t border-slate-100 bg-slate-50/50 rounded-md">
           <StatItem
             icon={Clock}
-            value={`${test.durationMinutes}m`}
+            value={`${duration}m`}
             label="Time"
           />
-          <StatItem icon={BookOpen} value={test.totalQuestions} label="Que" />
+          <StatItem icon={BookOpen} value={test.totalQuestions || 0} label="Que" />
           <StatItem icon={Users} value={enrolledCount} label="Users" />
         </div>
       </div>
