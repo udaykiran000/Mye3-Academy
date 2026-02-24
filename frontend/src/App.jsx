@@ -21,8 +21,8 @@ import DashboardPage from "./components/admin/DashboardPage";
 import ManageInstructors from "./components/admin/instructors/ManageInstructors";
 import ManageStudents from "./components/admin/students/ManageStudents";
 import ManageMocktests from "./components/admin/mocktest/ManageMocktests";
-import FormMocktest from "./components/admin/mocktest/FormMocktest";
-import AdminQuestions from "./components/admin/AdminQuestions";
+
+import AdminQuestions from "./components/admin/mocktest/AdminQuestions";
 import SelectCategoryForCreation from "./components/admin/category/SelectCategoryForCreation";
 import CategoryMockTests from "./components/admin/category/CategoryMockTests.jsx";
 import AddInstructor from "./components/admin/instructors/AddInstructor";
@@ -242,17 +242,17 @@ const App = () => {
               />
             </Route>
 
-            {/* Mocktest Core Routing System (Handles New and Edit via FormMocktest) */}
+            {/* Unified Test Manager (Handles Configuration & Questions) */}
             <Route path="mocktests" element={<ManageMocktests />} />
             <Route path="mocktests/:category" element={<CategoryMockTests />} />
 
             {/* CREATE MODE: category provided, no ID */}
-            <Route path="mocktests/:category/new" element={<FormMocktest />} />
+            <Route path="mocktests/:category/new" element={<AdminQuestions />} />
 
             {/* EDIT MODE: category and ID provided */}
             <Route
               path="mocktests/:category/edit/:id"
-              element={<FormMocktest />}
+              element={<AdminQuestions />}
             />
 
             {/* Question Builder for specific mocktest */}

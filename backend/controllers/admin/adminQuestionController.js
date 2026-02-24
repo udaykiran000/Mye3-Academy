@@ -22,15 +22,29 @@ const syncTestStats = (test) => {
   // Calculate total marks based on embedded questions
   test.totalMarks = test.questions.reduce((sum, q) => sum + (Number(q.marks) || 0), 0);
 
-  // If admin never set a duration (null = auto-mode), compute 2 mins per question
-  if (test.durationMinutes === null || test.durationMinutes === undefined) {
-    test.durationMinutes = null; // keep as null so frontend can compute live
-  }
-  // If it was set to 0 explicitly (shouldn't happen), treat as auto too
-  if (test.durationMinutes === 0) {
+  // Auto-rebuild subjects from embedded questions
+  const subjectMap = {};
+  test.questions.forEach(q => {
+    if (q.category) {
+      const name = q.category.trim().toLowerCase();
+      subjectMap[name] = (subjectMap[name] || 0) + 1;
+    }
+  });
+  // Only update subjects if admin hasn't manually configured them with limits
+  // If subjects were already set with specific limits, merge — don't overwrite limits
+  const existingMap = {};
+  (test.subjects || []).forEach(s => { if (s.name) existingMap[s.name] = s; });
+  test.subjects = Object.entries(subjectMap).map(([name, count]) => ({
+    name,
+    easy: existingMap[name]?.easy ?? count,
+    medium: existingMap[name]?.medium ?? 0,
+    hard: existingMap[name]?.hard ?? 0,
+  }));
+
+  // If admin never set a duration (null = auto-mode), keep as null so frontend can compute live
+  if (test.durationMinutes === null || test.durationMinutes === undefined || test.durationMinutes === 0) {
     test.durationMinutes = null;
   }
-  // If > 0, admin manually set it — leave it alone
 };
 
 /**

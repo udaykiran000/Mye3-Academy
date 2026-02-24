@@ -1,64 +1,57 @@
 // frontend/src/components/admin/TestTypeBreakdown.jsx
-// (Create this new file)
 
 import React from "react";
-import { FaTasks, FaTrophy } from "react-icons/fa";
+import { ClipboardList, Trophy } from "lucide-react";
 
 // Helper to format currency
 const formatRevenue = (value) => {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(value);
 };
 
-const TestTypeBreakdown = ({ data }) => {
-  const regular = data.find(d => d.testType === "Regular Tests") || { salesCount: 0, totalRevenue: 0 };
-  const grand = data.find(d => d.testType === "Grand Tests") || { salesCount: 0, totalRevenue: 0 };
+const TestTypeBreakdown = ({ data = [] }) => {
+  const safeData = Array.isArray(data) ? data : [];
+  const regular = safeData.find(d => d.testType === "Regular Tests") || { salesCount: 0, totalRevenue: 0 };
+  const grand = safeData.find(d => d.testType === "Grand Tests") || { salesCount: 0, totalRevenue: 0 };
 
   return (
-    <div className="p-6 bg-white shadow-md rounded-lg">
-      <h3 className="text-xl font-semibold mb-4 text-gray-700">
-        Sales by Test Type
-      </h3>
-      <div className="space-y-5">
-        
-        {/* Regular Tests Card */}
-        <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-          <div className="p-3 rounded-full bg-green-100 text-green-600 mr-4">
-            <FaTasks size={20} />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Regular Tests</p>
-            <p className="text-2xl font-bold text-gray-800">
-              {regular.salesCount}
-              <span className="text-base font-medium ml-2">Sales</span>
-            </p>
-            <p className="text-sm font-semibold text-green-700">
-              {formatRevenue(regular.totalRevenue)}
-            </p>
-          </div>
+    <div className="space-y-4">
+        {/* Regular Tests Row */}
+        <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-none border border-slate-100/50 group hover:bg-white hover:shadow-sm transition-all duration-300">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-indigo-50 text-[#6a73fa] flex items-center justify-center transition-transform group-hover:scale-110">
+                    <ClipboardList size={20} />
+                </div>
+                <div>
+                    <h4 className="text-[14px] font-bold text-[#3e4954]">Regular Exam</h4>
+                    <p className="text-[12px] font-medium text-[#7e7e7e]">Fixed Tier Tests</p>
+                </div>
+            </div>
+            <div className="text-right">
+                <p className="text-[14px] font-black text-[#3e4954]">{regular.salesCount} Sales</p>
+                <p className="text-[12px] font-bold text-emerald-500">{formatRevenue(regular.totalRevenue)}</p>
+            </div>
         </div>
 
-        {/* Grand Tests Card */}
-        <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-          <div className="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
-            <FaTrophy size={20} />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Grand Tests</p>
-            <p className="text-2xl font-bold text-gray-800">
-              {grand.salesCount}
-              <span className="text-base font-medium ml-2">Sales</span>
-            </p>
-            <p className="text-sm font-semibold text-yellow-700">
-              {formatRevenue(grand.totalRevenue)}
-            </p>
-          </div>
+        {/* Grand Tests Row */}
+        <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-none border border-slate-100/50 group hover:bg-white hover:shadow-sm transition-all duration-300">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-50 text-[#b472fb] flex items-center justify-center transition-transform group-hover:scale-110">
+                    <Trophy size={20} />
+                </div>
+                <div>
+                    <h4 className="text-[14px] font-bold text-[#3e4954]">Grand Analytics</h4>
+                    <p className="text-[12px] font-medium text-[#7e7e7e]">Institutional Tests</p>
+                </div>
+            </div>
+            <div className="text-right">
+                <p className="text-[14px] font-black text-[#3e4954]">{grand.salesCount} Sales</p>
+                <p className="text-[12px] font-bold text-amber-500">{formatRevenue(grand.totalRevenue)}</p>
+            </div>
         </div>
-
-      </div>
     </div>
   );
 };

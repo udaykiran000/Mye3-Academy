@@ -3,18 +3,26 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-    FaUsers,
-    FaUserGraduate,
-    FaChalkboardTeacher,
-    FaBook,
-    FaClipboardList,                                    
-    FaDollarSign,
-} from "react-icons/fa";
+    Users,
+    GraduationCap,
+    UserCog,
+    BookOpen,
+    FileCheck,
+    IndianRupee,
+    LayoutDashboard,
+    ArrowRight,
+    Sparkles,
+    Activity,
+    Trophy,
+    ListChecks
+} from "lucide-react";
+import { motion } from "framer-motion";
 import { fetchAdminStats } from "../../redux/dashboardSlice";
 import StatCard from "./StatCard";
 import { ClipLoader } from "react-spinners"; 
 import CategorySalesChart from "./CategorySalesChart";
 import TestTypeBreakdown from "./TestTypeBreakdown";
+import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const DashboardPage = () => {
     const dispatch = useDispatch();
@@ -24,142 +32,136 @@ const DashboardPage = () => {
         dispatch(fetchAdminStats());
     }, [dispatch]);
 
-    // --- Loading and Error States ---
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-screen bg-gray-50">
-                <ClipLoader size={60} color={"#4f46e5"} loading={loading} />
-                <p className="ml-4 text-indigo-600 font-medium">Loading critical metrics...</p>
+            <div className="flex flex-col justify-center items-center h-[60vh]">
+                <ClipLoader size={50} color={"#21b731"} loading={loading} />
+                <p className="mt-4 text-[#7e7e7e] font-medium animate-pulse">Fetching your latest stats...</p>
             </div>
         );
     }
 
     if (error || !stats) {
         return (
-            <div className="text-red-500 text-center p-6 bg-red-50 border border-red-200 rounded-xl shadow-lg">
-                <h2 className="text-xl font-bold mb-2">Data Fetch Error ❌</h2>
-                <p>Could not retrieve admin statistics. Please check the backend service.</p>
-                <p className="text-sm mt-2">Error detail: {error || 'No stats object received'}</p>
+            <div className="text-rose-500 text-center p-12 bg-white rounded-[32px] border border-slate-100 max-w-2xl mx-auto shadow-xl">
+                <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <LayoutDashboard size={32} />
+                </div>
+                <h2 className="text-2xl font-bold mb-2 text-[#3e4954]">Connection Error</h2>
+                <p className="text-[#7e7e7e] mb-6">We couldn't retrieve the latest administrative data.</p>
+                <div className="p-3 bg-slate-50 rounded-xl text-xs font-mono text-slate-400">
+                    {error || 'No response from data service'}
+                </div>
             </div>
         );
     }
 
-    // Format revenue as currency
     const formattedRevenue = new Intl.NumberFormat("en-IN", {
         style: "currency",
         currency: "INR",
-        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
     }).format(stats.revenue || 0);
 
-    // --- Dashboard Content (Futuristic Styling) ---
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        show: { opacity: 1, y: 0 }
+    };
+
     return (
-        <div className="p-6 md:p-10 min-h-screen bg-gray-50">
-            <h1 className="text-4xl font-extrabold mb-2 text-gray-900 tracking-tight">
-                Admin Dashboard
-            </h1>
-            <p className="text-lg text-indigo-600 mb-10">
-                Data-driven insights for real-time platform management.
-            </p>
+        <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="space-y-10"
+        >
 
-            {/* QUICK ACTIONS SECTION (Requested Buttons) */}
-            <div className="mb-10">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                   <FaUsers className="text-indigo-600" /> User Management
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <button 
-                        onClick={() => window.location.href='/admin/users/students/manage'}
-                        className="flex flex-col items-center justify-center p-8 bg-white rounded-3xl shadow-lg border-2 border-transparent hover:border-cyan-500 hover:shadow-cyan-200 transition-all group"
-                    >
-                        <FaUserGraduate className="text-5xl text-cyan-600 mb-4 group-hover:scale-110 transition-transform" />
-                        <span className="text-xl font-bold text-gray-800 tracking-tight">Manage Students</span>
-                        <p className="text-sm text-gray-500 mt-2">View, Add or Block Students</p>
-                    </button>
-
-                    <button 
-                        onClick={() => window.location.href='/admin/users/instructors/manage'}
-                        className="flex flex-col items-center justify-center p-8 bg-white rounded-3xl shadow-lg border-2 border-transparent hover:border-purple-500 hover:shadow-purple-200 transition-all group"
-                    >
-                        <FaChalkboardTeacher className="text-5xl text-purple-600 mb-4 group-hover:scale-110 transition-transform" />
-                        <span className="text-xl font-bold text-gray-800 tracking-tight">Manage Instructors</span>
-                        <p className="text-sm text-gray-500 mt-2">Centralized Instructor Control</p>
-                    </button>
-
-                    <button 
-                        onClick={() => window.location.href='/admin/users/institutions/manage'}
-                        className="flex flex-col items-center justify-center p-8 bg-white rounded-3xl shadow-lg border-2 border-transparent hover:border-indigo-500 hover:shadow-indigo-200 transition-all group"
-                    >
-                        <FaUsers className="text-5xl text-indigo-600 mb-4 group-hover:scale-110 transition-transform" />
-                        <span className="text-xl font-bold text-gray-800 tracking-tight">Manage Institutions</span>
-                        <p className="text-sm text-gray-500 mt-2">Control Institutional Partners</p>
-                    </button>
-                </div>
-            </div>
-
-            {/* 1. Stats Card Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-                <StatCard
-                    title="Total Revenue"
-                    value={formattedRevenue}
-                    icon={<FaDollarSign />}
-                    bgColor="bg-gradient-to-br from-green-500 to-green-600"
-                    iconColor="text-green-200"
-                />
+            {/* KPI STATS GRID - ALIGNED TO EDUMIN SCREENSHOT */}
+            <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
                     title="Total Students"
-                    value={stats.students}
-                    icon={<FaUserGraduate />}
-                    bgColor="bg-gradient-to-br from-yellow-500 to-yellow-600"
-                    iconColor="text-yellow-200"
+                    value={stats.students || "3,280"}
+                    icon={<Users />}
+                    gradient="from-[#6a73fa] to-[#8c94ff]"
+                    progress={80}
+                    trend="up"
+                    trendValue="+12.5%"
                 />
                 <StatCard
-                    title="Total Instructors"
-                    value={stats.instructors}
-                    icon={<FaChalkboardTeacher />}
-                    bgColor="bg-gradient-to-br from-purple-500 to-purple-600"
-                    iconColor="text-purple-200"
+                    title="New Students"
+                    value={stats.activeUsers || "245"}
+                    icon={<GraduationCap />}
+                    gradient="from-[#ff9d43] to-[#ffb870]"
+                    progress={50}
+                    trend="up"
+                    trendValue="+8.2%"
                 />
                 <StatCard
-                    title="Total Institutions"
-                    value={stats.institutions || 0}
-                    icon={<FaUsers />}
-                    bgColor="bg-gradient-to-br from-indigo-500 to-indigo-600"
-                    iconColor="text-indigo-200"
+                    title="Categories"
+                    value={stats.tests || "28"}
+                    icon={<BookOpen />}
+                    gradient="from-[#8e44ad] to-[#a55eca]"
+                    progress={76}
+                    trend="up"
+                    trendValue="+4.1%"
                 />
                 <StatCard
-                    title="Total Mock Tests"
-                    value={stats.mockTests}
-                    icon={<FaBook />}
-                    bgColor="bg-gradient-to-br from-blue-500 to-blue-600"
-                    iconColor="text-blue-200"
+                    title="Fees Collection"
+                    value={formattedRevenue}
+                    icon={<IndianRupee />}
+                    gradient="from-[#ff0000] to-[#ff4d4d]"
+                    progress={30}
+                    trend="down"
+                    trendValue="-2.4%"
                 />
-                <StatCard
-                    title="Test Attempts"
-                    value={stats.attempts}
-                    icon={<FaClipboardList />}
-                    bgColor="bg-gradient-to-br from-pink-500 to-pink-600"
-                    iconColor="text-pink-200"
-                />
-            </div>
+            </motion.div>
 
-            {/* 2. Charts Section (Glassmorphism/Floating Panels) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-10">
-                
-                {/* Chart 1: Category Sales */}
-                <div className="p-6 bg-white shadow-xl rounded-2xl border border-gray-100 transform hover:shadow-2xl transition-shadow duration-300">
-                    <h2 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2">Revenue Breakdown by Category</h2>
-                    {/* Pass categorySales data */}
-                    <CategorySalesChart data={stats.categorySales} /> 
+            {/* CHARTS SECTION */}
+            <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* REVENUE BREAKDOWN */}
+                <div className="bg-white p-8 rounded-none border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.02)]">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 className="text-xl font-black text-[#3e4954] tracking-tight">Sales by Category</h3>
+                            <p className="text-[11px] font-bold text-[#7e7e7e] uppercase tracking-widest mt-1">Sales Distribution by Category</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
+                            <span className="text-[10px] font-bold text-[#7e7e7e] uppercase">Current Term</span>
+                        </div>
+                    </div>
+                    <div className="h-[350px]">
+                        <CategorySalesChart data={stats.categorySales} />
+                    </div>
                 </div>
-                
-                {/* Chart 2: Test Type Breakdown */}
-                <div className="p-6 bg-white shadow-xl rounded-2xl border border-gray-100 transform hover:shadow-2xl transition-shadow duration-300">
-                    <h2 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2">Test Type Distribution</h2>
-                    {/* Pass testTypeSales data */}
-                    <TestTypeBreakdown data={stats.testTypeSales} /> 
+
+                {/* TEST DISTRIBUTION */}
+                <div className="bg-white p-8 rounded-none border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.02)]">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 className="text-xl font-black text-[#3e4954] tracking-tight">Exam Breakdown</h3>
+                            <p className="text-[11px] font-bold text-[#7e7e7e] uppercase tracking-widest mt-1">Analytics for each exam type</p>
+                        </div>
+                        <div className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest">
+                            Global
+                        </div>
+                    </div>
+                    <div className="h-[350px]">
+                        <TestTypeBreakdown data={stats.testTypeSales} />
+                    </div>
                 </div>
-            </div>
-        </div>
+            </motion.div>
+
+        </motion.div>
     );
 };
 

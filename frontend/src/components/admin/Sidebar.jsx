@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAdminProfile } from "../../redux/adminSlice";
@@ -6,176 +6,100 @@ import api from "../../api/axios";
 import toast from "react-hot-toast";
 import { setUserData } from "../../redux/userSlice";
 import { clearCart } from "../../redux/cartSlice";
+import { motion, AnimatePresence } from "framer-motion";
 
 import {
-  Home,
-  Users,
-  UserCog,
-  BarChart3,
+  LayoutDashboard,
   FileText,
+  Users,
+  LogOut,
+  HelpCircle,
+  GraduationCap,
+  Building2,
+  UserCog,
   ChevronRight,
   ChevronDown,
-  Plus,
   CreditCard,
-  LogOut,
-  Menu,
-  Settings,
-  Wallet,
-  X,
-  Building2,
-  GraduationCap,
-  Layers,
-  Trophy
+  LayoutGrid
 } from "lucide-react";
 
 // ----------------------------------------------
-// NAVIGATION GROUPS
+// NAVIGATION DATA MAPPING V2.1
 // ----------------------------------------------
-const navItems = [
-  { name: "Main Dashboard", path: "/admin", icon: Home, end: true },
+const MENU = [
+  { label: "Dashboard", icon: LayoutGrid, path: "/admin", end: true },
   {
-    name: "TESTS",
-    key: "tests",
+    label: "Academic Exams",
     icon: FileText,
+    key: "tests",
     children: [
-      {
-        name: "Categories",
-        path: "/admin/tests/add-new-test",
-        icon: Plus,
-      },
-      {
-        name: "manage Tests",
-        path: "/admin/tests/manage-tests",
-        icon: BarChart3,
-      },
+      { label: "Exam Categories", path: "/admin/categories" },
+      { label: "All Tests", path: "/admin/tests/manage-tests" },
     ],
   },
+  { label: "Students", icon: GraduationCap, path: "/admin/users/students/manage" },
+  { label: "Institutions", icon: Building2, path: "/admin/users/institutions/manage" },
+  { label: "Instructors", icon: UserCog, path: "/admin/users/instructors/manage" },
   {
-    name: "Students",
-    path: "/admin/users/students/manage",
-    icon: GraduationCap,
-  },
-  {
-    name: "Institutions",
-    path: "/admin/users/institutions/manage",
-    icon: Building2,
-  },
-  {
-    name: "Instructors",
-    path: "/admin/users/instructors/manage",
-    icon: UserCog,
-  },
-  {
-    name: "Payment Management",
-    key: "payments",
+    label: "Payment Management",
     icon: CreditCard,
+    key: "payments",
     children: [
-      { name: "Transactions Hub", path: "/admin/payments", icon: FileText },
-      { name: "Gateway Config", path: "/admin/payment-settings", icon: Wallet },
+      { label: "Transactions Hub", path: "/admin/payments" },
+      { label: "Payment Settings", path: "/admin/payment-settings" },
     ],
   },
-  { name: "Doubt Management", path: "/admin/doubts", icon: FileText },
+  { label: "Doubt Management", icon: HelpCircle, path: "/admin/doubts" },
 ];
 
-// ----------------------------------------------
-// MENU ITEM UI
-// ----------------------------------------------
-const MenuItem = ({ item, isOpen, toggleOpen, openSections, closeSidebar }) => {
-  const location = useLocation();
-  const isActive = useMemo(() => {
-    if (item.path) return location.pathname === item.path;
-    return item.children?.some((c) => location.pathname.startsWith(c.path));
-  }, [location.pathname]);
-
-  const activeStyle = `bg-indigo-50/80 text-indigo-600 border-r-2 border-indigo-500 font-bold shadow-sm`;
-  const baseStyle = `flex items-center justify-between gap-3 px-5 py-2.5 rounded-lg transition-all duration-200 cursor-pointer text-slate-500 hover:text-slate-800 hover:bg-slate-50`;
-
-  if (item.path) {
-    return (
-      <li className="list-none">
-        <NavLink
-          to={item.path}
-          end={item.end}
-          onClick={closeSidebar}
-          className={({ isActive: exact }) =>
-            `${baseStyle} ${exact ? activeStyle : ""}`
-          }
-        >
-          <div className="flex items-center gap-3">
-            <item.icon size={16} strokeWidth={isActive ? 2.5 : 2} />
-            <span className="text-[13px] tracking-tight">{item.name}</span>
-          </div>
-        </NavLink>
-      </li>
-    );
-  }
-
-  return (
-    <li className="list-none">
-      <div
-        className={`${baseStyle} ${isActive ? "text-indigo-600 font-bold" : ""}`}
-        onClick={() => toggleOpen(item.key)}
-      >
-        <div className="flex items-center gap-3">
-          <item.icon size={16} />
-          <span className="text-[13px] tracking-tight">{item.name}</span>
-        </div>
-        <span className="opacity-40">
-          {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        </span>
-      </div>
-      {isOpen && (
-        <ul className="ml-5 mt-1 space-y-1 border-l border-slate-100 pl-4">
-          {item.children.map((child) => (
-            <MenuItem
-              key={child.name}
-              item={child}
-              isOpen={child.children ? openSections[child.key] : false}
-              toggleOpen={toggleOpen}
-              openSections={openSections}
-              closeSidebar={closeSidebar}
-            />
-          ))}
-        </ul>
-      )}
-    </li>
-  );
-};
-
-// ----------------------------------------------
-// SIDEBAR CORE
-// ----------------------------------------------
-const Sidebar = () => {
+const Sidebar = ({ mobileOpen, setMobileOpen }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
+  
   const { adminProfile } = useSelector((state) => state.admin || {});
-  const [openSections, setOpenSections] = useState({});
-  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  
+  const [isHovering, setIsHovering] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const [openMenus, setOpenMenus] = useState({}); // Track multiple open accordions
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
+  const sidebarRef = useRef(null);
+  const hoverTimer = useRef(null);
+  const leaveTimer = useRef(null);
 
   useEffect(() => {
     if (!adminProfile) dispatch(fetchAdminProfile());
   }, [dispatch, adminProfile]);
 
+  // Sync openMenus with current path
   useEffect(() => {
-    const newOpenSections = {};
-    const path = location.pathname;
-    navItems.forEach((l1) => {
-      if (l1.children) {
-        let isL1Open = l1.children.some((l2) => {
-          if (l2.path && path.startsWith(l2.path)) return true;
-          return l2.children?.some((l3) => path.startsWith(l3.path));
-        });
-        if (isL1Open) newOpenSections[l1.key] = true;
-      }
-    });
-    setOpenSections(newOpenSections);
+    const activeParent = MENU.find(m => m.children?.some(c => location.pathname === c.path));
+    if (activeParent) {
+        setOpenMenus(prev => ({ ...prev, [activeParent.key]: true }));
+    }
   }, [location.pathname]);
 
-  const toggleOpen = (key) =>
-    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  const expandedSidebar = isPinned || isHovering;
+
+  const handleEnter = () => {
+    clearTimeout(leaveTimer.current);
+    hoverTimer.current = setTimeout(() => setIsHovering(true), 150);
+  };
+
+  const handleLeave = () => {
+    if (isPinned) return;
+    clearTimeout(hoverTimer.current);
+    leaveTimer.current = setTimeout(() => setIsHovering(false), 200);
+  };
+
+  const toggleMenu = (key) => {
+    setOpenMenus(prev => ({
+        ...prev,
+        [key]: !prev[key]
+    }));
+    if (!expandedSidebar) setIsPinned(true);
+  };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -183,10 +107,10 @@ const Sidebar = () => {
       await api.get("/api/auth/logout");
       dispatch(setUserData(null));
       dispatch(clearCart());
-      toast.success("Safe logout completed");
+      toast.success("You are now signed out");
       navigate("/");
     } catch (error) {
-      toast.error("Logout interrupted");
+      toast.error("Logout failed");
     } finally {
       setIsLoggingOut(false);
     }
@@ -194,132 +118,216 @@ const Sidebar = () => {
 
   const avatarUrl = useMemo(() => {
     if (adminProfile?.avatar)
-      return `import.meta.env.VITE_SERVER_URL/${adminProfile.avatar.replace(/\\/g, "/")}`;
+      return `${import.meta.env.VITE_SERVER_URL}/${adminProfile.avatar.replace(/\\/g, "/")}`;
     return `https://ui-avatars.com/api/?name=${adminProfile?.firstname || "Admin"}+${adminProfile?.lastname || ""}&background=6366f1&color=fff&size=128&bold=true`;
   }, [adminProfile]);
 
-  return (
-    <>
-      {/* MOBILE HEADER BUTTON */}
-      <div className="md:hidden fixed top-0 left-0 w-full p-4 bg-white/80 backdrop-blur-sm z-[60] flex justify-between items-center border-b border-slate-100 shadow-sm">
-        <h1 className="text-lg font-black text-indigo-600 tracking-tighter uppercase italic">
-          Mye 3 Academy
-        </h1>
-        <button onClick={() => setShowMobileSidebar(!showMobileSidebar)}>
-          {showMobileSidebar ? (
-            <X size={24} className="text-indigo-600" />
-          ) : (
-            <Menu size={24} className="text-indigo-600" />
-          )}
-        </button>
+  const SidebarContent = (
+    <motion.div
+      ref={sidebarRef}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+      animate={{ width: expandedSidebar ? 280 : 88 }}
+      transition={{ type: "spring", stiffness: 140, damping: 20, mass: 0.8 }}
+      className="relative h-full bg-white border-r border-slate-200 flex flex-col z-[100]"
+    >
+      {/* BRAND SECTION */}
+      <div className="px-6 py-8 flex items-center gap-4">
+        <div 
+            onClick={() => setIsPinned(!isPinned)}
+            className="shrink-0 w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg cursor-pointer hover:rotate-6 transition-transform"
+        >
+            <GraduationCap size={24} strokeWidth={2.5} />
+        </div>
+        <AnimatePresence>
+            {expandedSidebar && (
+                <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="overflow-hidden whitespace-nowrap"
+                >
+                    <h2 className="text-xl font-black text-slate-800 tracking-tighter italic">Mye3</h2>
+                    <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-[0.2em] leading-none mt-0.5">Academy Admin</p>
+                </motion.div>
+            )}
+        </AnimatePresence>
       </div>
 
-      {/* OVERLAY FOR MOBILE */}
-      {showMobileSidebar && (
-        <div
-          className="fixed inset-0 bg-slate-900/20 backdrop-blur-[1px] z-50 md:hidden"
-          onClick={() => setShowMobileSidebar(false)}
-        />
-      )}
+      {/* NAVIGATION */}
+      <nav className="px-3 space-y-1 flex-grow overflow-y-auto custom-scrollbar">
+        {MENU.map((m, i) => {
+          const Icon = m.icon;
+          const isActiveParent = m.path ? location.pathname === m.path : m.children?.some(c => location.pathname === c.path);
+          const isDropdownOpen = openMenus[m.key];
 
-      {/* SIDEBAR MAIN PANEL */}
-      <aside
-        className={`
-        bg-gray-300 border-1 border-gray-600 shadow-sm
-        fixed top-0 left-0 h-screen 
-        w-72 flex flex-col z-[55]
-        transition-transform duration-300 ease-in-out
-        ${showMobileSidebar ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-      `}
-      >
-        {/* BRAND IDENTITY */}
-        <div className="px-6 py-6 border-b border-slate-100 flex items-center gap-3">
-          {/* <div className="bg-indigo-600 w-8 h-8 rounded flex items-center justify-center text-white shadow-lg shadow-indigo-100">
-            <Settings size={18} strokeWidth={2.5} />
-          </div> */}
-          <div>
-            <h2 className="text-[13px] font-black text-slate-800 uppercase tracking-widest leading-none">
-              MYE 3 Academy
-            </h2>
-            <p className="text-[13px] text-slate-400 font-bold uppercase tracking-tight mt-0.5">
-              ADMIN
-            </p>
-          </div>
-        </div>
+          return (
+            <div key={i} className="mb-1">
+              <div
+                onClick={() => {
+                    if (m.children) {
+                        toggleMenu(m.key);
+                    } else {
+                        navigate(m.path);
+                        setMobileOpen(false);
+                    }
+                }}
+                className={`
+                    relative flex items-center gap-4 px-4 py-3 rounded-none cursor-pointer group transition-all
+                    ${isActiveParent ? "bg-indigo-50 text-indigo-600" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"}
+                `}
+              >
+                {isActiveParent && !m.children && (
+                  <motion.div 
+                    layoutId="active-pill"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1.5 bg-indigo-600 rounded-r-full shadow-sm" 
+                  />
+                )}
+                
+                <Icon size={20} strokeWidth={isActiveParent ? 2.5 : 2} className="shrink-0 relative z-10" />
+                
+                <AnimatePresence>
+                    {expandedSidebar && (
+                        <motion.span 
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -5 }}
+                            className="text-[14px] font-bold whitespace-nowrap overflow-hidden"
+                        >
+                            {m.label}
+                        </motion.span>
+                    )}
+                </AnimatePresence>
 
-        {/* PROFILE CONTROL UNIT */}
-        <div className="px-6 py-8 flex flex-col items-center border-b border-slate-100/50 bg-[#fafbfc]/50 group relative">
-          <div
-            className="relative group cursor-pointer"
-            onClick={() => {
-              navigate("/admin/profile");
-              setShowMobileSidebar(false);
-            }}
-          >
-            <img
-              src={avatarUrl}
-              className="w-10 h-10 rounded-xl object-cover border border-slate-100 shadow-sm hover:scale-105 transition duration-500"
-              alt="Avatar"
-            />
-          </div>
-          <div className="mt-4 text-center">
-            <h4 className="text-slate-800 font-black text-[14px] leading-tight uppercase tracking-tight">
-              {adminProfile?.firstname
-                ? `${adminProfile.firstname} ${adminProfile.lastname}`
-                : "Retrieving Data..."}
-            </h4>
-            <p className="text-indigo-500 text-[10px] font-bold uppercase tracking-widest mt-0.5"></p>
-          </div>
-        </div>
+                {m.children && expandedSidebar && (
+                    <ChevronDown 
+                        size={16} 
+                        className={`ml-auto opacity-40 transition-transform ${isDropdownOpen ? "rotate-180 text-indigo-500 opacity-100" : ""}`} 
+                    />
+                )}
+              </div>
 
-        {/* DYNAMIC NAVIGATION LINKS */}
-        <nav className="flex-grow overflow-y-auto px-3 py-6 no-scrollbar space-y-6">
-          <div>
-            <p className="px-5 text-[12px] font-bold text-black   uppercase tracking-[0.2em] mb-3">
-              Index
-            </p>
-            <ul className="space-y-0.5">
-              {navItems.map((item) => (
-                <MenuItem
-                  key={item.name}
-                  item={item}
-                  isOpen={openSections[item.key]}
-                  toggleOpen={toggleOpen}
-                  openSections={openSections}
-                  closeSidebar={() => setShowMobileSidebar(false)}
-                />
-              ))}
-            </ul>
-          </div>
-          {/* <div className="px-5">
-            <p className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.2em] mb-2">
-              Internal Index
-            </p>
-            <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
-              <p className="text-[10px] text-slate-400 leading-relaxed font-medium">
-                Dashboard back-end systemsync dashboard consistenc
-              </p>
+              {/* INLINE SUBMENU (ACCORDION) */}
+              <AnimatePresence>
+                {m.children && isDropdownOpen && expandedSidebar && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden pl-11 pr-2 space-y-1"
+                  >
+                    <div className="w-px absolute left-8 top-0 bottom-0 bg-slate-100"></div>
+                    {m.children.map((c, idx) => {
+                      const isActiveChild = location.pathname === c.path;
+                      return (
+                        <div
+                          key={idx}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(c.path);
+                            setMobileOpen(false);
+                          }}
+                          className={`
+                            relative py-2 pl-4 rounded-xl text-[13px] font-bold cursor-pointer transition-colors
+                            ${isActiveChild ? "text-indigo-600" : "text-slate-500 hover:text-indigo-500"}
+                          `}
+                        >
+                          {isActiveChild && (
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-indigo-600 shadow-sm" />
+                          )}
+                          {c.label}
+                        </div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* FLOATING SUBMENU (WHEN COLLAPSED) */}
+              <AnimatePresence>
+                {m.children && !expandedSidebar && isHovering && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    className="absolute left-full ml-2 top-0 bg-white border border-slate-100 shadow-2xl rounded-2xl w-48 p-2 z-[110]"
+                  >
+                    <div className="px-3 py-2 border-b border-slate-50 mb-1">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{m.label}</p>
+                    </div>
+                    {m.children.map((c, idx) => (
+                      <div
+                        key={idx}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(c.path);
+                          setMobileOpen(false);
+                        }}
+                        className={`
+                            px-4 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer transition-colors
+                            ${location.pathname === c.path ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-50 hover:text-indigo-500"}
+                        `}
+                      >
+                        {c.label}
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </div> */}
-        </nav>
+          );
+        })}
+      </nav>
 
-        {/* LOGOUT UNIT */}
-        <div className="p-4 border-t border-slate-100 mt-auto bg-slate-50/50">
-          <button
+      {/* FOOTER */}
+      <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
+        <button 
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className={`w-full group bg-rose-50 border border-rose-200 text-rose-500 py-2.5 rounded-lg flex items-center gap-3 justify-center font-bold text-xs uppercase tracking-widest transition duration-300 hover:bg-rose-100 hover:text-rose-600 ${
-              isLoggingOut ? "opacity-50" : ""
-            }`}
-          >
-            <LogOut
-              size={18}
-              className="group-hover:-translate-x-1 transition-transform"
+            className={`
+                flex items-center gap-4 px-4 py-3 rounded-2xl transition-all group w-full
+                ${expandedSidebar ? "bg-rose-50 text-rose-600 shadow-sm border border-rose-100" : "text-slate-500 hover:text-rose-600 hover:bg-rose-50"}
+            `}
+        >
+            <LogOut size={20} className="shrink-0" />
+            {expandedSidebar && (
+                <span className="text-[13px] font-bold whitespace-nowrap">
+                    {isLoggingOut ? "Signing out..." : "Secure Logout"}
+                </span>
+            )}
+        </button>
+      </div>
+    </motion.div>
+  );
+
+  return (
+    <>
+      <div className="hidden lg:block h-screen sticky top-0">{SidebarContent}</div>
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileOpen(false)}
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] lg:hidden"
             />
-            Logout
-          </button>
-        </div>
-      </aside>
+            <motion.div
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              className="fixed left-0 top-0 h-screen z-[160] lg:hidden w-[280px]"
+            >
+              <div className="h-full bg-white">
+                <div className="h-full w-full">
+                    {SidebarContent}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 };

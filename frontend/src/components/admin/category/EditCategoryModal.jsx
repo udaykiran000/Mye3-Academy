@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { updateCategory } from "../../../redux/categorySlice";
 import { toast } from "react-hot-toast";
-import { FaTimes, FaCloudUploadAlt } from "react-icons/fa";
+import { X, Upload, Save, Loader2 } from "lucide-react";
 
 import { getImageUrl, handleImageError } from "../../../utils/imageHelper";
 
@@ -41,37 +41,37 @@ const EditCategoryModal = ({ category, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fadeIn">
-        <div className="flex justify-between items-center p-4 border-b bg-gray-50">
-          <h3 className="text-lg font-bold text-gray-800">Edit Category</h3>
+    <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4 transition-all duration-300">
+      <div className="bg-white rounded-none shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200">
+        <div className="flex justify-between items-center px-4 py-3 border-b bg-[#fdfdfd]">
+          <h3 className="text-[12px] font-black text-[#3e4954] uppercase tracking-wider font-poppins">Edit Category</h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition"
+            className="text-slate-400 hover:text-rose-500 transition"
           >
-            <FaTimes size={20} />
+            <X size={14} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-[#7e7e7e] uppercase tracking-widest px-0.5 font-poppins">
               Name
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition"
+              className="w-full border border-slate-200 rounded-none px-3 py-2 text-xs text-[#3e4954] placeholder:text-slate-300 focus:border-[#21b731] outline-none transition font-poppins"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Image
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-[#7e7e7e] uppercase tracking-widest px-0.5 font-poppins">
+              Thumbnail
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition cursor-pointer relative group">
+            <div className="border border-dashed border-slate-200 rounded-none p-4 text-center hover:border-[#21b731]/30 transition group cursor-pointer relative bg-[#fcfdfe]">
               <input
                 type="file"
                 accept="image/*"
@@ -83,40 +83,40 @@ const EditCategoryModal = ({ category, onClose }) => {
                   <img
                     src={preview}
                     alt="Preview"
-                    className="h-32 mx-auto object-cover rounded shadow-sm"
+                    className="h-24 mx-auto object-contain bg-white border border-slate-100 p-2"
                   />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition rounded flex items-center justify-center">
-                    <p className="text-white opacity-0 group-hover:opacity-100 font-medium text-sm drop-shadow-md">
-                      Change Image
+                  <div className="mt-4">
+                    <p className="text-[10px] text-[#21b731] font-bold uppercase font-poppins tracking-tighter">
+                      Click to swap image
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="text-gray-400 py-4">
-                  <FaCloudUploadAlt
+                <div className="text-slate-400 py-4 flex flex-col items-center">
+                  <Upload
                     size={32}
-                    className="mx-auto mb-2 text-gray-300 group-hover:text-blue-400 transition"
+                    className="mb-2 text-slate-200 group-hover:text-[#21b731] transition"
                   />
-                  <span className="text-sm">Click to upload new image</span>
+                  <span className="text-[11px] font-bold uppercase tracking-tight font-poppins">Upload new image</span>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-6">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition font-medium"
+              className="px-6 py-3 text-[11px] font-bold text-[#7e7e7e] hover:bg-slate-50 uppercase tracking-widest transition font-poppins"
             >
-              Cancel
+              Discard
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition font-medium shadow-sm"
+              className="px-8 py-3 bg-[#21b731] text-white rounded-none hover:bg-[#1a9227] disabled:opacity-50 transition-all font-bold text-[11px] uppercase tracking-widest shadow-lg shadow-green-100 font-poppins"
             >
-              {loading ? "Saving..." : "Save Changes"}
+              {loading ? "SYNCING..." : "SAVE CHANGES"}
             </button>
           </div>
         </form>

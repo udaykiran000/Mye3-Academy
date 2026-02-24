@@ -51,89 +51,87 @@ const AddCategory = ({ onClose }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
-      {/* Small Header Section */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-        <h2 className="text-[15px] font-black text-slate-800 uppercase tracking-tight">
-          New Segment Entry
+    <div className="bg-white rounded-none max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200">
+      {/* Header Section */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-[#fdfdfd]">
+        <h2 className="text-[12px] font-black text-[#3e4954] uppercase tracking-wider font-poppins">
+          New Category
         </h2>
         <button
           onClick={onClose}
-          className="p-1.5 hover:bg-slate-200 rounded-md transition text-slate-400"
+          className="p-1 hover:bg-slate-50 transition text-slate-400"
         >
-          <X size={18} />
+          <X size={14} />
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 space-y-5">
-        {/* Title Input - Compact & Sharp */}
+      <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        {/* Name Input */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-0.5">
-            Category Identifier
+          <label className="text-[10px] font-bold text-[#7e7e7e] uppercase tracking-widest px-0.5 font-poppins">
+            Name
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-300 focus:ring-1 focus:ring-indigo-300 focus:border-indigo-400 outline-none transition"
-            placeholder="e.g. SSC CGL / RAILWAYS"
+            className="w-full border border-slate-200 rounded-none px-3 py-2 text-xs text-[#3e4954] placeholder:text-slate-300 focus:border-[#21b731] outline-none transition font-poppins"
+            placeholder="e.g. RRB NTPC"
             required
           />
         </div>
 
-        {/* Upload Logic - Human Friendly & Small */}
+        {/* Upload Section */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-0.5">
-            Graphic Asset
+          <label className="text-[10px] font-bold text-[#7e7e7e] uppercase tracking-widest px-0.5 font-poppins">
+            Thumbnail
           </label>
-          <div className="relative border border-dashed border-slate-200 rounded-lg bg-slate-50 p-4 hover:border-indigo-200 transition group flex items-center justify-center cursor-pointer">
+          <div className="relative border border-dashed border-slate-200 rounded-none bg-[#fcfdfe] p-4 hover:border-[#21b731]/30 transition group flex flex-col items-center justify-center cursor-pointer">
             <input
               type="file"
               accept="image/*"
               onChange={handleImageChange}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             />
-            <div className="text-center space-y-1 flex flex-col items-center">
-              <Upload
-                className="text-slate-300 group-hover:text-indigo-400 transition"
-                size={20}
-              />
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
-                Browse Local Files
-              </p>
-            </div>
+            <Upload
+              className="text-slate-300 group-hover:text-[#21b731] transition mb-2"
+              size={24}
+            />
+            <p className="text-[11px] text-[#7e7e7e] font-bold uppercase tracking-tight font-poppins">
+              Drop or Click to Upload
+            </p>
           </div>
 
-          {/* Miniature Image Preview */}
+          {/* Preview Section */}
           {preview && (
-            <div className="mt-3 flex items-center gap-3 p-2 bg-indigo-50/50 rounded-lg border border-indigo-100 animate-in fade-in">
+            <div className="mt-4 flex items-center gap-4 p-3 bg-slate-50 border border-slate-100 rounded-none animate-in fade-in">
               <img
                 src={preview}
                 alt="Asset Preview"
-                className="w-12 h-12 object-contain rounded-md bg-white border border-indigo-100"
+                className="w-14 h-14 object-contain bg-white border border-slate-100"
               />
-              <div>
-                <p className="text-[10px] text-indigo-500 font-bold uppercase">
-                  Ready to Commit
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] text-[#21b731] font-bold uppercase font-poppins">
+                  Image Ready
                 </p>
-                <p className="text-[9px] text-slate-400 truncate max-w-[200px] italic">
-                  Asset loaded for segment indexing...
+                <p className="text-[10px] text-[#7e7e7e] truncate italic font-poppins">
+                  Thumbnail processed for upload...
                 </p>
               </div>
             </div>
           )}
         </div>
 
-        {/* Dashboard-Ready Action Button */}
-        <div className="pt-2">
+        {/* Action Button */}
+        <div className="pt-4">
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3 px-4 rounded-lg text-white font-bold text-[13px] uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 shadow-sm
+            className={`w-full py-4 px-6 rounded-none text-white font-bold text-[12px] uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 shadow-sm font-poppins
                     ${
                       loading
                         ? "bg-slate-300 cursor-not-allowed"
-                        : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100/50 active:scale-95"
+                        : "bg-[#21b731] hover:bg-[#1a9227] shadow-green-100/50 active:scale-95"
                     }`}
           >
             {loading ? (
@@ -141,7 +139,7 @@ const AddCategory = ({ onClose }) => {
             ) : (
               <Save size={16} />
             )}
-            {loading ? "Processing Database..." : "Publish Category"}
+            {loading ? "SAVING DATA..." : "CREATE CATEGORY"}
           </button>
         </div>
       </form>
