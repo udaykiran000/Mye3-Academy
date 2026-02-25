@@ -1,4 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchStudentProfile } from "../../redux/studentSlice";
+import api from "../../api/axios";
+import toast from "react-hot-toast";
+import { setUserData } from "../../redux/userSlice";
+import { motion, AnimatePresence } from "framer-motion";
+
 import {
   BookOpen,
   TrendingUp,
@@ -6,208 +14,208 @@ import {
   Settings,
   LogOut,
   Search,
-  Home,
-  Menu,
+  GraduationCap,
   MessageCircle,
+  LayoutGrid,
+  ChevronDown,
+  Menu,
+  X
 } from "lucide-react";
 
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
-import { fetchStudentProfile } from "../../redux/studentSlice";
-import { setUserData } from "../../redux/userSlice";
-import api from "../../api/axios";
-import toast from "react-hot-toast";
-
-import SidebarLink from "./SidebarLink";
+const MENU = [
+  { label: "Overview", icon: LayoutGrid, key: "overview" },
+  { label: "My Enrollments", icon: BookOpen, key: "my-tests" },
+  { label: "Explore Tests", icon: Search, key: "explore" },
+  { label: "My Performance", icon: TrendingUp, key: "performance" },
+  { label: "My Doubts", icon: MessageCircle, key: "doubts" },
+  { label: "Profile Settings", icon: Settings, key: "settings" },
+];
 
 const StuSidebar = ({ activeTab, setActiveTab }) => {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [imgError, setImgError] = useState(false);
-
-  const dispatch = useDispatch();
+  const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
   const { studentProfile } = useSelector((state) => state.students);
+  const [isHovering, setIsHovering] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const hoverTimer = useRef(null);
+  const leaveTimer = useRef(null);
 
   useEffect(() => {
-    if (!studentProfile) {
-      dispatch(fetchStudentProfile());
-    }
+    if (!studentProfile) dispatch(fetchStudentProfile());
   }, [dispatch, studentProfile]);
 
-  // Reset error when avatar changes
-  useEffect(() => {
-    setImgError(false);
-  }, [studentProfile?.avatar]);
+  const expandedSidebar = isPinned || isHovering;
+
+  const handleEnter = () => {
+    clearTimeout(leaveTimer.current);
+    hoverTimer.current = setTimeout(() => setIsHovering(true), 150);
+  };
+
+  const handleLeave = () => {
+    if (isPinned) return;
+    clearTimeout(hoverTimer.current);
+    leaveTimer.current = setTimeout(() => setIsHovering(false), 200);
+  };
 
   const handleLogout = async () => {
     if (!window.confirm("Are you sure you want to logout?")) return;
-
-    setLoading(true);
+    setIsLoggingOut(true);
     try {
       await api.get("/api/auth/logout");
       dispatch(setUserData(null));
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("persist:root");
+      localStorage.clear();
       toast.success("Logged out successfully");
       window.location.href = "/";
     } catch (error) {
-      console.error("Logout failed:", error);
-      dispatch(setUserData(null));
-      localStorage.clear();
-      window.location.href = "/";
+      toast.error("Logout failed");
     } finally {
-      setLoading(false);
+      setIsLoggingOut(false);
     }
   };
 
-  const renderAvatar = () => {
-    if (studentProfile?.avatar && !imgError) {
-      const avatarUrl = `import.meta.env.VITE_SERVER_URL/${studentProfile.avatar.replace(/\\/g, "/")}`;
-      return (
-        <img
-          src={avatarUrl}
-          className="w-20 h-20 rounded-full object-cover border-4 border-gray-800 shadow-xl group-hover:border-blue-600 transition-colors duration-300"
-          alt="Student Profile"
-          onError={() => setImgError(true)}
-        />
-      );
-    }
-
-    const firstLetter = studentProfile?.firstname
-      ? studentProfile.firstname.charAt(0).toUpperCase()
-      : "S";
-
-    return (
-      <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center border-4 border-gray-800 shadow-xl group-hover:border-blue-500 transition-colors duration-300">
-        <span className="text-3xl font-bold text-white">{firstLetter}</span>
+  const SidebarContent = (
+    <motion.div
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+      animate={{ width: expandedSidebar ? 280 : 88 }}
+      transition={{ type: "spring", stiffness: 140, damping: 20, mass: 0.8 }}
+      className="relative h-full bg-white border-r border-slate-200 flex flex-col z-[100]"
+    >
+      {/* BRAND SECTION */}
+      <div className="px-6 py-8 flex items-center gap-4">
+        <div 
+            onClick={() => setIsPinned(!isPinned)}
+            className="shrink-0 w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg cursor-pointer hover:rotate-6 transition-transform"
+        >
+            <GraduationCap size={24} strokeWidth={2.5} />
+        </div>
+        <AnimatePresence>
+            {expandedSidebar && (
+                <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="overflow-hidden whitespace-nowrap"
+                >
+                    <h2 className="text-xl font-black text-slate-800 tracking-tighter italic">Mye3</h2>
+                    <p className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] leading-none mt-0.5">Student Dashboard</p>
+                </motion.div>
+            )}
+        </AnimatePresence>
       </div>
-    );
-  };
+
+      {/* NAVIGATION */}
+      <nav className="px-3 space-y-1 flex-grow overflow-y-auto custom-scrollbar">
+        {MENU.map((m, i) => {
+          const Icon = m.icon;
+          const isActive = activeTab === m.key;
+
+          return (
+            <div key={i} className="mb-1">
+              <div
+                onClick={() => {
+                  setActiveTab(m.key);
+                  setIsMobileOpen(false);
+                }}
+                className={`
+                    relative flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer group transition-all
+                    ${isActive ? "bg-blue-50 text-blue-600" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"}
+                `}
+              >
+                {isActive && (
+                  <motion.div 
+                    layoutId="active-pill-stu"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1.5 bg-blue-600 rounded-r-full shadow-sm" 
+                  />
+                )}
+                
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="shrink-0 relative z-10" />
+                
+                <AnimatePresence>
+                    {expandedSidebar && (
+                        <motion.span 
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -5 }}
+                            className="text-[14px] font-bold whitespace-nowrap overflow-hidden"
+                        >
+                            {m.label}
+                        </motion.span>
+                    )}
+                </AnimatePresence>
+              </div>
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* FOOTER */}
+      <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
+        <button 
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className={`
+                flex items-center gap-4 px-4 py-3 rounded-2xl transition-all group w-full
+                ${expandedSidebar ? "bg-rose-50 text-rose-600 shadow-sm border border-rose-100" : "text-slate-500 hover:text-rose-600 hover:bg-rose-50"}
+            `}
+        >
+            <LogOut size={20} className="shrink-0" />
+            {expandedSidebar && (
+                <span className="text-[13px] font-bold whitespace-nowrap">
+                    {isLoggingOut ? "Signing out..." : "Secure Logout"}
+                </span>
+            )}
+        </button>
+      </div>
+    </motion.div>
+  );
 
   return (
     <>
-      <div className="md:hidden fixed top-0 left-0 w-full p-4 bg-gray-900/95 backdrop-blur-md z-50 flex justify-between items-center shadow-lg">
-        <h1 className="text-xl font-bold text-white">Student Dashboard</h1>
+      <div className="md:hidden fixed top-0 left-0 w-full p-4 bg-white/95 backdrop-blur-md z-50 flex justify-between items-center shadow-sm border-b border-slate-100">
+        <h1 className="text-xl font-black text-blue-600 italic">Mye3</h1>
         <Menu
-          className="text-white text-3xl cursor-pointer"
-          onClick={() => setOpen(true)}
+          className="text-slate-600 cursor-pointer"
+          onClick={() => setIsMobileOpen(true)}
         />
       </div>
 
-      {open && (
-        <div
-          onClick={() => setOpen(false)}
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
-        />
-      )}
+      <div className="hidden md:block h-screen sticky top-0">{SidebarContent}</div>
 
-      <aside
-        className={`bg-gray-900/95 backdrop-blur-lg shadow-2xl shadow-gray-900/50 
-          fixed top-0 left-0 h-screen w-80 z-50 
-          flex flex-col 
-          transform transition-transform duration-300 ease-in-out
-          ${open ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 
-        `}
-      >
-        <div className="flex flex-col items-center py-8 border-b border-gray-800 mt-14 md:mt-0">
-          <div
-            className="relative group cursor-pointer"
-            onClick={() => setActiveTab("settings")}
-          >
-            {renderAvatar()}
-            <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <Settings className="text-white w-6 h-6" />
-            </div>
-          </div>
-
-          <h4 className="text-white font-bold mt-4 text-lg tracking-wide text-center px-4 capitalize">
-            {studentProfile?.firstname
-              ? `${studentProfile.firstname} ${studentProfile.lastname}`
-              : "Loading..."}
-          </h4>
-
-          <span className="bg-blue-900/50 text-blue-300 text-xs font-medium px-3 py-1 rounded-full mt-2 border border-blue-800/50">
-            Student Account
-          </span>
-        </div>
-
-        <nav className="mt-6 flex-grow overflow-y-auto px-4 space-y-2 scrollbar-hidden">
-
-          <SidebarLink
-            icon={<BarChart2 size={20} />}
-            label="Overview"
-            isActive={activeTab === "overview"}
-            onClick={() => {
-              setActiveTab("overview");
-              setOpen(false);
-            }}
-          />
-
-          <SidebarLink
-            icon={<BookOpen size={20} />}
-            label="My Enrollments"
-            isActive={activeTab === "my-tests"}
-            onClick={() => {
-              setActiveTab("my-tests");
-              setOpen(false);
-            }}
-          />
-
-          <SidebarLink
-            icon={<Search size={20} />}
-            label="Explore Tests"
-            isActive={activeTab === "explore"}
-            onClick={() => {
-              setActiveTab("explore");
-              setOpen(false);
-            }}
-          />
-
-          <SidebarLink
-            icon={<TrendingUp size={20} />}
-            label="My Performance"
-            isActive={activeTab === "performance"}
-            onClick={() => {
-              setActiveTab("performance");
-              setOpen(false);
-            }}
-          />
-
-          <SidebarLink
-            icon={<MessageCircle size={20} />}
-            label="My Doubts"
-            isActive={activeTab === "doubts"}
-            onClick={() => {
-              setActiveTab("doubts");
-              setOpen(false);
-            }}
-          />
-
-          <SidebarLink
-            icon={<Settings size={20} />}
-            label="Profile Settings"
-            isActive={activeTab === "settings"}
-            onClick={() => {
-              setActiveTab("settings");
-              setOpen(false);
-            }}
-          />
-        </nav>
-
-        <div className="p-4 border-t border-gray-800 mt-auto">
-          <button
-            onClick={handleLogout}
-            disabled={loading}
-            className={`w-full bg-red-700/30 hover:bg-red-700/50 text-red-300 py-3 rounded-lg flex items-center gap-3 justify-center font-medium transition duration-200 ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-          >
-            <LogOut className="w-4 h-4" />
-            {loading ? "Logging out..." : "Logout"}
-          </button>
-        </div>
-      </aside>
+      <AnimatePresence>
+        {isMobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileOpen(false)}
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] md:hidden"
+            />
+            <motion.div
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              className="fixed left-0 top-0 h-screen z-[160] md:hidden w-[280px]"
+            >
+              <div className="h-full bg-white relative">
+                <button 
+                  onClick={() => setIsMobileOpen(false)}
+                  className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 z-[170]"
+                >
+                  <X size={20} />
+                </button>
+                {SidebarContent}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 };

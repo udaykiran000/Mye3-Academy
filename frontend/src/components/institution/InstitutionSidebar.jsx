@@ -1,160 +1,210 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import api from "../../api/axios";
 import toast from "react-hot-toast";
 import { setUserData } from "../../redux/userSlice";
+import { motion, AnimatePresence } from "framer-motion";
 
 import {
   Home,
   Users,
-  BarChart3,
-  FileText,
-  ChevronRight,
-  ChevronDown,
-  Plus,
-  LogOut,
-  Menu,
   Settings,
-  X,
-  MessageSquare,
+  LogOut,
   Building2,
+  GraduationCap,
+  LayoutGrid,
+  Menu,
+  X
 } from "lucide-react";
 
-/* ----------------------------------
-  INSTITUTION NAV ITEMS
------------------------------------ */
-
-const navItems = [
-  { name: "Dashboard", path: "/institution-dashboard", icon: Home },
-  { name: "My Students", path: "/institution-dashboard/students", icon: Users },
-  { name: "Profile Settings", path: "/institution-dashboard/profile", icon: Settings },
+const MENU = [
+  { label: "Dashboard", icon: LayoutGrid, path: "/institution-dashboard" },
+  { label: "My Students", icon: Users, path: "/institution-dashboard/students" },
+  { label: "Profile Settings", icon: Settings, path: "/institution-dashboard/profile" },
 ];
 
-/* ----------------------------------
-  MENU ITEM
------------------------------------ */
-
-const MenuItem = ({ item, isOpen, toggleOpen, openSections, closeSidebar }) => {
-  const location = useLocation();
-
-  const isActive = useMemo(() => {
-    if (item.path) return location.pathname === item.path;
-    return item.children?.some((c) => location.pathname.startsWith(c.path));
-  }, [location.pathname, item.path, item.children]);
-
-  const activeStyle =
-    "bg-indigo-50/80 text-indigo-600 border-r-2 border-indigo-500 font-bold shadow-sm";
-
-  const baseStyle =
-    "flex items-center justify-between gap-3 px-5 py-2.5 rounded-lg transition-all duration-200 cursor-pointer text-slate-500 hover:text-slate-800 hover:bg-slate-50";
-
-  return (
-    <li>
-      <NavLink
-        to={item.path}
-        onClick={closeSidebar}
-        className={({ isActive: exact }) =>
-          `${baseStyle} ${exact ? activeStyle : ""}`
-        }
-      >
-        <div className="flex items-center gap-3">
-          <item.icon size={16} />
-          <span className="text-[13px]">{item.name}</span>
-        </div>
-      </NavLink>
-    </li>
-  );
-};
-
-/* ----------------------------------
-  SIDEBAR CORE
------------------------------------ */
-
 const InstitutionSidebar = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { userData } = useSelector((state) => state.user);
-  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+
+  const [isHovering, setIsHovering] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  const hoverTimer = useRef(null);
+  const leaveTimer = useRef(null);
+
+  const expandedSidebar = isPinned || isHovering;
+
+  const handleEnter = () => {
+    clearTimeout(leaveTimer.current);
+    hoverTimer.current = setTimeout(() => setIsHovering(true), 150);
+  };
+
+  const handleLeave = () => {
+    if (isPinned) return;
+    clearTimeout(hoverTimer.current);
+    leaveTimer.current = setTimeout(() => setIsHovering(false), 200);
+  };
+
   const handleLogout = async () => {
+    if (!window.confirm("Are you sure you want to logout?")) return;
     setIsLoggingOut(true);
     try {
       await api.get("/api/auth/logout");
       dispatch(setUserData(null));
-      toast.success("Logged out");
-      navigate("/");
+      localStorage.clear();
+      toast.success("Logged out successfully");
+      window.location.href = "/";
+    } catch (error) {
+      toast.error("Logout failed");
     } finally {
       setIsLoggingOut(false);
     }
   };
 
-  const avatarUrl = useMemo(() => {
-    if (userData?.avatar)
-      return `${import.meta.env.VITE_SERVER_URL}/${userData.avatar}`;
-    return `https://ui-avatars.com/api/?name=${userData?.firstname || "Institution"}&background=6366f1&color=fff`;
-  }, [userData]);
+  const SidebarContent = (
+    <motion.div
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+      animate={{ width: expandedSidebar ? 280 : 88 }}
+      transition={{ type: "spring", stiffness: 140, damping: 20, mass: 0.8 }}
+      className="relative h-full bg-white border-r border-slate-200 flex flex-col z-[100]"
+    >
+      {/* BRAND SECTION */}
+      <div className="px-6 py-8 flex items-center gap-4">
+        <div 
+            onClick={() => setIsPinned(!isPinned)}
+            className="shrink-0 w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg cursor-pointer hover:rotate-6 transition-transform"
+        >
+            <Building2 size={24} strokeWidth={2.5} />
+        </div>
+        <AnimatePresence>
+            {expandedSidebar && (
+                <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    className="overflow-hidden whitespace-nowrap"
+                >
+                    <h2 className="text-xl font-black text-slate-800 tracking-tighter italic">Mye3</h2>
+                    <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-[0.2em] leading-none mt-0.5">Institution Portal</p>
+                </motion.div>
+            )}
+        </AnimatePresence>
+      </div>
+
+      {/* NAVIGATION */}
+      <nav className="px-3 space-y-1 flex-grow overflow-y-auto custom-scrollbar">
+        {MENU.map((m, i) => {
+          const Icon = m.icon;
+          const isActive = location.pathname === m.path;
+
+          return (
+            <div key={i} className="mb-1">
+              <div
+                onClick={() => {
+                  navigate(m.path);
+                  setIsMobileOpen(false);
+                }}
+                className={`
+                    relative flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer group transition-all
+                    ${isActive ? "bg-indigo-50 text-indigo-600" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"}
+                `}
+              >
+                {isActive && (
+                  <motion.div 
+                    layoutId="active-pill-insti"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1.5 bg-indigo-600 rounded-r-full shadow-sm" 
+                  />
+                )}
+                
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="shrink-0 relative z-10" />
+                
+                <AnimatePresence>
+                    {expandedSidebar && (
+                        <motion.span 
+                            initial={{ opacity: 0, x: -5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -5 }}
+                            className="text-[14px] font-bold whitespace-nowrap overflow-hidden"
+                        >
+                            {m.label}
+                        </motion.span>
+                    )}
+                </AnimatePresence>
+              </div>
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* FOOTER */}
+      <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
+        <button 
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className={`
+                flex items-center gap-4 px-4 py-3 rounded-2xl transition-all group w-full
+                ${expandedSidebar ? "bg-rose-50 text-rose-600 shadow-sm border border-rose-100" : "text-slate-500 hover:text-rose-600 hover:bg-rose-50"}
+            `}
+        >
+            <LogOut size={20} className="shrink-0" />
+            {expandedSidebar && (
+                <span className="text-[13px] font-bold whitespace-nowrap">
+                    {isLoggingOut ? "Signing out..." : "Secure Logout"}
+                </span>
+            )}
+        </button>
+      </div>
+    </motion.div>
+  );
 
   return (
     <>
-      <div className="md:hidden fixed top-0 left-0 w-full p-4 bg-white z-50 flex justify-between border-b">
-        <h1 className="font-black text-indigo-600">MYE 3 ACADEMY</h1>
-        <button onClick={() => setShowMobileSidebar(!showMobileSidebar)}>
-          {showMobileSidebar ? <X /> : <Menu />}
-        </button>
+      <div className="md:hidden fixed top-0 left-0 w-full p-4 bg-white/95 backdrop-blur-md z-50 flex justify-between items-center shadow-sm border-b border-slate-100">
+        <h1 className="text-xl font-black text-indigo-600 italic">Mye3</h1>
+        <Menu
+          className="text-slate-600 cursor-pointer"
+          onClick={() => setIsMobileOpen(true)}
+        />
       </div>
 
-      {showMobileSidebar && (
-        <div
-          className="fixed inset-0 bg-black/20 z-40"
-          onClick={() => setShowMobileSidebar(false)}
-        />
-      )}
+      <div className="hidden md:block h-screen sticky top-0">{SidebarContent}</div>
 
-      <aside
-        className={`bg-white fixed top-0 left-0 h-screen w-72 z-50 transition border-r shadow-sm
-        ${showMobileSidebar ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
-      >
-        <div className="px-6 py-6 border-b">
-          <h2 className="text-xs font-black uppercase tracking-widest text-indigo-600">
-            MYE 3 Academy
-          </h2>
-          <p className="text-[10px] text-slate-400 font-bold">INSTITUTION PORTAL</p>
-        </div>
-
-        <div className="px-6 py-6 text-center border-b">
-          <img src={avatarUrl} className="w-12 h-12 mx-auto rounded-2xl shadow-sm border border-slate-100" />
-          <h4 className="mt-3 font-bold text-sm text-slate-800">
-            {userData?.firstname || "Institution"}
-          </h4>
-          <span className="text-[10px] text-slate-400 uppercase font-black tracking-tighter tracking-widest">
-            {userData?.lastname || "Campus"}
-          </span>
-        </div>
-
-        <nav className="px-3 py-6 space-y-1">
-          <ul>
-            {navItems.map((item) => (
-              <MenuItem
-                key={item.name}
-                item={item}
-                closeSidebar={() => setShowMobileSidebar(false)}
-              />
-            ))}
-          </ul>
-        </nav>
-
-        <div className="p-4 border-t absolute bottom-0 w-full">
-          <button
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className="w-full bg-rose-50 text-rose-500 py-2.5 rounded-xl flex justify-center items-center gap-2 font-bold text-xs hover:bg-rose-100 transition-colors"
-          >
-            <LogOut size={16} /> Logout
-          </button>
-        </div>
-      </aside>
+      <AnimatePresence>
+        {isMobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileOpen(false)}
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[150] md:hidden"
+            />
+            <motion.div
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              className="fixed left-0 top-0 h-screen z-[160] md:hidden w-[280px]"
+            >
+              <div className="h-full bg-white relative">
+                <button 
+                  onClick={() => setIsMobileOpen(false)}
+                  className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 z-[170]"
+                >
+                  <X size={20} />
+                </button>
+                {SidebarContent}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 };

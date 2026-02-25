@@ -254,6 +254,48 @@ export const getMyPurchasedTests = async (req, res) => {
       .json({ success: false, message: "Server error fetching tests." });
   }
 };
+export const getGlobalLeaderboard = async (req, res) => {
+  try {
+    const leaderboard = await Attempt.aggregate([
+      { $match: { status: { $in: ["finished", "completed"] } } },
+      {
+        $group: {
+          _id: "$studentId",
+          totalScore: { $sum: "$score" },
+          attemptsCount: { $sum: 1 },
+        },
+      },
+      { $sort: { totalScore: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      { $unwind: "$userDetails" },
+      {
+        $project: {
+          _id: 1,
+          totalScore: 1,
+          attemptsCount: 1,
+          name: {
+            $concat: ["$userDetails.firstname", " ", "$userDetails.lastname"],
+          },
+          avatar: "$userDetails.avatar",
+        },
+      },
+    ]);
+
+    res.status(200).json({ success: true, leaderboard });
+  } catch (error) {
+    console.error("Leaderboard Error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch leaderboard" });
+  }
+};
+
 export const getStudentDashboardStats = async (req, res) => {
   try {
     const userId = req.user._id;

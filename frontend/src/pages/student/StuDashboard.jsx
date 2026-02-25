@@ -52,7 +52,7 @@ export default function StuDashboard() {
       <StuSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 pt-20 md:pt-6 md:ml-80 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+      <main className="flex-1 pt-20 md:pt-6 p-4 sm:p-6 lg:p-8 overflow-y-auto">
         {/* Pass userData for header display while profile is loading */}
         <StuHeader user={userProfile || userData} />
 

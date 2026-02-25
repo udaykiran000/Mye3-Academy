@@ -9,7 +9,7 @@ export default function InstructorDashboard() {
       <InstructorSidebar />
 
       {/* RIGHT CONTENT */}
-      <main className="flex-1 bg-gray-300 md:ml-72 pt-20 md:pt-6 px-6">
+      <main className="flex-1 bg-gray-50 pt-20 md:pt-6 px-6">
         <Outlet />
       </main>
     </div>

@@ -130,6 +130,18 @@ export const updateStudentProfile = createAsyncThunk(
   }
 );
 
+export const fetchGlobalLeaderboard = createAsyncThunk(
+  "students/fetchGlobalLeaderboard",
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get("/api/student/leaderboard");
+      return data.leaderboard;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Failed to load global leaderboard");
+    }
+  }
+);
+
 /* ============================================================
    INITIAL STATE
 ============================================================ */
@@ -151,7 +163,9 @@ const initialState = {
   testStartStatus: "idle",
     testStartError: null,
   leaderboards: {}, 
+  globalLeaderboard: [],
   leaderboardStatus: "idle",
+  globalLeaderboardStatus: "idle",
   leaderboardError: null,
 
   // ✅ Profile Update State
@@ -319,6 +333,17 @@ const studentSlice = createSlice({
       })
       .addCase(fetchLeaderboard.rejected, (state) => {
         state.leaderboardStatus = "failed";
+      });
+      builder
+      .addCase(fetchGlobalLeaderboard.pending, (state) => {
+        state.globalLeaderboardStatus = "loading";
+      })
+      .addCase(fetchGlobalLeaderboard.fulfilled, (state, action) => {
+        state.globalLeaderboardStatus = "succeeded";
+        state.globalLeaderboard = action.payload;
+      })
+      .addCase(fetchGlobalLeaderboard.rejected, (state) => {
+        state.globalLeaderboardStatus = "failed";
       });
 
 
