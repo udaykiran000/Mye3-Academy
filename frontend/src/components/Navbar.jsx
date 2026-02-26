@@ -178,25 +178,34 @@ const Navbar = () => {
                   Home
                 </Link>
                 <Link
-                  to="/mocktests"
+                  to="/mocktests?type=mock"
                   className={
-                    location.pathname === "/mocktests" &&
-                    !location.search.includes("grand")
+                    location.search.includes("type=mock")
                       ? "text-indigo-600"
                       : "hover:text-indigo-600"
                   }
                 >
-                  All Tests
+                  Mock Tests
                 </Link>
                 <Link
-                  to="/mocktests?filter=grand"
+                  to="/mocktests?type=grand"
                   className={
-                    location.search.includes("grand")
+                    location.search.includes("type=grand")
                       ? "text-indigo-600"
                       : "hover:text-indigo-600"
                   }
                 >
                   Grand Tests
+                </Link>
+                <Link
+                  to="/mocktests"
+                  className={
+                    location.pathname === "/mocktests" && !location.search.includes("type=")
+                      ? "text-indigo-600"
+                      : "hover:text-indigo-600"
+                  }
+                >
+                  All Tests
                 </Link>
               </div>
 
@@ -297,16 +306,22 @@ const Navbar = () => {
           {[
             { id: "home", label: "HOME", icon: Home, path: "/" },
             {
-              id: "tests",
-              label: "TESTS",
+              id: "mock",
+              label: "MOCK",
               icon: ClipboardList,
-              path: "/mocktests",
+              path: "/mocktests?type=mock",
             },
             {
               id: "grand",
               label: "GRAND",
               icon: Zap,
-              path: "/mocktests?filter=grand",
+              path: "/mocktests?type=grand",
+            },
+            {
+              id: "all",
+              label: "ALL",
+              icon: Search,
+              path: "/mocktests",
             },
             {
               id: "profile",
@@ -318,15 +333,23 @@ const Navbar = () => {
             <Link
               key={tab.id}
               to={tab.path}
-              className="flex flex-col items-center gap-1 min-w-[70px]"
+              className="flex flex-col items-center gap-1 min-w-[60px]"
             >
               <div
-                className={`p-3 rounded-full transition-all ${location.pathname === tab.path ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400"}`}
+                className={`p-2.5 rounded-full transition-all ${
+                  location.pathname + location.search === tab.path || (tab.id === 'all' && location.pathname === tab.path && !location.search.includes('type='))
+                    ? "bg-indigo-600 text-white shadow-lg"
+                    : "text-slate-400 hover:text-indigo-400"
+                }`}
               >
-                <tab.icon size={22} />
+                <tab.icon size={20} />
               </div>
               <span
-                className={`text-[10px] font-black tracking-widest ${location.pathname === tab.path ? "text-indigo-600" : "text-slate-400"}`}
+                className={`text-[9px] font-black tracking-widest ${
+                  location.pathname + location.search === tab.path || (tab.id === 'all' && location.pathname === tab.path && !location.search.includes('type='))
+                    ? "text-indigo-600"
+                    : "text-slate-400"
+                }`}
               >
                 {tab.label}
               </span>

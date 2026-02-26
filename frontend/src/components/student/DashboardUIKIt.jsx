@@ -14,31 +14,31 @@ export const StatCard = ({ icon, title, value, subValue, color }) => {
   const theme = colorMap[color] || colorMap.blue;
 
   return (
-    <div className={`relative group bg-white p-6 rounded-3xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] border-2 border-transparent hover:border-${color}-500/20 transition-all duration-500 overflow-hidden`}>
+    <div className={`relative group ${theme.bg} p-5 rounded-[24px] shadow-lg border border-transparent hover:scale-105 transition-all duration-500 overflow-hidden`}>
       {/* Subtle Background Shape */}
-      <div className={`absolute -top-4 -right-4 w-24 h-24 ${theme.light} rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700`}></div>
+      <div className="absolute -top-4 -right-4 w-20 h-20 bg-white/20 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-700"></div>
       
-      <div className="flex flex-col gap-5 relative z-10">
+      <div className="flex flex-col gap-4 relative z-10">
         <div className="flex items-center justify-between">
-          <div className={`p-4 rounded-2xl ${theme.light} ${theme.text} shadow-sm border ${theme.border} group-hover:scale-110 group-hover:bg-${color}-500 group-hover:text-white transition-all duration-500`}>
-            {React.cloneElement(icon, { size: 26, strokeWidth: 2.5 })}
+          <div className="p-3 rounded-xl bg-white/20 text-white shadow-sm border border-white/30 group-hover:bg-white group-hover:text-slate-900 transition-all duration-500">
+            {React.cloneElement(icon, { size: 20, strokeWidth: 2.5 })}
           </div>
-          <div className={`w-12 h-1 ${theme.bg} rounded-full opacity-20 group-hover:opacity-100 transition-opacity`}></div>
+          <div className="w-8 h-1 bg-white/30 rounded-full opacity-50 group-hover:opacity-100 transition-opacity"></div>
         </div>
         
         <div>
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[3px] mb-1">{title}</p>
+          <p className="text-[10px] font-black text-white/70 uppercase tracking-[2px] mb-1">{title}</p>
           <div className="flex items-baseline gap-2">
-            <h3 className="text-4xl font-black text-slate-900 tracking-tight">{value}</h3>
+            <h3 className="text-2xl font-black text-white tracking-tight">{value}</h3>
             {subValue && (
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[2px]">{subValue}</span>
+              <span className="text-[9px] font-extrabold text-white/60 uppercase tracking-[1px]">{subValue}</span>
             )}
           </div>
         </div>
       </div>
       
       {/* Interactive Bottom Accent */}
-      <div className={`absolute bottom-0 left-0 w-0 h-1.5 ${theme.bg} group-hover:w-full transition-all duration-700`}></div>
+      <div className="absolute bottom-0 left-0 w-0 h-1 bg-white/50 group-hover:w-full transition-all duration-700"></div>
     </div>
   );
 };

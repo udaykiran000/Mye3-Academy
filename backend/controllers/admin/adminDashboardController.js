@@ -86,6 +86,38 @@ export const getAdminStats = async (req, res) => {
       },
     ]); // 6. FINAL STATS OBJECT (FIX: Include categorySales and testTypeSales)
 
+    const topRankers = await Attempt.aggregate([
+      { $match: { status: { $in: ["completed", "finished"] } } },
+      {
+        $group: {
+          _id: "$studentId",
+          totalScore: { $sum: "$score" },
+          examsTaken: { $sum: 1 },
+        },
+      },
+      { $sort: { totalScore: -1 } },
+      { $limit: 3 },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "studentDetails",
+        },
+      },
+      { $unwind: "$studentDetails" },
+      {
+        $project: {
+          _id: 0,
+          studentId: "$_id",
+          name: { $concat: ["$studentDetails.firstname", " ", "$studentDetails.lastname"] },
+          avatar: "$studentDetails.avatar",
+          totalScore: 1,
+          examsTaken: 1,
+        },
+      },
+    ]);
+
     const stats = {
       students: studentCount,
       instructors: instructorCount,
@@ -94,8 +126,9 @@ export const getAdminStats = async (req, res) => {
       attempts: totalAttempts,
       revenue: salesData[0]?.totalRevenue || 0,
       orders: salesData[0]?.totalOrders || 0,
-      categorySales: categorySales, // <-- FIX APPLIED
-      testTypeSales: testTypeSales, // <-- FIX APPLIED
+      categorySales: categorySales, 
+      testTypeSales: testTypeSales,
+      topRankers: topRankers,
     };
 
     res.status(200).json({

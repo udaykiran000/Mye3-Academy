@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import { getImageUrl, handleImageError } from "../../utils/imageHelper";
 
@@ -54,16 +55,15 @@ const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
   };
 
   return (
-    <section id="categories" className="py-20 bg-white scroll-mt-24">
+    <section id="categories" className="py-20 bg-transparent scroll-mt-24">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         {/* HEADER */}
-        <div className="text-left mb-8">
-          <h2 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight">
-            Popular Exams
+        <div className="text-left mb-10">
+          <h2 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tighter uppercase">
+            Popular <span className="text-emerald-500">Exams</span>
           </h2>
-          <p className="text-slate-500 mt-2 font-medium">
-            Get exam-ready with concepts, questions and study notes as per the
-            latest pattern
+          <p className="text-slate-500 mt-2 font-bold uppercase tracking-widest text-[10px] opacity-70">
+            Premium Exam Series • Concept Mastery • AI Analytics
           </p>
         </div>
 
@@ -72,13 +72,13 @@ const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
           {/* Left Arrow Button */}
           <button
             onClick={() => scroll("left")}
-            className="absolute left-[-15px] top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white border border-slate-100 rounded-full shadow-lg flex items-center justify-center text-slate-400 hover:text-cyan-500 hover:scale-110 transition active:scale-95 md:flex hidden"
+            className="absolute left-[-15px] top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white border border-slate-200 rounded-full shadow-lg flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:scale-110 transition active:scale-95 md:flex hidden"
           >
-            <ChevronLeft size={20} strokeWidth={3} />
+            <ChevronLeft size={20} strokeWidth={2.5} />
           </button>
 
           {/* Tab Container */}
-          <div className="bg-white p-2 rounded-2xl shadow-sm border border-slate-50 flex items-center relative overflow-hidden">
+          <div className="bg-transparent flex items-center relative overflow-hidden mb-4">
             <div
               ref={scrollRef}
               className="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth w-full py-1 px-2"
@@ -90,10 +90,10 @@ const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveCategory(tab.id)}
-                  className={`px-8 py-3 rounded-full text-[13px] font-bold tracking-tight transition-all duration-300 border-2 whitespace-nowrap ${
+                  className={`px-6 py-3 rounded-xl text-[11px] font-black tracking-[0.1em] transition-all duration-300 border-2 whitespace-nowrap uppercase ${
                     activeCategory === tab.id
-                      ? "bg-[#00d1ff] border-[#00d1ff] text-white shadow-xl shadow-cyan-100 scale-105"
-                      : "bg-white border-slate-100 text-slate-500 hover:border-slate-300"
+                      ? "bg-emerald-500 border-emerald-500 text-white shadow-xl shadow-emerald-500/20 scale-105"
+                      : "bg-white border-slate-200 text-slate-400 hover:border-emerald-500/50 hover:text-emerald-500"
                   }`}
                 >
                   {tab.label}
@@ -105,16 +105,16 @@ const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
           {/* Right Arrow Button */}
           <button
             onClick={() => scroll("right")}
-            className="absolute right-[-15px] top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white border border-slate-100 rounded-full shadow-lg flex items-center justify-center text-slate-400 hover:text-cyan-500 hover:scale-110 transition active:scale-95 md:flex hidden"
+            className="absolute right-[-15px] top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white border border-slate-200 rounded-full shadow-lg flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:scale-110 transition active:scale-95 md:flex hidden"
           >
-            <ChevronRight size={20} strokeWidth={3} />
+            <ChevronRight size={20} strokeWidth={2.5} />
           </button>
         </div>
 
         {/* ================= CONTENT GRID ================= */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="w-12 h-12 text-[#00d1ff] animate-spin" />
+            <Loader2 className="w-12 h-12 text-emerald-500 animate-spin" />
             <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">
               Updating Exams...
             </p>
@@ -129,10 +129,10 @@ const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
                 <div
                   key={item._id}
                   onClick={() => onCategoryClick(item)}
-                  className="group flex items-center justify-between p-5 bg-white border border-slate-100 rounded-2xl hover:shadow-[0_15px_30px_-10px_rgba(0,0,0,0.1)] hover:border-cyan-100 transition-all duration-300 cursor-pointer"
+                  className="group flex items-center justify-between p-5 bg-white border border-slate-200 rounded-[24px] hover:shadow-[0_20px_45px_-12px_rgba(0,0,0,0.08)] hover:border-emerald-500 transition-all duration-500 cursor-pointer relative overflow-hidden shadow-sm"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-11 h-11 flex-none rounded-full bg-slate-50 border border-slate-50 flex items-center justify-center overflow-hidden transition-colors group-hover:bg-cyan-50/50">
+                    <div className="w-12 h-12 flex-none rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:bg-emerald-50">
                       {testIcon ? (
                         <img
                           src={testIcon}
@@ -143,25 +143,35 @@ const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
                         <div className="w-5 h-5 bg-slate-200 rounded-full" />
                       )}
                     </div>
-                    <h3 className="text-slate-700 font-bold text-[14px] md:text-[15px] group-hover:text-blue-500 transition-colors uppercase leading-snug tracking-tight">
-                      {testLabel}
-                    </h3>
+                    <div>
+                      <h3 className="text-slate-800 font-black text-[15px] group-hover:text-emerald-600 transition-colors uppercase leading-tight tracking-tight">
+                        {testLabel}
+                      </h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Mock Test Series</p>
+                    </div>
                   </div>
-                  <ChevronRight
-                    size={18}
-                    className="text-slate-200 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all"
-                  />
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-50 text-slate-200 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-500">
+                    <ChevronRight size={18} strokeWidth={3} />
+                  </div>
                 </div>
               );
             })}
 
             {/* Always visible Explore All card */}
             {filteredExams.length > 0 && (
-              <div className="flex items-center justify-center p-5 bg-white border border-slate-100 border-dashed rounded-2xl hover:bg-slate-50 group transition-all">
-                <span className="text-[#00d1ff] font-extrabold text-sm uppercase tracking-wide group-hover:underline">
-                  Explore all exams
-                </span>
-              </div>
+              <Link
+                to="/mocktests"
+                className="flex items-center justify-center p-5 bg-white border border-slate-200 border-dashed rounded-[24px] hover:bg-emerald-50 hover:border-emerald-500 hover:border-solid group transition-all duration-500 cursor-pointer shadow-sm"
+              >
+                <div className="flex items-center gap-3">
+                   <span className="text-emerald-600 font-black text-[13px] uppercase tracking-[0.1em] group-hover:scale-105 transition-transform">
+                     View All Exams
+                   </span>
+                   <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 group-hover:translate-x-1 transition-all">
+                      <ChevronRight size={14} strokeWidth={3} />
+                   </div>
+                </div>
+              </Link>
             )}
           </div>
         )}

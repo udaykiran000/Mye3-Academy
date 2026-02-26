@@ -37,7 +37,7 @@ const MyTests = () => {
       );
     } else {
       content = (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
           {myMockTests.map((test) => {
             // Safety: ensure test is an object (populated) not just an ID string
             if (!test || typeof test !== 'object') return null;
@@ -56,8 +56,14 @@ const MyTests = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 min-h-screen">
-      <h1 className="text-3xl font-bold mb-8 text-gray-900">My Enrolled Tests</h1>
+    <div className="pb-10">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-2xl font-black text-slate-800 tracking-tight">My Active Tests</h2>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[3px] mt-1">Enrolled Series</p>
+        </div>
+        <div className="h-px flex-1 bg-slate-100 ml-8 hidden md:block"></div>
+      </div>
       {content}
     </div>
   );

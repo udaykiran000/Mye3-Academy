@@ -34,98 +34,87 @@ const StuHeader = ({ user }) => {
   }, [dispatch, globalLeaderboardStatus]);
 
   return (
-    <header className="flex flex-col gap-6 mb-10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm relative overflow-hidden group">
-        {/* Subtle Background Pattern */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-blue-500/10 transition-colors"></div>
+    <header className="mb-6">
+      {/* ── ULTRA-COMPACT ELITE RIBBON ── */}
+      <div className="relative overflow-hidden bg-slate-900 rounded-2xl p-2 md:p-2.5 shadow-lg border border-white/5 flex flex-col xl:flex-row items-center gap-4 xl:gap-6">
+        {/* Abstract Glow Background */}
+        <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600 rounded-full blur-[80px] opacity-10 -mr-24 -mt-24 pointer-events-none"></div>
         
-        <div className="relative z-10">
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 mb-2"
-          >
-            <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-[2px] rounded-full border border-blue-100">Student Dashboard</span>
-          </motion.div>
-          <h1 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight leading-tight">
-            Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">{user?.firstname || "Champ"}</span>! 👋
-          </h1>
-          <p className="text-slate-400 mt-2 font-medium text-lg">Your progress matters. Let's conquer your goals today.</p>
+        {/* Left: Integrated User Hero */}
+        <div className="relative z-10 flex items-center gap-3 pl-2 min-w-fit border-b xl:border-b-0 xl:border-r border-white/10 pb-3 xl:pb-0 xl:pr-6 w-full xl:w-auto">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 p-0.5 shadow-lg">
+             <div className="w-full h-full bg-slate-900 rounded-[8px] flex items-center justify-center text-sm font-black text-white border border-white/5 uppercase">
+                {user?.firstname?.charAt(0) || "S"}
+             </div>
+          </div>
+          <div>
+            <h1 className="text-sm font-black text-white tracking-tight leading-none mb-1">
+              Hi, <span className="text-blue-400">{user?.firstname || "Champ"}</span>!
+            </h1>
+            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest hidden sm:block">Control Center</p>
+          </div>
+          <div className="ml-auto xl:ml-3 flex items-center gap-2">
+            <button
+              onClick={() => setHasNotification(false)}
+              className="relative p-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 transition-all group backdrop-blur-md"
+            >
+              <Bell className={`text-slate-400 group-hover:text-blue-400 ${hasNotification ? 'animate-pulse' : ''}`} size={14} />
+              {hasNotification && (
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-rose-500 rounded-full border border-slate-900"></span>
+              )}
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-4 relative z-10">
-          <button
-            onClick={() => setHasNotification(false)}
-            className="relative p-4 bg-slate-50 hover:bg-white hover:shadow-xl hover:shadow-blue-500/10 rounded-2xl border border-slate-200 transition-all duration-300 group"
-          >
-            <Bell className={`text-slate-600 group-hover:text-blue-600 ${hasNotification ? 'animate-swing' : ''}`} size={24} />
-            {hasNotification && (
-              <span className="absolute top-3 right-3 w-3 h-3 bg-rose-500 border-2 border-white rounded-full animate-pulse shadow-sm"></span>
-            )}
-          </button>
-        </div>
+        {/* Center/Right: Consolidated Hall of Fame */}
+        <AnimatePresence>
+          {globalLeaderboard.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="relative z-10 flex-1 flex items-center gap-4 w-full overflow-hidden"
+            >
+              <div className="flex items-center gap-2 min-w-fit">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-500 border border-amber-500/30">
+                  <Trophy size={14} />
+                </div>
+                <div className="hidden lg:block">
+                  <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Hall of Fame</p>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-x-auto scroll-hidden">
+                 <div className="flex items-center gap-2.5 py-1">
+                    {globalLeaderboard.slice(0, 4).map((ranker, index) => (
+                      <motion.div 
+                        key={index}
+                        whileHover={{ scale: 1.05, y: -1 }}
+                        className="flex items-center gap-2 bg-white/5 pl-1 pr-3 py-1 rounded-xl border border-white/5 hover:border-blue-500/40 hover:bg-white/10 transition-all cursor-default min-w-fit group backdrop-blur-sm"
+                      >
+                         <div className="relative">
+                            <div className={`w-7 h-7 rounded-[8px] flex items-center justify-center text-white font-black text-[10px] shadow-inner
+                              ${index === 0 ? 'bg-amber-400' : index === 1 ? 'bg-slate-400' : index === 2 ? 'bg-orange-400' : 'bg-blue-500'}
+                            `}>
+                               {ranker.name?.charAt(0)}
+                            </div>
+                            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-black border border-slate-900 shadow-sm
+                              ${index === 0 ? 'bg-amber-400 text-amber-900' : index === 1 ? 'bg-slate-200 text-slate-600' : index === 2 ? 'bg-orange-100 text-orange-700' : 'bg-white text-blue-600'}
+                            `}>
+                              {index + 1}
+                            </div>
+                         </div>
+                         <div>
+                            <p className="text-[10px] font-black text-slate-200 truncate max-w-[80px] leading-tight group-hover:text-blue-400 transition-colors uppercase tracking-tighter">{ranker.name}</p>
+                            <p className="text-[7px] font-bold text-slate-500 uppercase tracking-tighter">{ranker.totalScore.toLocaleString()} pts</p>
+                         </div>
+                      </motion.div>
+                    ))}
+                 </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-
-      {/* 🏆 TOP RANKERS SECTION - PREMIUM INTEGRATION */}
-      <AnimatePresence>
-        {globalLeaderboard.length > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center"
-          >
-            <div className="lg:col-span-3 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
-                <Trophy size={24} />
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-800 tracking-tight">Top Hall of Fame</h3>
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Global Rankings</p>
-              </div>
-            </div>
-
-            <div className="lg:col-span-9">
-               <div className="flex flex-wrap items-center gap-3 scroll-hidden">
-                  {globalLeaderboard.slice(0, 5).map((ranker, index) => (
-                    <motion.div 
-                      key={index}
-                      whileHover={{ scale: 1.05, y: -2 }}
-                      className="flex items-center gap-3 bg-white pl-1 pr-4 py-1 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-default"
-                    >
-                      <div className="relative">
-                        {ranker.avatar ? (
-                          <img 
-                            src={`${import.meta.env.VITE_SERVER_URL}/${ranker.avatar.replace(/\\/g, "/")}`} 
-                            className="w-10 h-10 rounded-xl object-cover border-2 border-white shadow-sm" 
-                            alt={ranker.name}
-                          />
-                        ) : (
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm
-                            ${index === 0 ? 'bg-amber-500' : index === 1 ? 'bg-slate-400' : index === 2 ? 'bg-orange-400' : 'bg-blue-500'}
-                          `}>
-                            {ranker.name?.charAt(0)}
-                          </div>
-                        )}
-                        <div className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white shadow-sm
-                          ${index === 0 ? 'bg-amber-400 text-amber-900' : index === 1 ? 'bg-slate-200 text-slate-600' : index === 2 ? 'bg-orange-100 text-orange-700' : 'bg-white text-blue-600'}
-                        `}>
-                          #{index + 1}
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-[13px] font-black text-slate-700 truncate max-w-[100px] leading-tight">{ranker.name}</p>
-                        <div className="flex items-center gap-1">
-                          <Star size={10} className="text-amber-500 fill-amber-500" />
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{ranker.totalScore.toLocaleString()} Pts</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </header>
   );
 };

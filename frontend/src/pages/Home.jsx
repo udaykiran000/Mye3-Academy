@@ -30,90 +30,84 @@ import { fetchPublicMockTests } from "../redux/studentSlice";
    ========================================= */
 const RoleSelectionSection = ({ onNavigate }) => {
   return (
-    <section className="py-24 relative bg-white overflow-hidden">
+    <section className="py-12 relative bg-slate-200/30 overflow-hidden">
       {/* Soft Background Accents */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-50/50 rounded-full blur-[100px] -z-10"></div>
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-50/50 rounded-full blur-[100px] -z-10"></div>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* === STUDENT CARD === */}
-          <div className="group relative p-10 rounded-[45px] bg-white border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.04)] hover:shadow-[0_30px_60px_rgba(79,70,229,0.12)] transition-all duration-500 hover:-translate-y-3">
-            <div className="w-20 h-20 mb-8 rounded-[25px] bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-inner">
-              <GraduationCap size={38} />
+          <div className="group relative p-6 rounded-[32px] bg-white border border-slate-100 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-indigo-100/30 transition-all duration-500 hover:-translate-y-2">
+            <div className="w-14 h-14 mb-6 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-inner">
+              <GraduationCap size={28} />
             </div>
 
-            <h3 className="text-3xl font-black text-slate-800 mb-4 tracking-tighter uppercase">
+            <h3 className="text-xl font-black text-slate-800 mb-3 tracking-tighter uppercase">
               For Students
             </h3>
-            <p className="text-slate-500 mb-8 leading-relaxed font-medium text-lg">
+            <p className="text-slate-500 mb-6 leading-relaxed font-medium text-sm">
               Unlock unlimited mock tests, get detailed performance analytics,
               and compete with peers nationwide.
             </p>
 
-            <ul className="space-y-4 mb-10">
+            <div className="space-y-3 mb-8">
               {[
                 "Real-time Rankings",
                 "Detailed Solutions",
                 "Performance Graphs",
               ].map((item) => (
-                <li
-                  key={item}
-                  className="flex items-center gap-3 text-slate-700 font-bold text-sm"
-                >
-                  <div className="p-1 bg-emerald-100 rounded-full text-emerald-600">
-                    <CheckCircle2 size={16} />
-                  </div>
-                  {item}
-                </li>
+                <div key={item} className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-emerald-500" />
+                  <span className="text-[13px] font-bold text-slate-700 tracking-tight">
+                    {item}
+                  </span>
+                </div>
               ))}
-            </ul>
+            </div>
 
             <button
               onClick={onNavigate}
-              className="w-full py-5 rounded-2xl font-black bg-indigo-600 text-white shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all duration-300 flex items-center justify-center gap-3 uppercase tracking-widest"
+              className="w-full py-3.5 px-8 rounded-xl bg-indigo-600 text-white font-black uppercase tracking-widest text-[10px] hover:bg-indigo-700 transition-all duration-300 shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 group/btn"
             >
-              Start Learning <ArrowRight size={20} />
+              Start Your Preparation <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
             </button>
           </div>
 
           {/* === INSTRUCTOR CARD === */}
-          <div className="group relative p-10 rounded-[45px] bg-white border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.04)] hover:shadow-[0_30px_60px_rgba(147,51,234,0.12)] transition-all duration-500 hover:-translate-y-3">
-            <div className="w-20 h-20 mb-8 rounded-[25px] bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all duration-500 shadow-inner">
-              <Presentation size={38} />
+          <div className="group relative p-6 rounded-[32px] bg-white border border-slate-100 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-purple-100/30 transition-all duration-500 hover:-translate-y-2">
+            <div className="w-14 h-14 mb-6 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all duration-500 shadow-inner">
+              <Presentation size={28} />
             </div>
 
-            <h3 className="text-3xl font-black text-slate-800 mb-4 tracking-tighter uppercase">
+            <h3 className="text-xl font-black text-slate-800 mb-3 tracking-tighter uppercase">
               For Instructors
             </h3>
-            <p className="text-slate-500 mb-8 leading-relaxed font-medium text-lg">
-              Create high-quality test series, reach thousands of students, and
-              generate revenue from your expertise.
+            <p className="text-slate-500 mb-6 leading-relaxed font-medium text-sm">
+              Create high-quality test series, reach thousands of students,
+              and generate revenue from your expertise.
             </p>
 
-            <ul className="space-y-4 mb-10">
+            <div className="space-y-3 mb-8">
               {[
                 "Easy Test Creation",
                 "Student Analytics",
                 "Monetize Content",
               ].map((item) => (
-                <li
-                  key={item}
-                  className="flex items-center gap-3 text-slate-700 font-bold text-sm"
-                >
-                  <div className="p-1 bg-purple-100 rounded-full text-purple-600">
-                    <CheckCircle2 size={16} />
-                  </div>
-                  {item}
-                </li>
+                <div key={item} className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-purple-500" />
+                  <span className="text-[13px] font-bold text-slate-700 tracking-tight">
+                    {item}
+                  </span>
+                </div>
               ))}
-            </ul>
+            </div>
 
             <button
               onClick={onNavigate}
-              className="w-full py-5 rounded-2xl font-black bg-purple-600 text-white shadow-xl shadow-purple-200 hover:bg-purple-700 transition-all duration-300 flex items-center justify-center gap-3 uppercase tracking-widest"
+              className="w-full py-3.5 px-8 rounded-xl bg-purple-600 text-white font-black uppercase tracking-widest text-[10px] hover:bg-purple-700 transition-all duration-300 shadow-lg shadow-purple-100 flex items-center justify-center gap-2 group/btn"
             >
-              Become Instructor <ArrowRight size={20} />
+              Join As Instructor <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
             </button>
           </div>
         </div>
@@ -147,36 +141,36 @@ const FAQSection = () => {
   ];
 
   return (
-    <section className="py-24 bg-slate-50 border-t border-slate-100">
-      <div className="max-w-4xl mx-auto px-6">
-        <h2 className="text-4xl font-black text-center mb-16 text-slate-900 tracking-tighter">
-          FREQUENTLY ASKED QUESTIONS
+    <section className="py-12 bg-slate-200/30 border-t border-slate-100 relative">
+      <div className="max-w-3xl mx-auto px-6">
+        <h2 className="text-2xl md:text-3xl font-black text-center mb-10 text-slate-800 tracking-tighter uppercase leading-tight">
+          Frequently Asked Questions
         </h2>
-        <div className="space-y-5">
+        <div className="space-y-3">
           {faqs.map((faq, idx) => (
             <div
               key={idx}
-              className="bg-white border border-slate-200 rounded-[25px] overflow-hidden shadow-sm hover:border-indigo-300 transition-all duration-300"
+              className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-xl shadow-slate-200/50 hover:border-indigo-300 transition-all duration-300"
             >
               <button
                 onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
-                className="w-full flex justify-between items-center p-7 text-left focus:outline-none"
+                className="w-full flex justify-between items-center p-4 md:p-5 text-left focus:outline-none"
               >
                 <span
-                  className={`text-lg font-bold ${
+                  className={`text-sm md:text-base font-bold tracking-tight ${
                     openIndex === idx ? "text-indigo-600" : "text-slate-800"
                   }`}
                 >
                   {faq.q}
                 </span>
                 {openIndex === idx ? (
-                  <ChevronUp className="text-indigo-600" />
+                  <ChevronUp size={18} className="text-indigo-600" />
                 ) : (
-                  <ChevronDown className="text-slate-400" />
+                  <ChevronDown size={18} className="text-slate-400" />
                 )}
               </button>
               {openIndex === idx && (
-                <div className="p-7 pt-0 text-slate-500 font-medium leading-relaxed text-md bg-white border-t border-slate-50">
+                <div className="p-4 md:p-5 pt-0 text-slate-500 font-medium leading-relaxed text-xs bg-white border-t border-slate-50">
                   {faq.a}
                 </div>
               )}
@@ -192,25 +186,25 @@ const FAQSection = () => {
    3. REDESIGNED: CTA BANNER
    ========================================= */
 const CTASection = ({ onSignup }) => (
-  <section className="relative py-24 px-6 bg-white">
-    <div className="max-w-7xl mx-auto rounded-[60px] overflow-hidden relative shadow-2xl">
+  <section className="relative py-12 px-6 bg-white overflow-hidden">
+    <div className="max-w-7xl mx-auto rounded-[32px] overflow-hidden relative shadow-2xl border border-slate-100">
       {/* Vibrant Gradient like Jumbo Xerox Bulk Section */}
       <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-pink-600"></div>
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
 
-      <div className="relative py-24 px-10 text-center text-white z-10">
-        <h2 className="text-5xl md:text-7xl font-black mb-8 tracking-tighter uppercase">
+      <div className="relative py-12 px-8 text-center text-white z-10">
+        <h2 className="text-2xl md:text-4xl font-black mb-4 tracking-tighter uppercase whitespace-nowrap overflow-hidden text-ellipsis">
           Ready to Top Your Next Exam?
         </h2>
-        <p className="text-2xl text-orange-50 mb-12 max-w-3xl mx-auto font-medium opacity-90 leading-relaxed">
+        <p className="text-sm md:text-base text-orange-50 mb-8 max-w-2xl mx-auto font-medium opacity-90 leading-relaxed line-clamp-2">
           Join 150,000+ students practicing daily with our AI-powered test
           series. Start your first test for free today.
         </p>
         <button
           onClick={onSignup}
-          className="px-14 py-6 bg-white text-orange-600 font-black text-xl rounded-[20px] shadow-2xl hover:scale-110 transition-all duration-300 flex items-center gap-3 mx-auto uppercase tracking-widest"
+          className="px-10 py-4 bg-white text-orange-600 font-black text-xs rounded-xl shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-2 mx-auto uppercase tracking-widest"
         >
-          Start Practicing Now <ArrowRight size={24} />
+          Start Practicing Now <ArrowRight size={16} />
         </button>
       </div>
     </div>
@@ -267,56 +261,90 @@ const Home = () => {
         />
 
         {/* CATEGORIES */}
-        <div id="categories-section" className="bg-slate-50 py-10">
-          <CategoriesSection
-            categories={categories}
-            loading={categoryLoading}
-            onCategoryClick={handleCategoryClick}
-          />
+        <div id="categories-section" className="bg-slate-100 pt-10 pb-6 relative">
+          <div className="relative z-10">
+            <CategoriesSection
+              categories={categories}
+              loading={categoryLoading}
+              onCategoryClick={handleCategoryClick}
+            />
+          </div>
+        </div>
+
+        {/* SECTION SEPARATOR - VISIBLE LITE GAP */}
+        <div className="bg-slate-200/50 flex items-center justify-center overflow-hidden">
+           <div className="w-full h-14 bg-white rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-y border-slate-200 relative z-20 mx-[-40px]"></div>
         </div>
 
         {/* FEATURES */}
-        <div className="bg-white">
+        <div className="bg-slate-100 pt-6 pb-12">
           <FeaturesSection />
         </div>
 
+        {/* SECTION SEPARATOR - VISIBLE LITE GAP */}
+        <div className="bg-slate-200/50 flex items-center justify-center overflow-hidden">
+           <div className="w-full h-14 bg-white rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-y border-slate-200 relative z-20 mx-[-40px]"></div>
+        </div>
+
         {/* MOCK TESTS */}
-        <div className="bg-white">
+        <div className="bg-slate-200/20 border-t border-slate-300/30">
           <FeaturedTestsSection
             id="mock-tests"
             title="Top Rated Mock Series"
             tests={mockTests}
             loading={publicStatus === "loading"}
             showViewAll
+            viewAllText="View All Mocktests"
             CardComponent={MockTestCard}
-            onViewAll={() => navigate("/mocktests")}
+            onViewAll={() => navigate("/mocktests?type=mock")}
           />
         </div>
 
+        {/* SECTION SEPARATOR - VISIBLE LITE GAP */}
+        <div className="bg-slate-200/50 flex items-center justify-center overflow-hidden">
+           <div className="w-full h-14 bg-white rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-y border-slate-200 relative z-20 mx-[-40px]"></div>
+        </div>
+
         {/* GRAND TESTS - Subtle contrast bg */}
-        <div className="bg-[#F8FAFC] border-y border-slate-100">
+        <div className="bg-slate-300/20 border-t border-slate-300/40">
           <FeaturedTestsSection
             id="grand-tests"
             title="All-India Grand Tests"
             tests={grandTests}
             loading={publicStatus === "loading"}
             showViewAll
+            viewAllText="View All Grand Tests"
             CardComponent={PremiumTestCard}
-            onViewAll={() => navigate("/mocktests?filter=grand")}
+            onViewAll={() => navigate("/mocktests?type=grand")}
           />
+        </div>
+
+        {/* SECTION SEPARATOR - VISIBLE LITE GAP */}
+        <div className="bg-slate-200/50 flex items-center justify-center overflow-hidden">
+           <div className="w-full h-14 bg-white rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-y border-slate-200 relative z-20 mx-[-40px]"></div>
         </div>
 
         {/* TESTIMONIALS */}
         <TestimonialsSection />
 
+        {/* SECTION SEPARATOR - VISIBLE LITE GAP */}
+        <div className="bg-slate-200/40 flex items-center justify-center overflow-hidden">
+           <div className="w-full h-14 bg-white rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-y border-slate-200 relative z-20 mx-[-40px]"></div>
+        </div>
+
         {/* NEW JOIN SECTION (Bright UI) */}
         <RoleSelectionSection onNavigate={() => navigate("/signup")} />
+
+        {/* SECTION SEPARATOR - VISIBLE LITE GAP */}
+        <div className="bg-slate-200/50 flex items-center justify-center overflow-hidden">
+           <div className="w-full h-14 bg-white rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-y border-slate-200 relative z-20 mx-[-40px]"></div>
+        </div>
 
         {/* FAQ SECTION (Clean White UI) */}
         <FAQSection />
 
         {/* CTA BANNER (Vibrant High Energy) */}
-        <CTASection onSignup={() => navigate("/login")} />
+        <CTASection onSignup={() => navigate("/mocktests")} />
       </main>
     </div>
   );

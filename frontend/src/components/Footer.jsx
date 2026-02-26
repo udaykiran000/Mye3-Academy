@@ -4,8 +4,8 @@ import { GraduationCap } from "lucide-react"; // Added for logo consistency
 
 const Footer = () => (
   <footer className="bg-slate-900 text-slate-300 border-t border-slate-800">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
         {/* BRAND COLUMN */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
@@ -16,7 +16,7 @@ const Footer = () => (
               <span className="text-indigo-400">MYE 3 Academy</span>
             </h3>
           </div>
-          <p className="text-sm leading-relaxed text-slate-400">
+          <p className="text-xs leading-relaxed text-slate-400">
             The nation's most trusted AI-powered test series platform. Your
             partner in exam excellence and professional success.
           </p>
@@ -24,10 +24,10 @@ const Footer = () => (
 
         {/* QUICK LINKS */}
         <div>
-          <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] mb-6">
+          <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4">
             Quick Links
           </h3>
-          <ul className="space-y-3 text-sm font-medium">
+          <ul className="space-y-2 text-xs font-medium">
             <li>
               <a href="#" className="hover:text-indigo-400 transition-colors">
                 All Test Series
@@ -59,10 +59,10 @@ const Footer = () => (
 
         {/* SUPPORT */}
         <div>
-          <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] mb-6">
+          <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4">
             Support
           </h3>
-          <ul className="space-y-3 text-sm font-medium">
+          <ul className="space-y-2 text-xs font-medium">
             <li>
               <a href="#" className="hover:text-indigo-400 transition-colors">
                 About MYE 3 Academy
@@ -88,10 +88,10 @@ const Footer = () => (
 
         {/* LEGAL */}
         <div>
-          <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] mb-6">
+          <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4">
             Legal
           </h3>
-          <ul className="space-y-3 text-sm font-medium">
+          <ul className="space-y-2 text-xs font-medium">
             <li>
               <a href="#" className="hover:text-indigo-400 transition-colors">
                 Privacy Policy
@@ -117,7 +117,7 @@ const Footer = () => (
       </div>
 
       {/* COPYRIGHT SECTION */}
-      <div className="mt-16 border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-semibold uppercase tracking-widest text-slate-500">
+      <div className="mt-10 border-t border-slate-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
         <p>&copy; 2025 MYE 3 Academy. All rights reserved.</p>
         <p className="flex items-center gap-1">
           Designed By <span className="text-slate-300">Web N App Studio</span>

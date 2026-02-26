@@ -31,6 +31,7 @@ const initialState = {
     orders: 0,
     categorySales: [], // Included in initial state
     testTypeSales: [],
+    topRankers: [],
   },
   loading: false,
   error: null,

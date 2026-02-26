@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import ScrollToTop from "./components/ScrollToTop";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { AnimatePresence } from "framer-motion";
 
 // PUBLIC PAGES
 import Home from "./pages/Home";
@@ -97,7 +98,8 @@ const App = () => {
       <ScrollToTop />
 
       <MainLayout>
-        <Routes>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
           {/* ---------------- PUBLIC ROUTES ---------------- */}
           <Route path="/" element={<Home />} />
           <Route
@@ -121,24 +123,60 @@ const App = () => {
           />
 
           {/* ---------------- STUDENT ROUTES ---------------- */}
-          <Route path="/mocktests" element={<AllMockTests />} />
-          <Route path="/mocktests/:id" element={<MockTestDetail />} />
-          <Route path="/cart" element={<Cart />} />
+          <Route
+            path="/mocktests"
+            element={
+              <ProtectedRoute>
+                <AllMockTests />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mocktests/:id"
+            element={
+              <ProtectedRoute>
+                <MockTestDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/cart"
+            element={
+              <ProtectedRoute>
+                <Cart />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/checkout"
-            element={userData ? <Checkout /> : <Navigate to="/login" replace />}
+            element={
+              <ProtectedRoute>
+                <Checkout />
+              </ProtectedRoute>
+            }
           />
-          <Route path="/student/doubts" element={<StudentDoubts />} />
+          <Route
+            path="/student/doubts"
+            element={
+              <ProtectedRoute>
+                <StudentDoubts />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/student/instructions/:mocktestId"
             element={
-              userData ? <InstructionsPage /> : <Navigate to="/login" replace />
+              <ProtectedRoute>
+                <InstructionsPage />
+              </ProtectedRoute>
             }
           />
           <Route
             path="/student/write-test/:attemptId"
             element={
-              userData ? <WriteMocktest /> : <Navigate to="/login" replace />
+              <ProtectedRoute>
+                <WriteMocktest />
+              </ProtectedRoute>
             }
           />
           <Route
@@ -265,6 +303,7 @@ const App = () => {
           {/* ---------------- FALLBACK ---------------- */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </AnimatePresence>
       </MainLayout>
     </>
   );

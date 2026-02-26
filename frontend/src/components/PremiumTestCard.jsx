@@ -10,9 +10,9 @@ import { getImageUrl, handleImageError } from "../utils/imageHelper";
 
 const StatItem = ({ icon: Icon, value, label, accentLight }) => (
   <div className="text-center">
-    <Icon size={18} className={`${accentLight} mx-auto mb-1`} />
-    <p className="text-lg font-bold text-white leading-tight">{value}</p>
-    <p className="text-[10px] text-gray-500 uppercase tracking-wider">{label}</p>
+    <Icon size={12} className={`${accentLight} mx-auto mb-0.5`} />
+    <p className="text-sm font-black text-white leading-tight">{value}</p>
+    <p className="text-[7px] text-gray-500 uppercase tracking-wider font-black">{label}</p>
   </div>
 );
 
@@ -107,61 +107,64 @@ const PremiumTestCard = ({ test }) => {
     <div
       className={`
         group relative flex flex-col rounded-2xl overflow-hidden cursor-pointer
-        bg-gray-900/80 backdrop-blur-md border border-gray-800 shadow-2xl 
+        bg-gray-900 border border-white/10 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.5)] 
         hover:${glowColor}
-        transition-all duration-500 transform hover:-translate-y-2 hover:scale-[1.03]
+        transition-all duration-500 transform hover:-translate-y-3 hover:scale-[1.02]
         before:content-[''] before:absolute before:inset-0 before:rounded-2xl 
-        before:border-2 before:opacity-0 group-hover:opacity-100 
+        before:border-[3px] before:opacity-0 group-hover:opacity-100 
         before:transition-opacity before:duration-500 before:border-transparent 
         before:bg-clip-border before:bg-gradient-to-r before:${accentColor}
-        before:pointer-events-none
+        before:pointer-events-none ring-1 ring-white/5
       `}
     >
       {(isFree || isGrand || hasPurchasedBefore) && (
-        <span className="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
+        <span className={`absolute top-3 left-3 text-white text-[10px] font-black px-3 py-1 rounded-full z-20 shadow-lg uppercase tracking-wider
+          ${hasPurchasedBefore ? "bg-emerald-500" : isFree ? "bg-blue-500" : "bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 border border-amber-300"}
+        `}>
           {hasPurchasedBefore ? "Purchased" : isFree ? "FREE" : "Grand"}
         </span>
       )}
 
-      <div className="relative w-full h-40">
-          <img 
-            src={imageSource} 
-            onError={handleImageError}
-            className="w-full h-full object-cover" 
-          />
+      <div className="relative w-full h-22">
+        <img
+          src={imageSource}
+          onError={handleImageError}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
       </div>
 
-      <Link to={`/mocktests/${test._id}`} className="p-6 flex flex-col flex-grow">
-        <div className="mb-4">
+      <Link to={`/mocktests/${test._id}`} className="p-1.5 flex flex-col flex-grow">
+        <div className="mb-1">
           {test.category?.name && (
-            <p className="text-sm font-semibold text-gray-400 mb-1 tracking-wider">
-              {test.category.name.toUpperCase()}
+            <p className="text-[8px] font-semibold text-gray-400 mb-0.5 tracking-wider uppercase transition-transform duration-300 group-hover:scale-105 origin-left">
+              {test.category.name}
             </p>
           )}
-          <h3 className="text-2xl font-bold text-white leading-snug line-clamp-2">
+          <h3 className="text-base font-bold text-white leading-snug line-clamp-1 uppercase tracking-tight">
             {test.title}
           </h3>
         </div>
 
-        <p className="text-gray-400 text-sm mb-5 line-clamp-3 flex-grow">
+        <p className="text-gray-400 text-xs mb-3 line-clamp-1 flex-grow">
           {test.description}
         </p>
 
-        <div className="grid grid-cols-3 gap-4 border-y border-gray-700/50 py-4 mb-5">
-          <StatItem icon={Clock} value={`${test.durationMinutes} Min`} label="Duration" accentLight={accentLight} />
+        <div className="grid grid-cols-3 gap-2 border-y border-gray-700/50 py-2 mb-3">
+          <StatItem icon={Clock} value={`${test.durationMinutes}m`} label="Duration" accentLight={accentLight} />
           <StatItem icon={BookOpen} value={`${test.totalQuestions} Qs`} label="Questions" accentLight={accentLight} />
-          <StatItem icon={Users} value={(test.totalQuestions * 37 + 500).toLocaleString()} label="Enrolled" accentLight={accentLight} />
+          <StatItem icon={Users} value={(test.totalQuestions * 37 + 500).toLocaleString().replace(/,/g, " ")} label="Enrolled" accentLight={accentLight} />
         </div>
 
         {/* ⭐⭐⭐ PRICE SECTION UPDATED ⭐⭐⭐ */}
-        <div className="flex items-center gap-3">
-          <p className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-300 drop-shadow-lg">
+        <div className="flex items-center gap-2">
+          <p className="text-lg font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-300 drop-shadow-lg">
             {isFree ? "Free" : `₹${test.price}`}
           </p>
 
           {/* Show discount if originalPrice exists AND is higher */}
           {test.originalPrice && test.originalPrice > test.price && (
-            <p className="text-lg line-through text-gray-400">
+            <p className="text-xs line-through text-gray-400">
               ₹{test.originalPrice}
             </p>
           )}
@@ -170,17 +173,17 @@ const PremiumTestCard = ({ test }) => {
 
       </Link>
 
-      <div className={`p-6 pt-0 flex gap-3 w-full ${needsTwoButtons ? "flex-col sm:flex-row" : "flex-row"}`}>
+      <div className={`p-2 pt-0 flex gap-2 w-full ${needsTwoButtons ? "flex-col sm:flex-row" : "flex-row"}`}>
         <button
           onClick={handlePrimaryAction}
-          className={`flex items-center justify-center gap-2 text-white py-3 rounded-lg font-bold transition 
+          className={`flex items-center justify-center gap-2 text-white py-2 rounded-lg font-black transition text-xs uppercase tracking-widest
             ${(isFree || hasPurchasedBefore)
-              ? "bg-green-600 hover:bg-green-500 w-full"
-              : "bg-cyan-600 hover:bg-cyan-500 w-full sm:w-1/2"
+              ? "bg-green-600 hover:bg-green-500 w-full shadow-lg shadow-green-900/20"
+              : "bg-cyan-600 hover:bg-cyan-500 w-full sm:w-1/2 shadow-lg shadow-cyan-900/20"
             }
           `}
         >
-          {(isFree || hasPurchasedBefore) ? <Play size={18} /> : <Wallet size={18} />}
+          {(isFree || hasPurchasedBefore) ? <Play size={14} /> : <Wallet size={14} />}
           {getPrimaryButtonText()}
         </button>
 
@@ -188,22 +191,22 @@ const PremiumTestCard = ({ test }) => {
           isGrand && hasPurchasedBefore ? (
             <button
               disabled
-              className="flex items-center justify-center gap-2 text-white py-3 rounded-lg font-semibold
+              className="flex items-center justify-center gap-2 text-white py-2 rounded-lg font-bold text-xs uppercase
               w-full sm:w-1/2 bg-gray-500 cursor-not-allowed"
             >
-              Already Purchased
+              Purchased
             </button>
           ) : (
             <button
               onClick={handleAddToCart}
               disabled={isInCart}
-              className={`flex items-center justify-center gap-2 text-white py-3 rounded-lg font-semibold transition 
+              className={`flex items-center justify-center gap-2 text-white py-2 rounded-lg font-bold transition text-xs uppercase tracking-widest
                 w-full sm:w-1/2
                 ${isInCart ? "bg-gray-500 cursor-not-allowed" : "bg-gray-700 hover:bg-gray-600"}
               `}
             >
-              <ShoppingCart size={18} />
-              {isInCart ? "In Cart" : "Add to Cart"}
+              <ShoppingCart size={14} />
+              {isInCart ? "In Cart" : "Add"}
             </button>
           )
         )}
