@@ -1,5 +1,8 @@
-// backend/controllers/student/studentDashboardController.js
 import MockTest from "../../models/MockTest.js";
+import User from "../../models/Usermodel.js";
+import Attempt from "../../models/Attempt.js";
+import Order from "../../models/Order.js";
+import Doubt from "../../models/Doubt.js";
 
 export const getAvailableMocktests = async (req, res) => {
   try {
@@ -257,7 +260,7 @@ export const getMyPurchasedTests = async (req, res) => {
 export const getGlobalLeaderboard = async (req, res) => {
   try {
     const leaderboard = await Attempt.aggregate([
-      { $match: { status: { $in: ["finished", "completed"] } } },
+      { $match: { status: { $in: ["finished", "completed", "pending"] } } },
       {
         $group: {
           _id: "$studentId",
@@ -289,6 +292,7 @@ export const getGlobalLeaderboard = async (req, res) => {
       },
     ]);
 
+    console.log(`🏆 Found ${leaderboard.length} rankers for the global leaderboard.`);
     res.status(200).json({ success: true, leaderboard });
   } catch (error) {
     console.error("Leaderboard Error:", error);

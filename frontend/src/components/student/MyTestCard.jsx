@@ -72,71 +72,84 @@ const MyTestCard = ({ test }) => {
     return (
         <div
             className={`
-                group flex flex-col bg-gray-900 rounded-2xl shadow-xl border border-gray-800
-                transition duration-300 w-full 
-                hover:scale-[1.03] hover:shadow-2xl ${hoverGlow}
+                group flex flex-col bg-white rounded-xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.01)]
+                transition-all duration-500 w-full overflow-hidden
+                hover:shadow-[0_15px_30px_-8px_rgba(0,0,0,0.06)] hover:border-blue-400/30 hover:-translate-y-1
             `}
         >
+            {/* ── MINI THUMBNAIL AREA ── */}
+            <div className="relative w-full h-20 overflow-hidden bg-slate-50">
+                <img
+                    src={imgSrc}
+                    alt={test.title}
+                    onError={handleImageError}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-40" />
+                
+                {/* Micro Badges */}
+                <div className="absolute top-2 left-2">
+                    <span className={`px-1.5 py-0.5 text-[6.5px] font-black text-white rounded-[4px] shadow-sm uppercase tracking-widest backdrop-blur-md border border-white/5 ${badgeColor}`}>
+                        {testTypeBadge?.split(" ")[0]}
+                    </span>
+                </div>
 
-            <div className="relative w-full h-44 sm:h-52 rounded-t-2xl overflow-hidden">
-                    <img
-                        src={imgSrc}
-                        alt={test.title}
-                        onError={handleImageError}
-                        className="w-full h-full object-cover"
-                    />
-
-                <span
-                    className={`
-                        absolute bottom-0 right-0 px-4 py-2 text-lg sm:text-xl font-extrabold text-white 
-                        bg-gradient-to-r ${accent.bg} rounded-tl-xl shadow-inner
-                    `}
-                >
-                    {bannerStatus}
-                </span>
-
-                <span className={`absolute top-4 left-4 text-white text-xs sm:text-sm font-bold px-4 py-1.5 rounded-full shadow ${badgeColor}`}>
-                    {testTypeBadge}
-                </span>
+                <div className="absolute bottom-2 left-2">
+                    <span className={`px-1.5 py-0.5 text-[7px] font-black text-white rounded-md shadow-sm uppercase tracking-tighter flex items-center gap-1 bg-slate-900/70 border border-white/10`}>
+                        <div className={`w-1 h-1 rounded-full animate-pulse bg-current ${accent.text}`}></div>
+                        {bannerStatus}
+                    </span>
+                </div>
             </div>
 
-            <div className="p-5 pb-3 flex-grow">
-                <p className="text-xs text-gray-400 uppercase mb-1">
-                    {test.category?.name || "Category"}
-                </p>
-
-                <h3 className="text-xl sm:text-2xl font-extrabold text-white leading-snug line-clamp-2 group-hover:text-cyan-300 transition">
+            {/* ── ULTRA-LEAN CONTENT AREA ── */}
+            <div className="p-2.5 flex flex-grow flex-col">
+                <h3 className="text-[11px] font-black text-slate-800 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors mb-2 min-h-[22px]">
                     {test.title}
                 </h3>
 
-                <div className="grid grid-cols-3 gap-x-2 py-4 mt-4 border-t border-b border-gray-700/40">
-                    <StatItem icon={Clock} value={Number(test.durationMinutes) || (Number(test.totalQuestions) * 2) || 30} label="Min" accentColorClass={accent.text} />
-                    <StatItem icon={BookOpen} value={test.totalQuestions || 0} label="Questions" accentColorClass={accent.text} />
-                    <StatItem icon={BarChart2} value={test.attemptsMade || 0} label="Attempts" accentColorClass={accent.text} />
+                {/* Single-Line Micro Meta */}
+                <div className="flex items-center justify-between py-1.5 border-y border-slate-50/50 mb-2">
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                        <div className="flex items-center gap-0.5 min-w-fit">
+                            <Clock size={8} className="text-slate-300" />
+                            <span className="text-[7.5px] font-black text-slate-500">{test.durationMinutes || 30}m</span>
+                        </div>
+                        <div className="w-px h-2 bg-slate-100"></div>
+                        <div className="flex items-center gap-0.5 min-w-fit">
+                            <BookOpen size={8} className="text-slate-300" />
+                            <span className="text-[7.5px] font-black text-slate-500">{test.totalQuestions || 0}Q</span>
+                        </div>
+                    </div>
+                    <div className="text-[7px] font-black text-blue-500 uppercase tracking-tighter">
+                        {test.attemptsMade || 0} Attempts
+                    </div>
                 </div>
-            </div>
 
-            <div className="px-5">
-                <div className="w-full bg-gray-800 rounded-full h-2">
-                    <div
-                        className={`h-2 rounded-full transition-all ${isCompleted && !isReadyForNewAttempt ? "bg-green-500" : (isGrandTest ? "bg-indigo-500" : "bg-cyan-500")}`}
-                        style={{ width: `${progress}%` }}
-                    ></div>
+                {/* Progress Mini-Bar */}
+                <div className="mt-auto">
+                    <div className="w-full bg-slate-50 rounded-full h-0.5 overflow-hidden mb-2">
+                        <div
+                            className={`h-full transition-all duration-1000 ease-out ${isCompleted && !isReadyForNewAttempt ? "bg-emerald-500" : (isGrandTest ? "bg-indigo-600" : "bg-blue-600")}`}
+                            style={{ width: `${progress}%` }}
+                        ></div>
+                    </div>
+
+                    {/* Elite Action Button */}
+                    <button
+                        onClick={handleStart}
+                        className={`
+                            w-full py-1.5 rounded-lg font-black text-[7.5px] uppercase tracking-[1px] text-white transition-all transform active:scale-95 shadow-sm flex items-center justify-center gap-1
+                            ${isCompleted && !isReadyForNewAttempt 
+                                ? "bg-slate-800 hover:bg-slate-700" 
+                                : (isGrandTest ? "bg-indigo-600 hover:bg-indigo-500" : "bg-blue-600 hover:bg-blue-500")
+                            }
+                        `}
+                    >
+                        <Play size={8} fill="currentColor" />
+                        {buttonText?.split(" ")[0]}
+                    </button>
                 </div>
-            </div>
-
-            <div className="p-5 pt-4">
-                <button
-                    onClick={handleStart}
-                    className={`
-                        w-full flex items-center justify-center py-3 rounded-xl 
-                        font-bold text-white transition
-                        ${isCompleted && !isReadyForNewAttempt ? "bg-green-600 hover:bg-green-500" : (isGrandTest ? "bg-indigo-600 hover:bg-indigo-500" : "bg-cyan-600 hover:bg-cyan-500")}
-                    `}
-                >
-                    <Play size={18} className="mr-2" />
-                    {buttonText}
-                </button>
             </div>
         </div>
     );

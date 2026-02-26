@@ -134,7 +134,7 @@ export const fetchGlobalLeaderboard = createAsyncThunk(
   "students/fetchGlobalLeaderboard",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await api.get("/api/student/leaderboard");
+      const { data } = await api.get("/api/student/dashboard/leaderboard");
       return data.leaderboard;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Failed to load global leaderboard");

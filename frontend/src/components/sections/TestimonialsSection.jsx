@@ -30,10 +30,10 @@ const TESTIMONIALS = [
 ];
 
 const TestimonialsSection = () => (
-  <section id="testimonials" className="py-24 bg-white text-slate-800">
+  <section id="testimonials" className="py-12 bg-slate-200/30 text-slate-800 relative">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Header - Bold & Deep Navy */}
-      <h2 className="text-4xl md:text-5xl font-black text-center mb-16 text-slate-900 tracking-tighter uppercase">
+      <h2 className="text-2xl md:text-3xl font-black text-center mb-10 text-slate-900 tracking-tighter uppercase leading-tight">
         What Our <span className="text-indigo-600">Users Say</span>
       </h2>
 
@@ -41,28 +41,28 @@ const TestimonialsSection = () => (
         {TESTIMONIALS.map((item) => (
           <div
             key={item._id}
-            className="bg-white p-8 rounded-[32px] shadow-[0_10px_40px_rgba(0,0,0,0.04)] border border-slate-100 hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-100/50 transition-all duration-500 transform hover:-translate-y-2"
+            className="bg-white p-5 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 hover:border-indigo-400 hover:shadow-2xl hover:shadow-indigo-100/30 transition-all duration-500 transform hover:-translate-y-1.5"
           >
             {/* Star Rating */}
-            <div className="flex mb-5">
+            <div className="flex mb-3">
               {Array(5)
                 .fill()
                 .map((_, i) => (
                   <Star
                     key={i}
-                    className="w-5 h-5 fill-amber-400 text-amber-400"
+                    className="w-3 h-3 fill-amber-400 text-amber-400"
                   />
                 ))}
             </div>
 
             {/* Quote - Slate Gray for Readability */}
-            <p className="text-slate-600 font-medium italic mb-8 text-lg leading-relaxed">
+            <p className="text-slate-600 font-medium italic mb-5 text-[13px] leading-relaxed">
               "{item.quote}"
             </p>
 
             <div className="flex items-center">
               <img
-                className="h-14 w-14 rounded-2xl object-cover border-2 border-indigo-50 shadow-sm"
+                className="h-10 w-10 rounded-xl object-cover border border-indigo-50 shadow-sm"
                 src={item.avatar}
                 alt={item.name}
                 onError={(e) => {
@@ -71,11 +71,11 @@ const TestimonialsSection = () => (
                     "https://placehold.co/100x100/F1F5F9/64748B?text=User";
                 }}
               />
-              <div className="ml-4">
-                <div className="text-base font-black text-slate-900 uppercase tracking-tighter">
+              <div className="ml-3">
+                <div className="text-[13px] font-black text-slate-900 uppercase tracking-tighter">
                   {item.name}
                 </div>
-                <div className="text-xs font-bold text-indigo-600 uppercase tracking-widest">
+                <div className="text-[9px] font-bold text-indigo-600 uppercase tracking-widest">
                   {item.role}
                 </div>
               </div>
