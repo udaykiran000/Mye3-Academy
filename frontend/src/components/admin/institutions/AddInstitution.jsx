@@ -137,7 +137,7 @@ const AddInstitution = () => {
         </h2>
       </div>
 
-      <div className="bg-white shadow-xl rounded-2xl border p-8">
+      <div className="bg-white shadow-[0_20px_60px_rgba(0,0,0,0.12)] rounded-2xl border border-slate-100 p-8">
         <form onSubmit={handleSubmit} className="space-y-8">
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

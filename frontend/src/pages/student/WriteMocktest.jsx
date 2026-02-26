@@ -627,7 +627,7 @@ const WriteMocktest = () => {
   }).length;
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 overflow-hidden font-inter relative">
+    <div className="flex flex-col h-screen bg-gray-100 overflow-hidden font-sans relative">
       {/* --- SCORE MODAL (WITH ACCESS CHECK) --- */}
       {/* --- SCORE MODAL (WITH ACCESS CHECK) --- */}
       {showResultModal && (

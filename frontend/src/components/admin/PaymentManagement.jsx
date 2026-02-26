@@ -10,6 +10,8 @@ import {
   FaCalendar,
   FaArrowTrendUp,
   FaHandshake,
+  FaChevronRight,
+  FaCreditCard,
 } from "react-icons/fa6";
 import toast from "react-hot-toast";
 
@@ -30,21 +32,21 @@ const StatusBadge = ({ status }) => {
   switch (status?.toLowerCase()) {
     case "success":
       return (
-        <span className={`${baseClass} bg-green-100 text-green-700`}>
-          <FaCircleCheck className="w-3 h-3" /> Success
+        <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100">
+          <FaCircleCheck className="w-2.5 h-2.5" /> Success
         </span>
       );
     case "failed":
       return (
-        <span className={`${baseClass} bg-red-100 text-red-700`}>
-          <FaCircleXmark className="w-3 h-3" /> Failed
+        <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 border border-rose-100">
+          <FaCircleXmark className="w-2.5 h-2.5" /> Failed
         </span>
       );
     case "pending":
     default:
       return (
-        <span className={`${baseClass} bg-yellow-100 text-yellow-700`}>
-          <FaClock className="w-3 h-3" /> Pending
+        <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100">
+          <FaClock className="w-2.5 h-2.5" /> Pending
         </span>
       );
   }
@@ -61,6 +63,10 @@ const PaymentManagement = () => {
   const [courseFilter, setCourseFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+
+  // --- PAGINATION STATE ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
 
   // --- KPI DATA ---
   const [stats, setStats] = useState({
@@ -168,12 +174,24 @@ const PaymentManagement = () => {
     });
   }, [payments, courses, search, typeFilter, courseFilter, statusFilter, dateFilter]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, typeFilter, courseFilter, statusFilter, dateFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredPayments.length / ITEMS_PER_PAGE));
+
+  const paginatedPayments = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredPayments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [currentPage, filteredPayments]);
+
   /* ---------------------- STYLES ---------------------- */
   const tableHeadClassLeft =
-    "px-6 py-3 text-left font-bold text-gray-600 tracking-wider border-b text-sm uppercase";
-  const tableDataClass = "px-6 py-4 whitespace-nowrap text-sm text-gray-700";
+    "px-6 py-3 text-left font-black text-[#3e4954] tracking-widest border-b text-[10px] uppercase";
+  const tableDataClass = "px-6 py-3 whitespace-nowrap text-[11px] font-bold text-gray-700 border-b border-slate-100";
   const inputClass =
-    "w-full p-2.5 bg-gray-50 border border-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 outline-none";
+    "w-full px-3 py-1.5 bg-slate-50 border border-slate-200 text-[10px] font-bold text-gray-700 focus:border-blue-500 outline-none transition duration-150 rounded-none";
 
   const KpiCard = ({ title, value, icon: Icon, colorClass }) => {
     const isColoredBg =
@@ -183,13 +201,13 @@ const PaymentManagement = () => {
 
     return (
       <div
-        className={`flex flex-col p-5 rounded-xl shadow-lg border-b-4 ${colorClass}`}
+        className={`flex flex-col p-4 rounded-xl shadow-[0_15px_40px_rgba(0,0,0,0.08)] border-b-4 ${colorClass}`}
       >
         <div className="flex justify-between items-center">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <Icon className={`w-5 h-5 ${iconColor}`} />
+          <p className="text-[10px] text-gray-400 font-bold tracking-widest mb-1 opacity-70 uppercase"> {title} </p>
+          <Icon className={`w-4 h-4 ${iconColor}`} />
         </div>
-        <h2 className={`text-2xl font-extrabold mt-3 ${textColor}`}>
+        <h2 className={`text-lg font-black mt-2 ${textColor}`}>
           {value}
         </h2>
       </div>
@@ -197,53 +215,94 @@ const PaymentManagement = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen font-sans">
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-8 flex items-center gap-3">
-        <FaMoneyBillWave className="text-blue-600" /> Payment Management
-      </h1>
+    <div className="min-h-screen bg-[#EDF0FF] font-poppins">
+      {/* WHITE HEADER STRIP */}
+      <div className="bg-white border-b border-slate-200 shadow-[0_2px_15px_rgba(0,0,0,0.02)] mb-8">
+        <div className="max-w-[1700px] mx-auto px-4 md:px-6 py-8 animate-in fade-in slide-in-from-top-1 duration-700">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-1.5 h-10 bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.2)]" />
+              <div>
+                <h1 className="text-2xl font-black text-[#3e4954] tracking-tight uppercase flex items-center gap-3">
+                  <FaCreditCard className="text-blue-600" size={24} />
+                  Payment Management
+                </h1>
+                <p className="text-[10px] font-black text-[#7e7e7e] uppercase tracking-[0.1em] opacity-60 mt-1">
+                  Monitor financial transactions, revenue metrics and order history
+                </p>
+              </div>
+            </div>
 
-      {/* --- KPI CARDS --- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
-        <KpiCard
-          title="Total Revenue"
-          value={formatPrice(stats.totalRevenue)}
-          icon={FaMoneyBillWave}
-          colorClass="bg-white border-l-4 border-indigo-600 shadow-lg"
-        />
-        <KpiCard
-          title="Today's Revenue"
-          value={formatPrice(stats.todaysRevenue)}
-          icon={FaCalendar}
-          colorClass="bg-white border-l-4 border-orange-500 shadow-lg"
-        />
-        <KpiCard
-          title="Total Transactions"
-          value={stats.totalTransactions}
-          icon={FaArrowTrendUp}
-          colorClass="bg-white border-l-4 border-blue-500 shadow-lg"
-        />
-        <KpiCard
-          title="Avg. Order Value"
-          value={formatPrice(stats.averageOrderValue)}
-          icon={FaHandshake}
-          colorClass="bg-white border-l-4 border-green-500 shadow-lg"
-        />
-        <KpiCard
-          title="Pending Payments"
-          value={stats.totalPending}
-          icon={FaClock}
-          colorClass="bg-white border-l-4 border-red-500 shadow-lg"
-        />
+            <div className="flex items-center gap-4">
+              <button
+                className="flex items-center gap-2 bg-white border border-slate-200 text-[#7e7e7e] px-4 py-2.5 rounded-none shadow-sm hover:bg-slate-50 transition font-black text-[10px] uppercase tracking-widest border-b-2 hover:border-b-blue-600"
+                onClick={async () => {
+                  try {
+                    const response = await api.get("/api/admin/payments/report", { responseType: "blob" });
+                    const url = window.URL.createObjectURL(new Blob([response.data]));
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.setAttribute("download", "Payments_Report.csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    toast.success("Payment report downloaded");
+                  } catch (err) {
+                    toast.error("Download failed");
+                  }
+                }}
+              >
+                <FaDownload className="w-3.5 h-3.5" /> Download Report
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
+      <div className="max-w-[1700px] mx-auto px-4 md:px-6 pb-12">
+        <div className="space-y-8">
+          {/* --- KPI CARDS --- */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            <KpiCard
+              title="Total Revenue"
+              value={formatPrice(stats.totalRevenue)}
+              icon={FaMoneyBillWave}
+              colorClass="bg-white border-l-4 border-indigo-600 shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
+            />
+            <KpiCard
+              title="Today's Revenue"
+              value={formatPrice(stats.todaysRevenue)}
+              icon={FaCalendar}
+              colorClass="bg-white border-l-4 border-orange-500 shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
+            />
+            <KpiCard
+              title="Total Transactions"
+              value={stats.totalTransactions}
+              icon={FaArrowTrendUp}
+              colorClass="bg-white border-l-4 border-blue-500 shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
+            />
+            <KpiCard
+              title="Avg. Order Value"
+              value={formatPrice(stats.averageOrderValue)}
+              icon={FaHandshake}
+              colorClass="bg-white border-l-4 border-green-500 shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
+            />
+            <KpiCard
+              title="Pending Payments"
+              value={stats.totalPending}
+              icon={FaClock}
+              colorClass="bg-white border-l-4 border-red-500 shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
+            />
+          </div>
+
       {/* --- FILTER SECTION --- */}
-      <div className="bg-white rounded-xl shadow p-5 mb-8 border border-gray-200">
+      <div className="bg-white rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] p-4 mb-4 border border-gray-200">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-4">
-          <h3 className="text-xl font-semibold text-gray-800">
+          <h3 className="text-sm font-black text-gray-700 uppercase tracking-widest">
             Filter Transactions
           </h3>
           <button
-            className="flex items-center bg-blue-600 text-white px-4 py-2.5 rounded-lg shadow hover:bg-blue-700 transition text-sm font-medium"
+            className="flex items-center bg-blue-600 text-white px-3 py-1.5 rounded-none shadow-lg shadow-blue-100 hover:bg-blue-700 transition text-[10px] font-black uppercase tracking-widest"
             onClick={async () => {
               try {
                 const response = await api.get("/api/admin/payments/report", { responseType: "blob" });
@@ -260,7 +319,7 @@ const PaymentManagement = () => {
               }
             }}
           >
-            <FaDownload className="w-4 h-4 mr-2" /> Download Report (
+            <FaDownload className="w-3 h-3 mr-2" /> Download Report (
             {filteredPayments.length})
           </button>
         </div>
@@ -269,7 +328,7 @@ const PaymentManagement = () => {
           
           {/* 1. Search */}
           <div className="col-span-1 sm:col-span-2 lg:col-span-1">
-            <label className="block text-gray-700 text-xs font-bold uppercase mb-1">
+            <label className="block text-gray-700 text-[10px] font-bold tracking-widest mb-1">
               Search
             </label>
             <div className="relative">
@@ -286,8 +345,8 @@ const PaymentManagement = () => {
 
           {/* 2. Type Filter (Mock vs Grand) */}
           <div>
-            <label className="block text-gray-700 text-xs font-bold uppercase mb-1">
-              Test Type
+            <label className="block text-gray-700 text-[10px] font-bold tracking-widest mb-1">
+              Test type
             </label>
             <select
               className={inputClass}
@@ -302,8 +361,8 @@ const PaymentManagement = () => {
 
           {/* 3. Test Name */}
           <div>
-            <label className="block text-gray-700 text-xs font-bold uppercase mb-1">
-              Test Name
+            <label className="block text-gray-700 text-[10px] font-bold tracking-widest mb-1">
+              Test name
             </label>
             <select
               className={inputClass}
@@ -321,7 +380,7 @@ const PaymentManagement = () => {
 
           {/* 4. Status */}
           <div>
-            <label className="block text-gray-700 text-xs font-bold uppercase mb-1">
+            <label className="block text-gray-700 text-[10px] font-bold tracking-widest mb-1">
               Status
             </label>
             <select
@@ -338,12 +397,12 @@ const PaymentManagement = () => {
 
           {/* 5. Date */}
           <div>
-            <label className="block text-gray-700 text-xs font-bold uppercase mb-1">
+            <label className="block text-gray-700 text-[10px] font-bold tracking-widest mb-1">
               Date
             </label>
             <input
               type="date"
-              className={inputClass}
+              className={`${inputClass} !py-1.5`}
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
             />
@@ -352,12 +411,12 @@ const PaymentManagement = () => {
       </div>
 
       {/* --- TABLE SECTION --- */}
-      <div className="bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
-        <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-800">
+      <div className="bg-white rounded-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] border border-gray-200 overflow-hidden">
+        <div className="px-4 py-2 bg-[#fdfdfd] border-b border-slate-200 flex justify-between items-center">
+          <h3 className="text-[10px] font-black text-[#3e4954] uppercase tracking-widest">
             Transaction History
           </h3>
-          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
+          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-none border border-blue-100 text-[9px] font-black uppercase tracking-widest">
             {filteredPayments.length} Records
           </span>
         </div>
@@ -365,12 +424,12 @@ const PaymentManagement = () => {
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead>
-              <tr className="bg-gray-100/70">
+              <tr className="bg-[#fdfdfd] border-b border-slate-200">
                 <th className={tableHeadClassLeft}>Student</th>
                 <th className={tableHeadClassLeft}>Test Name</th>
                 <th className={tableHeadClassLeft}>Type</th> 
                 <th className={tableHeadClassLeft}>Email</th>
-                <th className="px-6 py-3 text-right font-bold text-gray-600 tracking-wider border-b text-sm uppercase">
+                <th className="px-6 py-3 text-right font-black text-[#3e4954] tracking-widest border-b text-[10px] uppercase">
                   Amount
                 </th>
                 <th className={tableHeadClassLeft}>Date</th>
@@ -388,14 +447,14 @@ const PaymentManagement = () => {
                     </div>
                   </td>
                 </tr>
-              ) : filteredPayments.length === 0 ? (
+              ) : paginatedPayments.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="text-center py-12 text-gray-500">
                     No transactions found matching your filters.
                   </td>
                 </tr>
               ) : (
-                filteredPayments.map((p) => {
+                paginatedPayments.map((p) => {
                   // Logic to find the linked course for this payment row
                   const linkedCourse = courses.find(c => c.title === p.courseName);
                   const isGrand = linkedCourse?.isGrandTest === true;
@@ -419,12 +478,12 @@ const PaymentManagement = () => {
 
                       {/* Type (Based on isGrandTest flag) */}
                       <td className={tableDataClass}>
-                         <span className={`text-xs px-2 py-1 rounded border ${
+                         <span className={`text-[9px] px-1.5 py-0.5 rounded-none font-black uppercase tracking-widest border ${
                            isGrand
-                           ? 'bg-purple-50 text-purple-700 border-purple-100'
-                           : 'bg-gray-50 text-gray-600 border-gray-200'
+                           ? 'bg-purple-50 text-purple-600 border-purple-100'
+                           : 'bg-slate-50 text-slate-500 border-slate-200'
                          }`}>
-                           {isGrand ? "Grand Test" : "Mock Test"}
+                           {isGrand ? "Grand" : "Mock"}
                          </span>
                       </td>
 
@@ -455,6 +514,66 @@ const PaymentManagement = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* PAGINATION CONTROLS */}
+        {!loading && filteredPayments.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-[#fdfdfd] border-t border-slate-200">
+            <div className="text-[10px] font-black text-[#7e7e7e] uppercase tracking-widest font-poppins">
+              Showing <span className="text-[#3e4954]">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to <span className="text-[#3e4954]">{Math.min(currentPage * ITEMS_PER_PAGE, filteredPayments.length)}</span> of <span className="text-[#21b731]">{filteredPayments.length}</span> results
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+                className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 hover:text-[#3e4954] transition-all"
+              >
+                <FaChevronRight size={14} className="rotate-180" />
+              </button>
+
+              <div className="flex items-center gap-1">
+                {[...Array(totalPages)].map((_, i) => {
+                  const pageNum = i + 1;
+                  if (
+                    pageNum === 1 || 
+                    pageNum === totalPages || 
+                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`w-10 h-10 text-[11px] font-black transition-all border ${
+                          currentPage === pageNum 
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100' 
+                            : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300 hover:text-[#3e4954]'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  } else if (
+                    pageNum === currentPage - 2 || 
+                    pageNum === currentPage + 2
+                  ) {
+                    return <span key={pageNum} className="px-1 text-slate-300 font-bold">...</span>;
+                  }
+                  return null;
+                })}
+              </div>
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                className="w-10 h-10 flex items-center justify-center border border-slate-200 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 hover:text-[#3e4954] transition-all"
+              >
+                <FaChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
         </div>
       </div>
     </div>

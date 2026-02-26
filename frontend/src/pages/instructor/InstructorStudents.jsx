@@ -215,7 +215,7 @@ const InstructorStudents = () => {
                         <td className="p-4 text-center">
                            <div className="flex items-center justify-center gap-2 text-gray-500">
                               <Phone size={14} className="text-cyan-500" />
-                              <span className="text-xs font-mono">{s.phoneNumber || "N/A"}</span>
+                              <span className="text-xs">{s.phoneNumber || "N/A"}</span>
                            </div>
                         </td>
                       </tr>
@@ -270,7 +270,7 @@ const InstructorStudents = () => {
                                   <Calendar size={12} /> Purchased on {new Date(test.date).toLocaleDateString()}
                                 </span>
                             </div>
-                            <span className="text-xs font-mono text-gray-400">{test.orderId}</span>
+                            <span className="text-xs text-gray-400">{test.orderId}</span>
                           </div>
                         ))
                       ) : <p className="text-center py-10 text-gray-400">No tests purchased.</p>}

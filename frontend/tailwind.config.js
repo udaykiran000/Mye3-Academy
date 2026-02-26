@@ -3,6 +3,10 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Poppins'],
+        poppins: ['Poppins'],
+      },
       colors: {
         brand: {
           primary: "#E11D48", // Vibrant Rose-Red

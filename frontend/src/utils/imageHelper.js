@@ -7,9 +7,12 @@ export const getImageUrl = (path) => {
   // Use VITE_SERVER_URL or default to localhost:8000
   const baseUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:8000";
   
+  // Normalize path for Windows/Unix compatibility (replace \ with /)
+  const normalizedPath = path.replace(/\\/g, "/");
+  
   // Ensure we don't double slash or miss a slash
   const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  const cleanPath = normalizedPath.startsWith("/") ? normalizedPath : `/${normalizedPath}`;
   
   return `${cleanBase}${cleanPath}`;
 };

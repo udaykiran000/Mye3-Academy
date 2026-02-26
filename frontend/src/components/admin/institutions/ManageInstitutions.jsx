@@ -7,7 +7,7 @@ import {
 } from "../../../redux/institutionSlice";
 import api from "../../../api/axios";
 import { useNavigate, Link } from "react-router-dom";
-import { Search, Home, Building2, Lock, Unlock, Pencil, Trash2, X, ArrowLeft, Plus, Download, MoreVertical, Users, Mail, Phone, ArrowRight, User as UserIcon } from "lucide-react";
+import { Search, Home, Building2, Lock, Unlock, Pencil, Trash2, X, ArrowLeft, Plus, Download, MoreVertical, Users, Mail, Phone, ArrowRight, User as UserIcon, ChevronRight } from "lucide-react";
 import { FaCheckCircle, FaBan, FaSpinner, FaExclamationTriangle, FaTimes, FaGraduationCap } from "react-icons/fa";
 import toast from "react-hot-toast";
 
@@ -17,7 +17,7 @@ const getImageUrl = (path) => {
   return `${api.defaults.baseURL}/${path}`;
 };
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 12;
 
 const ManageInstitutions = () => {
   const dispatch = useDispatch();
@@ -134,62 +134,79 @@ const ManageInstitutions = () => {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50 font-sans text-gray-800">
-      <Link
-        to="/admin"
-        className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 mb-4 transition font-medium"
-      >
-        <ArrowLeft size={16} /> Back to Dashboard
-      </Link>
+    <div className="min-h-screen bg-[#EDF0FF] font-poppins">
+      {/* WHITE HEADER STRIP */}
+      <div className="bg-white border-b border-slate-200 shadow-[0_2px_15px_rgba(0,0,0,0.02)] mb-8">
+        <div className="max-w-[1700px] mx-auto px-4 md:px-6 py-8 animate-in fade-in slide-in-from-top-1 duration-700">
+          <div className="space-y-3 mb-6">
+            <Link
+              to="/admin"
+              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#7e7e7e] hover:text-indigo-600 transition"
+            >
+              <ArrowLeft size={12} /> Back to Dashboard
+            </Link>
+          </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2 text-gray-800">
-            <Building2 className="text-indigo-600" /> Manage Institutions
-          </h1>
-          <p className="text-gray-500 mt-1">
-            View, manage, and organize your institutions.
-          </p>
-        </div>
+          <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-1.5 h-10 bg-indigo-600 shadow-[0_0_10px_rgba(79,70,229,0.2)]" />
+              <div>
+                <h1 className="text-2xl font-black text-[#3e4954] tracking-tight uppercase flex items-center gap-3">
+                  <Building2 className="text-indigo-600" size={24} />
+                  Manage Institutions
+                </h1>
+                <p className="text-[10px] font-black text-[#7e7e7e] uppercase tracking-[0.1em] opacity-60 mt-1">
+                  View, manage, and organize your institutions and their registrations
+                </p>
+              </div>
+            </div>
 
-        <div className="flex gap-3">
-          <button
-            onClick={handleDownloadReport}
-            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 transition font-medium"
-          >
-            <Download size={18} /> Download Report
-          </button>
-          
-          <Link
-            to="/admin/users/institutions/add"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-md transition flex items-center gap-2 font-medium"
-          >
-            <Plus size={18} /> Add Institution
-          </Link>
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              {/* Search Integrated into Header Row */}
+              <div className="relative group">
+                <Search
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors"
+                  size={14}
+                />
+                <input
+                  type="text"
+                  placeholder="Search institutions..."
+                  className="bg-slate-50 border border-slate-100 rounded-none pl-9 pr-8 py-2.5 text-xs focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 outline-none w-56 md:w-64 transition-all font-poppins text-[#3e4954] font-bold"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={clearSearch}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDownloadReport}
+                  className="flex items-center gap-2 bg-white border border-slate-200 text-[#7e7e7e] px-4 py-2.5 rounded-none shadow-sm hover:bg-slate-50 transition font-black text-[10px] uppercase tracking-widest border-b-2 hover:border-b-indigo-600"
+                >
+                  <Download size={14} /> Report
+                </button>
+                
+                <Link
+                  to="/admin/users/institutions/add"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-none shadow-lg shadow-indigo-100 transition flex items-center gap-2 font-black text-[10px] uppercase tracking-widest hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  <Plus size={16} /> Add Institution
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-        <div className="relative w-full md:w-96">
-          <Search
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-            size={18}
-          />
-          <input
-            type="text"
-            placeholder="Search by name or email..."
-            className="w-full pl-10 pr-10 py-3 rounded-xl border border-gray-200 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          {searchTerm && (
-            <button
-              onClick={clearSearch}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
-            >
-              <X size={16} />
-            </button>
-          )}
-        </div>
+      <div className="max-w-[1700px] mx-auto px-4 md:px-6 pb-12">
+        <div className="space-y-6">
 
       {status === "loading" && (
         <div className="flex justify-center py-12">
@@ -220,16 +237,16 @@ const ManageInstitutions = () => {
 
       {status === "succeeded" && filteredInstitutions.length > 0 && (
         <>
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100">
+          <div className="bg-white rounded-xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] border border-gray-100">
             <div className="overflow-x-visible">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-50/50 border-b border-gray-100 text-gray-500 uppercase text-[10px] font-bold tracking-widest">
-                    <th className="p-4 pl-6">Institution</th>
-                    <th className="p-4">Contact Info</th>
-                    <th className="p-4 text-center">Students</th>
-                    <th className="p-4">Joined Date</th>
-                    <th className="p-4 text-center">Status & Actions</th>
+                  <tr className="bg-[#fdfdfd] border-b border-gray-100 text-[#3e4954] uppercase text-[10px] font-black tracking-widest">
+                    <th className="px-6 py-3">Institution</th>
+                    <th className="px-4 py-3">Contact Info</th>
+                    <th className="px-4 py-3 text-center">Students</th>
+                    <th className="px-4 py-3">Joined Date</th>
+                    <th className="px-4 py-3 text-center">Status & Actions</th>
                   </tr>
                 </thead>
 
@@ -247,78 +264,78 @@ const ManageInstitutions = () => {
                     return (
                       <tr
                         key={inst._id}
-                        className="hover:bg-gray-50 transition duration-150"
+                        className="hover:bg-slate-50 transition duration-150 border-b border-slate-100 last:border-0"
                       >
-                        <td className="p-4">
+                        <td className="px-6 py-3">
                           <div className="flex items-center gap-3">
                             <img
                               src={avatarSrc || avatarFallback}
                               alt={inst.firstname}
-                              className="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm"
+                              className="w-8 h-8 rounded-full object-cover border border-gray-200 shadow-sm"
                               onError={(e) => {
                                 e.target.src = avatarFallback;
                               }}
                             />
                             <div>
-                              <p className="font-semibold text-gray-800">
+                               <p className="font-extrabold text-gray-800 text-xs">
                                 {inst.firstname} {inst.lastname}
                               </p>
-                              <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-medium">
+                              <span className="text-[9px] text-indigo-600 font-black uppercase tracking-wider">
                                 Institution
                               </span>
                             </div>
                           </div>
                         </td>
 
-                        <td className="p-4">
-                          <p className="text-sm text-gray-700">{inst.email}</p>
-                          <p className="text-xs text-gray-500">
+                        <td className="px-4 py-3">
+                          <p className="text-[11px] font-bold text-gray-700">{inst.email}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                             {inst.phoneNumber || "—"}
                           </p>
                         </td>
 
-                        <td className="p-4 text-center">
+                        <td className="px-4 py-3 text-center">
                           <div 
                             onClick={() => handleViewStudents(inst)}
                             className="inline-flex flex-col items-center group/students cursor-pointer"
                           >
-                            <div className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-xl border border-indigo-100 shadow-sm transition-transform group-hover/students:scale-105">
-                              <Users size={14} />
-                              <span className="font-black text-sm">{inst.studentCount || 0}</span>
+                            <div className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-none border border-indigo-100 shadow-sm transition-transform group-hover/students:scale-105">
+                              <Users size={12} />
+                              <span className="font-black text-xs">{inst.studentCount || 0}</span>
                             </div>
-                            <span className="text-[9px] font-bold text-gray-400 mt-1 uppercase tracking-tighter">Registered</span>
+                            <span className="text-[8px] font-black text-gray-400 mt-1 uppercase tracking-widest">Registered</span>
                           </div>
                         </td>
 
-                        <td className="p-4 text-sm text-gray-600">
-                          <div className="font-medium text-gray-700">
+                        <td className="px-4 py-3 text-xs text-gray-600">
+                          <div className="font-black text-gray-700 text-[11px]">
                             {inst.createdAt ? new Date(inst.createdAt).toLocaleDateString("en-GB", {
                               day: "2-digit",
                               month: "2-digit",
                               year: "numeric"
                             }) : "—"}
                           </div>
-                          <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Access Granted</div>
+                          <div className="text-[9px] text-gray-400 font-black uppercase tracking-tight opacity-70">Access Granted</div>
                         </td>
 
-                        <td className="p-4 text-center">
-                          <div className="flex items-center justify-center gap-4 relative">
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex items-center justify-center gap-3 relative">
                             {/* PREMIUM TOGGLE RESTORED */}
                             <div className="flex flex-col items-center gap-1">
                               <button
                                 onClick={() => handleToggleStatus(inst)}
-                                className={`group/toggle relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 focus:outline-none ring-2 ring-offset-2 ring-transparent focus:ring-indigo-500 shadow-sm ${
+                                className={`group/toggle relative inline-flex h-4 w-9 items-center rounded-full transition-all duration-300 focus:outline-none ring-2 ring-offset-2 ring-transparent focus:ring-indigo-500 shadow-sm ${
                                   inst.isActive ? "bg-green-500" : "bg-gray-200"
                                 }`}
                                 title={inst.isActive ? "Deactivate Institution" : "Activate Institution"}
                               >
                                 <span
-                                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-all shadow-md ${
-                                    inst.isActive ? "translate-x-6" : "translate-x-1"
+                                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-all shadow-md ${
+                                    inst.isActive ? "translate-x-5" : "translate-x-1"
                                   }`}
                                 />
                               </button>
-                              <span className={`text-[9px] font-bold uppercase tracking-tight ${inst.isActive ? "text-green-600" : "text-gray-400"}`}>
+                              <span className={`text-[8px] font-black uppercase tracking-widest ${inst.isActive ? "text-green-600" : "text-gray-400"}`}>
                                 {inst.isActive ? "Active" : "Blocked"}
                               </span>
                             </div>
@@ -326,9 +343,9 @@ const ManageInstitutions = () => {
                             {/* HOVER ACTION MENU */}
                             <div className="relative group/actions z-10">
                               <button 
-                                className={`p-2.5 rounded-xl transition-all duration-300 border bg-white text-gray-400 border-gray-100 group-hover/actions:bg-[#1e293b] group-hover/actions:text-white group-hover/actions:border-[#1e293b] group-hover/actions:shadow-lg`}
+                                className={`p-1.5 rounded-none transition-all duration-300 border bg-white text-gray-400 border-gray-100 group-hover/actions:bg-[#1e293b] group-hover/actions:text-white group-hover/actions:border-[#1e293b] group-hover/actions:shadow-lg`}
                               >
-                                <MoreVertical size={18} />
+                                <MoreVertical size={14} />
                               </button>
                               
                               {/* Floating Menu */}
@@ -380,37 +397,60 @@ const ManageInstitutions = () => {
             </div>
           </div>
 
-          {totalPages > 1 && (
-            <div className="flex justify-center mt-6 gap-2">
-              <button
-                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                Prev
-              </button>
-
-              {Array.from({ length: totalPages }, (_, index) => (
+          {status === "succeeded" && filteredInstitutions.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 bg-white border border-slate-200 p-4 shadow-sm">
+              <div className="text-[10px] font-black text-[#7e7e7e] uppercase tracking-widest font-poppins">
+                Showing <span className="text-[#3e4954]">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to <span className="text-[#3e4954]">{Math.min(currentPage * ITEMS_PER_PAGE, filteredInstitutions.length)}</span> of <span className="text-[#21b731]">{filteredInstitutions.length}</span> results
+              </div>
+              
+              <div className="flex items-center gap-1">
                 <button
-                  key={index}
-                  onClick={() => setCurrentPage(index + 1)}
-                  className={`px-3 py-1 rounded transition ${
-                    currentPage === index + 1
-                      ? "bg-indigo-600 text-white shadow-md"
-                      : "bg-gray-200 hover:bg-gray-300"
-                  }`}
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => prev - 1)}
+                  className="w-10 h-10 flex items-center justify-center border border-slate-100 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 hover:text-[#3e4954] transition-all"
                 >
-                  {index + 1}
+                  <ChevronRight size={16} className="rotate-180" />
                 </button>
-              ))}
 
-              <button
-                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </button>
+                <div className="flex items-center gap-1">
+                  {[...Array(totalPages)].map((_, i) => {
+                    const pageNum = i + 1;
+                    if (
+                      pageNum === 1 || 
+                      pageNum === totalPages || 
+                      (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`w-10 h-10 text-[11px] font-black transition-all border ${
+                            currentPage === pageNum 
+                              ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100' 
+                              : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200 hover:text-[#3e4954]'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    } else if (
+                      pageNum === currentPage - 2 || 
+                      pageNum === currentPage + 2
+                    ) {
+                      return <span key={pageNum} className="px-1 text-slate-300 font-bold">...</span>;
+                    }
+                    return null;
+                  })}
+                </div>
+
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  className="w-10 h-10 flex items-center justify-center border border-slate-100 text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-50 hover:text-[#3e4954] transition-all"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           )}
         </>
@@ -518,6 +558,8 @@ const ManageInstitutions = () => {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 };

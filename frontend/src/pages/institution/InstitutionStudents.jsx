@@ -165,7 +165,7 @@ const InstitutionStudents = () => {
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2 text-slate-600">
                              <Phone size={12} className="text-indigo-600" />
-                             <span className="text-xs font-mono font-bold tracking-tighter">{s.phoneNumber || "N/A"}</span>
+                             <span className="text-xs font-bold tracking-tighter">{s.phoneNumber || "N/A"}</span>
                         </div>
                          <span className="text-[10px] text-slate-300 font-black uppercase">Verified ID</span>
                       </div>

@@ -129,13 +129,13 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       onMouseLeave={handleLeave}
       animate={{ width: expandedSidebar ? 280 : 88 }}
       transition={{ type: "spring", stiffness: 140, damping: 20, mass: 0.8 }}
-      className="relative h-full bg-white border-r border-slate-200 flex flex-col z-[100]"
+      className="relative h-full bg-white flex flex-col z-[100] shadow-[12px_0_40px_rgba(33,33,33,0.03)]"
     >
       {/* BRAND SECTION */}
       <div className="px-6 py-8 flex items-center gap-4">
         <div 
             onClick={() => setIsPinned(!isPinned)}
-            className="shrink-0 w-11 h-11 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-lg cursor-pointer hover:rotate-6 transition-transform"
+            className="shrink-0 w-11 h-11 rounded-2xl bg-[#5654F7] flex items-center justify-center text-white shadow-lg cursor-pointer hover:rotate-6 transition-transform"
         >
             <GraduationCap size={24} strokeWidth={2.5} />
         </div>
@@ -148,7 +148,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                     className="overflow-hidden whitespace-nowrap"
                 >
                     <h2 className="text-xl font-black text-slate-800 tracking-tighter italic">Mye3</h2>
-                    <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-[0.2em] leading-none mt-0.5">Academy Admin</p>
+                    <p className="text-[10px] font-bold text-[#5654F7] uppercase tracking-[0.2em] leading-none mt-0.5">Academy Admin</p>
                 </motion.div>
             )}
         </AnimatePresence>
@@ -174,13 +174,13 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                 }}
                 className={`
                     relative flex items-center gap-4 px-4 py-3 rounded-none cursor-pointer group transition-all
-                    ${isActiveParent ? "bg-indigo-50 text-indigo-600" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"}
+                    ${isActiveParent ? "bg-[#5654F7]/10 text-[#5654F7]" : "text-slate-500 hover:bg-slate-50 hover:text-[#5654F7]"}
                 `}
               >
                 {isActiveParent && !m.children && (
                   <motion.div 
                     layoutId="active-pill"
-                    className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1.5 bg-indigo-600 rounded-r-full shadow-sm" 
+                    className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1.5 bg-[#5654F7] rounded-r-full shadow-sm" 
                   />
                 )}
                 
@@ -202,7 +202,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                 {m.children && expandedSidebar && (
                     <ChevronDown 
                         size={16} 
-                        className={`ml-auto opacity-40 transition-transform ${isDropdownOpen ? "rotate-180 text-indigo-500 opacity-100" : ""}`} 
+                        className={`ml-auto opacity-40 transition-transform ${isDropdownOpen ? "rotate-180 text-[#5654F7] opacity-100" : ""}`} 
                     />
                 )}
               </div>
@@ -214,9 +214,8 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden pl-11 pr-2 space-y-1"
+                    className="overflow-hidden pl-11 pr-2 space-y-1 relative"
                   >
-                    <div className="w-px absolute left-8 top-0 bottom-0 bg-slate-100"></div>
                     {m.children.map((c, idx) => {
                       const isActiveChild = location.pathname === c.path;
                       return (
@@ -229,11 +228,11 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                           }}
                           className={`
                             relative py-2 pl-4 rounded-xl text-[13px] font-bold cursor-pointer transition-colors
-                            ${isActiveChild ? "text-indigo-600" : "text-slate-500 hover:text-indigo-500"}
+                            ${isActiveChild ? "text-[#5654F7]" : "text-slate-500 hover:text-[#5654F7]"}
                           `}
                         >
                           {isActiveChild && (
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-indigo-600 shadow-sm" />
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#5654F7] shadow-sm" />
                           )}
                           {c.label}
                         </div>
@@ -265,7 +264,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                         }}
                         className={`
                             px-4 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer transition-colors
-                            ${location.pathname === c.path ? "bg-indigo-50 text-indigo-600" : "text-slate-600 hover:bg-slate-50 hover:text-indigo-500"}
+                            ${location.pathname === c.path ? "bg-[#5654F7]/10 text-[#5654F7]" : "text-slate-600 hover:bg-slate-50 hover:text-[#5654F7]"}
                         `}
                       >
                         {c.label}

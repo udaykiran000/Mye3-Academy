@@ -25,8 +25,8 @@ const findTestById = async (id) => {
 export const getAllAdminMocktests = async (req, res) => {
   try {
     const [mockTests, grandTests] = await Promise.all([
-      MockTest.find({}).populate("category", "name slug").sort({ createdAt: -1 }),
-      GrandTest.find({}).populate("category", "name slug").sort({ createdAt: -1 }),
+      MockTest.find({}).select("-questions -attempts").populate("category", "name slug").sort({ createdAt: -1 }),
+      GrandTest.find({}).select("-questions -attempts").populate("category", "name slug").sort({ createdAt: -1 }),
     ]);
 
     res.status(200).json({
@@ -50,6 +50,7 @@ export const getMocktestsByCategory = async (req, res) => {
 
     const Model = getModel(isGrandTest);
     const tests = await Model.find({ categorySlug: category })
+      .select("-questions -attempts")
       .populate("category", "name slug")
       .sort({ createdAt: -1 });
 
@@ -285,16 +286,16 @@ export const getFilteredMocktests = async (req, res) => {
 
     let tests = [];
     if (isGrandTest === "true") {
-      tests = await GrandTest.find(query).populate("category", "name slug").sort({ createdAt: -1 });
+      tests = await GrandTest.find(query).select("-questions -attempts").populate("category", "name slug").sort({ createdAt: -1 });
       console.log(`- GrandTests Only: ${tests.length}`);
     } else if (isGrandTest === "false") {
-      tests = await MockTest.find(query).populate("category", "name slug").sort({ createdAt: -1 });
+      tests = await MockTest.find(query).select("-questions -attempts").populate("category", "name slug").sort({ createdAt: -1 });
       console.log(`- MockTests Only: ${tests.length}`);
     } else {
       // Both
       const [m, g] = await Promise.all([
-        MockTest.find(query).populate("category", "name slug").sort({ createdAt: -1 }),
-        GrandTest.find(query).populate("category", "name slug").sort({ createdAt: -1 }),
+        MockTest.find(query).select("-questions -attempts").populate("category", "name slug").sort({ createdAt: -1 }),
+        GrandTest.find(query).select("-questions -attempts").populate("category", "name slug").sort({ createdAt: -1 }),
       ]);
       console.log(`- Combined results: Mock(${m.length}), Grand(${g.length})`);
       tests = [...m, ...g];

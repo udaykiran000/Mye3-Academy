@@ -7,34 +7,38 @@
     --edumin-primary: #21b731;
     --edumin-secondary: #ff9d43;
     --edumin-success: #21b731;
-    --edumin-info: #6a73fa;
+    --edumin-info: #5654F7;
     --edumin-warning: #ffb800;
     --edumin-danger: #ff5c5c;
     --edumin-charcoal: #3e4954;
     --edumin-grey: #7e7e7e;
-    --edumin-bg: #f8f9fa;
-    --edumin-card-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    --edumin-bg: #EDF0FF;
+    --edumin-card-shadow: 0 15px 45px rgba(0, 0, 0, 0.12);
     --edumin-radius: 0px; /* Square Design */
 
     /* Gradients from Screenshot */
-    --gradient-blue: linear-gradient(to right, #6a73fa, #b2b7ff);
+    --gradient-blue: linear-gradient(to right, #5654F7, #9896ff);
     --gradient-orange: linear-gradient(to right, #ff9d43, #ffc977);
     --gradient-purple: linear-gradient(to right, #b472fb, #d4a7ff);
     --gradient-red: linear-gradient(to right, #ff5c5c, #ff9696);
   }
 
-  body {
-    @apply font-['Poppins'] bg-[#f8f9fa] text-[#7e7e7e];
+  * {
+    font-family: inherit;
+  }
+
+  body, button, input, select, textarea, span, p, div, a, li, th, td, table, thead, tbody, tr {
+    font-family: 'Poppins' !important;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply text-[#3e4954] font-bold;
+    font-family: 'Poppins' !important;
   }
 }
 
 @layer components {
   .edumin-card {
-    @apply bg-white rounded-2xl shadow-[0_0.125rem_0.25rem_rgba(0,0,0,0.075)] border border-gray-100 transition-all duration-300;
+    @apply bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] border border-gray-100/50 transition-all duration-300;
   }
   
   .glass-morph {
@@ -60,6 +64,12 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@layer utilities {
+  .font-sans, .font-poppins {
+    font-family: 'Poppins' !important;
+  }
 }
 
 .animate-fadeIn {

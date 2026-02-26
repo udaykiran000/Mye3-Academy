@@ -91,77 +91,166 @@ const AdminProfileSettings = () => {
         return <div className="flex justify-center p-10"><Loader className="animate-spin text-blue-600" size={32} /></div>;
     }
 
-    return (
-        <div className="bg-white p-6 rounded-lg shadow-md max-w-4xl mx-auto border border-gray-100">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-4">Admin Profile Settings</h2>
+  return (
+    <div className="min-h-screen bg-[#EDF0FF] font-poppins">
+      {/* WHITE HEADER STRIP */}
+      <div className="bg-white border-b border-slate-200 shadow-[0_2px_15px_rgba(0,0,0,0.02)] mb-8">
+        <div className="max-w-[1700px] mx-auto px-4 md:px-6 py-8 animate-in fade-in slide-in-from-top-1 duration-700">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-1.5 h-10 bg-indigo-600 shadow-[0_0_10px_rgba(79,70,229,0.2)]" />
+              <div>
+                <h1 className="text-2xl font-black text-[#3e4954] tracking-tight uppercase flex items-center gap-3">
+                  <Camera className="text-indigo-600" size={24} />
+                  Profile Settings
+                </h1>
+                <p className="text-[10px] font-black text-[#7e7e7e] uppercase tracking-[0.1em] opacity-60 mt-1">
+                  Manage your personal account details, avatar and security settings
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+               {/* No specific actions needed in header for profile yet */}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6 pb-12">
+        <div className="bg-white p-8 md:p-12 rounded-none shadow-[0_20px_60px_rgba(0,0,0,0.12)] border border-slate-100 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <h2 className="text-xl font-black mb-8 text-[#3e4954] border-b border-slate-100 pb-6 uppercase tracking-widest">Account Details</h2>
 
             <form onSubmit={handleSubmit} className="space-y-8">
                 {status === 'failed' && (
-                    <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
-                        <span className="font-bold">Error:</span> {error}
+                    <div className="p-4 bg-red-50 text-red-700 rounded-none border border-red-200 text-xs font-bold font-poppins">
+                        <span className="font-black uppercase tracking-widest mr-2">Error:</span> {error}
                     </div>
                 )}
                 {status === 'succeeded' && (
-                    <div className="p-4 bg-green-50 text-green-700 rounded-lg border border-green-200">
-                         <span className="font-bold">Success:</span> {successMessage}
+                    <div className="p-4 bg-green-50 text-green-700 rounded-none border border-green-200 text-xs font-bold font-poppins">
+                         <span className="font-black uppercase tracking-widest mr-2">Success:</span> {successMessage}
                     </div>
                 )}
 
-                <div className="flex flex-col md:flex-row gap-10 items-start">
-                    {/* Image */}
-                    <div className="flex flex-col items-center space-y-4 w-full md:w-1/3 pt-2">
+                <div className="flex flex-col md:flex-row gap-12 items-start">
+                    {/* Image Section */}
+                    <div className="flex flex-col items-center space-y-6 w-full md:w-1/3 pt-2">
                         <div className="relative group">
-                            <img src={avatarPreview} alt="Profile" className="w-40 h-40 rounded-full object-cover border-4 border-white shadow-xl" />
-                            <label htmlFor="avatar-upload" className="absolute bottom-2 right-2 bg-blue-600 p-2.5 rounded-full text-white cursor-pointer hover:bg-blue-700 transition shadow-md hover:scale-105">
+                            <div className="w-48 h-48 rounded-full overflow-hidden border-8 border-slate-50 shadow-2xl relative">
+                                <img 
+                                    src={avatarPreview} 
+                                    alt="Profile" 
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                                />
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                    <Camera size={40} className="text-white opacity-60" />
+                                </div>
+                            </div>
+                            <label 
+                                htmlFor="avatar-upload" 
+                                className="absolute bottom-4 right-4 bg-indigo-600 p-3.5 rounded-full text-white cursor-pointer hover:bg-indigo-700 transition shadow-xl hover:scale-110 active:scale-95 z-10"
+                            >
                                 <Camera size={20} />
                             </label>
                             <input id="avatar-upload" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                         </div>
+                        <p className="text-[10px] font-black text-[#7e7e7e] uppercase tracking-[0.2em] opacity-40">Click icon to change avatar</p>
                     </div>
 
-                    {/* Inputs */}
-                    <div className="w-full md:w-2/3 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">First Name</label>
-                                <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                    {/* Inputs Section */}
+                    <div className="w-full md:w-2/3 space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-black text-[#7e7e7e] uppercase tracking-widest">First Name</label>
+                                <input 
+                                    type="text" 
+                                    name="firstName" 
+                                    value={formData.firstName} 
+                                    onChange={handleChange} 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-none p-3.5 text-xs font-bold text-[#3e4954] focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all font-poppins" 
+                                />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">Last Name</label>
-                                <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
-                            <input type="email" value={adminProfile?.email || ''} disabled className="w-full p-2.5 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed" />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number</label>
-                            <input type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-
-                        <hr className="my-6 border-gray-200" />
-
-                        <div>
-                            <h3 className="text-md font-semibold text-gray-800 mb-4">Change Password</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="New Password" className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                                <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="Confirm Password" className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-black text-[#7e7e7e] uppercase tracking-widest">Last Name</label>
+                                <input 
+                                    type="text" 
+                                    name="lastName" 
+                                    value={formData.lastName} 
+                                    onChange={handleChange} 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-none p-3.5 text-xs font-bold text-[#3e4954] focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all font-poppins" 
+                                />
                             </div>
                         </div>
 
-                        <div className="pt-4 flex justify-end">
-                            <button type="submit" disabled={status === 'loading'} className="bg-blue-600 text-white py-2.5 px-8 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-blue-300 shadow-md">
-                                {status === 'loading' ? 'Updating...' : 'Save Changes'}
+                        <div className="space-y-2">
+                            <label className="block text-[10px] font-black text-[#7e7e7e] uppercase tracking-widest">Email Address</label>
+                            <input 
+                                type="email" 
+                                value={adminProfile?.email || ''} 
+                                disabled 
+                                className="w-full bg-slate-100 border border-slate-200 rounded-none p-3.5 text-xs font-bold text-slate-400 cursor-not-allowed font-poppins italic" 
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="block text-[10px] font-black text-[#7e7e7e] uppercase tracking-widest">Phone Number</label>
+                            <input 
+                                type="tel" 
+                                name="phoneNumber" 
+                                value={formData.phoneNumber} 
+                                onChange={handleChange} 
+                                className="w-full bg-slate-50 border border-slate-200 rounded-none p-3.5 text-xs font-bold text-[#3e4954] focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all font-poppins" 
+                            />
+                        </div>
+
+                        <div className="py-4 border-t border-slate-100 mt-6">
+                            <h3 className="text-xs font-black text-[#3e4954] mb-6 uppercase tracking-[0.2em] flex items-center gap-3">
+                                <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full" />
+                                Security Settings
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-[#7e7e7e] uppercase tracking-widest">New Password</label>
+                                    <input 
+                                        type="password" 
+                                        name="password" 
+                                        value={formData.password} 
+                                        onChange={handleChange} 
+                                        placeholder="Enter new password" 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-none p-3.5 text-xs font-bold text text-[#3e4954] focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all font-poppins" 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-[#7e7e7e] uppercase tracking-widest">Confirm Password</label>
+                                    <input 
+                                        type="password" 
+                                        name="confirmPassword" 
+                                        value={formData.confirmPassword} 
+                                        onChange={handleChange} 
+                                        placeholder="Repeat new password" 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-none p-3.5 text-xs font-bold text text-[#3e4954] focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all font-poppins" 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-8 flex justify-end">
+                            <button 
+                                type="submit" 
+                                disabled={status === 'loading'} 
+                                className="bg-indigo-600 text-white py-3.5 px-10 rounded-none font-black text-[10px] uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all disabled:bg-indigo-300 shadow-xl shadow-indigo-100 hover:-translate-y-1 active:translate-y-0"
+                            >
+                                {status === 'loading' ? 'Saving Changes...' : 'Save Configuration'}
                             </button>
                         </div>
                     </div>
                 </div>
             </form>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default AdminProfileSettings;

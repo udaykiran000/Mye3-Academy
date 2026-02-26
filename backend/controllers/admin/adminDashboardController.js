@@ -84,19 +84,21 @@ export const getAdminStats = async (req, res) => {
           _id: 0,
         },
       },
-    ]); // 6. FINAL STATS OBJECT (FIX: Include categorySales and testTypeSales)
+    ]); 
 
-    const topRankers = await Attempt.aggregate([
-      { $match: { status: { $in: ["completed", "finished"] } } },
+    // 6. Get Top Students Breakdown
+    const topStudents = await Attempt.aggregate([
+      { $match: { status: "completed" } },
       {
         $group: {
           _id: "$studentId",
           totalScore: { $sum: "$score" },
-          examsTaken: { $sum: 1 },
+          averageScore: { $avg: "$score" },
+          totalAttempts: { $sum: 1 },
         },
       },
       { $sort: { totalScore: -1 } },
-      { $limit: 3 },
+      { $limit: 10 },
       {
         $lookup: {
           from: "users",
@@ -110,14 +112,44 @@ export const getAdminStats = async (req, res) => {
         $project: {
           _id: 0,
           studentId: "$_id",
-          name: { $concat: ["$studentDetails.firstname", " ", "$studentDetails.lastname"] },
-          avatar: "$studentDetails.avatar",
           totalScore: 1,
-          examsTaken: 1,
+          averageScore: 1,
+          totalAttempts: 1,
+          fullName: { $concat: ["$studentDetails.firstname", " ", "$studentDetails.lastname"] },
+          avatar: "$studentDetails.avatar",
         },
       },
+      { $limit: 5 }
+    ]); 
+
+    // 7. Get Monthly Sales Breakdown for Mock vs Grand Tests
+    const monthlyTestSales = await Order.aggregate([
+      { $match: { status: "successful" } },
+      { $unwind: "$items" },
+      {
+        $lookup: {
+          from: "mocktests",
+          localField: "items",
+          foreignField: "_id",
+          as: "mockTestDetails",
+        },
+      },
+      { $unwind: "$mockTestDetails" },
+      {
+        $group: {
+          _id: {
+            month: { $month: "$createdAt" },
+            year: { $year: "$createdAt" },
+            isGrandTest: "$mockTestDetails.isGrandTest"
+          },
+          salesCount: { $sum: 1 },
+          revenue: { $sum: "$mockTestDetails.price" }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }
     ]);
 
+    // 8. FINAL STATS OBJECT
     const stats = {
       students: studentCount,
       instructors: instructorCount,
@@ -127,8 +159,9 @@ export const getAdminStats = async (req, res) => {
       revenue: salesData[0]?.totalRevenue || 0,
       orders: salesData[0]?.totalOrders || 0,
       categorySales: categorySales, 
-      testTypeSales: testTypeSales,
-      topRankers: topRankers,
+      testTypeSales: testTypeSales, 
+      monthlyTestSales: monthlyTestSales,
+      topStudents: topStudents,
     };
 
     res.status(200).json({

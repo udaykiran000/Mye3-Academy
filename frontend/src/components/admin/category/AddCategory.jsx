@@ -108,6 +108,7 @@ const AddCategory = ({ onClose }) => {
               <img
                 src={preview}
                 alt="Asset Preview"
+                onError={handleImageError}
                 className="w-14 h-14 object-contain bg-white border border-slate-100"
               />
               <div className="flex-1 min-w-0">

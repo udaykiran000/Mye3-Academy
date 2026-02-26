@@ -83,6 +83,7 @@ const EditCategoryModal = ({ category, onClose }) => {
                   <img
                     src={preview}
                     alt="Preview"
+                    onError={handleImageError}
                     className="h-24 mx-auto object-contain bg-white border border-slate-100 p-2"
                   />
                   <div className="mt-4">

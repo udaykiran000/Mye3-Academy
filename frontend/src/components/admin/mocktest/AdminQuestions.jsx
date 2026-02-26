@@ -251,6 +251,7 @@ export default function AdminQuestions() {
       toast.success("Question Added to Bank");
       setQForm(f => ({ ...f, title: "", options: [{text:""},{text:""},{text:""},{text:""}], correct: [], correctManualAnswer: "" }));
       setThumbnailPreview(null);
+      setQPage(1);
       if (document.getElementById("qFileInput")) document.getElementById("qFileInput").value = "";
 
       // Silently sync test-level settings (duration, negativeMarking) to DB
@@ -300,6 +301,7 @@ export default function AdminQuestions() {
       toast.success("Bulk Upload Complete");
       setBulkFile(null);
       setBulkRows([]);
+      setQPage(1);
       loadData();
     } catch (err) {
       toast.error("Bulk upload failed");
@@ -309,7 +311,7 @@ export default function AdminQuestions() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center font-poppins text-[11px] font-black uppercase tracking-[0.4em] text-slate-400">
+    <div className="min-h-screen bg-[#EDF0FF] flex items-center justify-center font-poppins text-[11px] font-black uppercase tracking-[0.4em] text-slate-400">
        Preparing Exam Manager...
     </div>
   );
@@ -319,12 +321,12 @@ export default function AdminQuestions() {
   const labelClass = "text-[9px] font-black text-[#7e7e7e] uppercase tracking-[0.2em] mb-2 block font-poppins";
 
   return (
-    <div className="bg-[#f8f9fa] min-h-screen -mt-2 lg:-mt-4 pt-0 px-4 pb-4 font-poppins">
-      <div className="max-w-[1500px] mx-auto space-y-3">
+    <div className="bg-[#EDF0FF] min-h-screen pt-4 lg:pt-6 px-4 pb-4 font-poppins">
+      <div className="max-w-[1500px] mx-auto space-y-6">
         
         {/* HEADER SECTION */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-[9px] font-black text-[#7e7e7e] uppercase tracking-widest">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-[10px] font-black text-[#7e7e7e] uppercase tracking-widest">
             <Link to="/admin" className="hover:text-[#21b731] transition-colors">Home</Link>
             <ChevronRight size={12} className="text-slate-300" />
             <Link to="/admin/mocktests" className="hover:text-[#21b731] transition-colors">Categories</Link>
@@ -403,7 +405,7 @@ export default function AdminQuestions() {
 
         {activeTab === "settings" && (
           <form onSubmit={handleSaveSettings} className="max-w-2xl mx-auto space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-2">
-             <div className="bg-white border border-slate-200 shadow-[0_10px_30px_rgba(0,0,0,0.03)] relative overflow-hidden">
+             <div className="bg-white border border-slate-200 shadow-[0_20px_60px_rgba(0,0,0,0.12)] relative overflow-hidden">
                 <div className={`h-1 w-full ${isGrandTest ? 'bg-amber-500' : 'bg-[#21b731]'}`} />
                 
                 <div className="p-4 space-y-4">
@@ -467,7 +469,7 @@ export default function AdminQuestions() {
              {/* LEFT: QUESTION BUILDER */}
              <div className="lg:col-span-7 space-y-4">
                 
-                <div className="bg-white border border-slate-200 p-3 space-y-4 relative overflow-hidden">
+                <div className="bg-white p-6 shadow-[0_15px_50px_rgba(0,0,0,0.12)] border border-slate-100 space-y-6 relative overflow-hidden">
                     <div className="flex gap-2 mb-4 p-1 bg-slate-100 border border-slate-200">
 
                        <button onClick={() => setEntryMode("manual")} className={`flex-1 py-2 text-[9px] font-black uppercase tracking-[0.2em] transition-all ${entryMode === 'manual' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-600'}`}>Manual Question</button>
@@ -604,7 +606,7 @@ export default function AdminQuestions() {
 
              {/* RIGHT: LIST & PREVIEW */}
              <div className="lg:col-span-5 space-y-4">
-                <div className="bg-white border border-slate-200 flex flex-col h-[600px] relative overflow-hidden">
+                <div className="bg-white border border-slate-200 flex flex-col h-[600px] relative overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.12)]">
                    <div className="p-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                       <div className="flex items-center gap-2">
                          <Library className="text-indigo-600" size={16} />
@@ -615,19 +617,22 @@ export default function AdminQuestions() {
                       </span>
                    </div>
 
-                   <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5">
-                      {[...addedQuestions].reverse().map((q, i) => (
-                        <div key={q.id || q._id} onClick={() => setPreview(q)} className={`p-2 border cursor-pointer transition-all ${preview?._id === (q.id || q._id) ? 'bg-indigo-50 border-indigo-400' : 'bg-white border-slate-100 hover:border-indigo-100'}`}>
+                    <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 custom-scrollbar">
+                       {[...addedQuestions]
+                        .reverse()
+                        .slice((qPage - 1) * Q_PER_PAGE, qPage * Q_PER_PAGE)
+                        .map((q, i) => (
+                        <div key={q._id || q.id} onClick={() => setPreview(q)} className={`p-2 border cursor-pointer transition-all ${preview?._id === (q._id || q.id) ? 'bg-indigo-50 border-indigo-400' : 'bg-white border-slate-100 hover:border-indigo-100'}`}>
                            <div className="flex justify-between gap-2">
                               <div className="flex-1 space-y-0.5">
                                  <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{q.category} • {q.difficulty}</p>
-                                 <p className="text-[10px] font-bold text-slate-700 line-clamp-1">{q.title}</p>
+                                 <p className="text-[11px] font-bold text-slate-700 line-clamp-1">{q.title}</p>
 
                                   {q.correct?.length > 0 && <p className="text-[7px] font-black text-emerald-600 mt-0.5">Ans: {q.correct.map(ci => String.fromCharCode(65+ci)).join(", ")}</p>}
 
                                   {q.questionType === 'manual' && q.correctManualAnswer && <p className="text-[7px] font-black text-emerald-600 mt-0.5 truncate">Ans: {q.correctManualAnswer}</p>}
                               </div>
-                              <button onClick={(e) => {e.stopPropagation(); deleteQuestion(q.id || q._id);}} className="text-slate-300 hover:text-rose-500"><Trash2 size={14} /></button>
+                              <button onClick={(e) => {e.stopPropagation(); deleteQuestion(q._id || q.id);}} className="text-slate-300 hover:text-rose-500"><Trash2 size={14} /></button>
                            </div>
                         </div>
                       ))}
