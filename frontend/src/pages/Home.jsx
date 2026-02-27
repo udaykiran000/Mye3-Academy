@@ -235,7 +235,7 @@ const Home = () => {
 
   useEffect(() => {
     dispatch(fetchCategories());
-    dispatch(fetchPublicMockTests("?limit=20"));
+    dispatch(fetchPublicMockTests("?limit=100"));
   }, [dispatch]);
 
   const handleSearch = (e) => {
@@ -264,8 +264,8 @@ const Home = () => {
         <div id="categories-section" className="bg-slate-100 pt-10 pb-6 relative">
           <div className="relative z-10">
             <CategoriesSection
-              categories={categories}
-              loading={categoryLoading}
+              categories={publicMocktests}
+              loading={publicStatus === "loading"}
               onCategoryClick={handleCategoryClick}
             />
           </div>

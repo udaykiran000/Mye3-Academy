@@ -53,11 +53,12 @@ router.post(
   upload.single("questionImage"),
   addQuestion,
 );
-router.post(
-  "/mocktests/:id/questions/bulk-upload",
-  upload.single("file"),
-  bulkUploadQuestions,
-);
+// REMOVED duplicate route already defined in mocktestRoutes.js
+// router.post(
+//   "/mocktests/:id/questions/bulk-upload",
+//   upload.single("file"),
+//   bulkUploadQuestions,
+// );
 router.delete("/questions/:qId", deleteQuestion);
 
 import {
