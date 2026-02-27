@@ -21,9 +21,8 @@ const fileStorage = multer.diskStorage({
     if (!fs.existsSync(UPLOADS_ROOT)) {
       fs.mkdirSync(UPLOADS_ROOT, { recursive: true });
     }
-    // 2. Save using Relative Path ("uploads/")
-    // This ensures req.file.path is "uploads/filename.csv", which works with your static URL.
-    cb(null, "uploads/");
+    // 2. Save using Absolute Path
+    cb(null, UPLOADS_ROOT);
   },
   filename(req, file, cb) {
     const ext = path.extname(file.originalname);
@@ -66,9 +65,8 @@ const imageStorage = multer.diskStorage({
     if (!fs.existsSync(IMAGES_DIR)) {
       fs.mkdirSync(IMAGES_DIR, { recursive: true });
     }
-    // 2. Save using Relative Path ("uploads/images/")
-    // This ensures req.file.path is "uploads/images/img-123.png"
-    cb(null, "uploads/images/");
+    // 2. Save using Absolute Path
+    cb(null, IMAGES_DIR);
   },
   filename(req, file, cb) {
     const ext = path.extname(file.originalname);

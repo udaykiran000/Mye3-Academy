@@ -19,14 +19,14 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative bg-[#f0f9ff]">
+    <section className="relative bg-[#f0f9ff] overflow-hidden">
       {/* ================= MAIN HERO CONTENT ================= */}
       <div className="relative pt-24 pb-12 lg:pt-28 lg:pb-16 overflow-visible">
         {/* Background Glow */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100/50 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2" />
 
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center text-left">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center text-left">
             {/* LEFT CONTENT */}
             <div className="space-y-4">
               <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-[#1e293b] leading-[1.2] tracking-tight">

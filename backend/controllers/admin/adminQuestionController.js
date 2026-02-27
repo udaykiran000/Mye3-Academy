@@ -187,8 +187,16 @@ export const addPassageWithChildren = async (req, res) => {
 export const bulkUploadQuestions = async (req, res) => {
   try {
     const { id: testId } = req.params;
+    console.log("📥 Bulk Upload Request for Test:", testId);
+    console.log("🔍 Headers:", req.headers['content-type']);
+    console.log("🔍 req.file:", req.file);
+    console.log("🔍 req.body keys:", Object.keys(req.body));
+    
     const filePath = req.file?.path;
-    if (!filePath) throw new Error("No file uploaded");
+    if (!filePath) {
+      console.error("❌ No file found in request. Check field name and middleware.");
+      throw new Error("No file uploaded");
+    }
 
     const { test } = await findTestById(testId);
     if (!test) return res.status(404).json({ success: false, message: "Test not found" });
@@ -285,13 +293,23 @@ export const bulkUploadQuestions = async (req, res) => {
 
     test.questions.push(...validQuestions);
     syncTestStats(test);
-    await test.save();
+    
+    try {
+      await test.save();
+    } catch (saveErr) {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      return res.status(400).json({ 
+        success: false, 
+        message: "Database Validation Failed: " + (Object.values(saveErr.errors || {}).map(e => e.message).join(", ") || saveErr.message)
+      });
+    }
 
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     res.status(201).json({ success: true, message: `${validQuestions.length} questions uploaded successfully` });
   } catch (err) {
     if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-    res.status(500).json({ message: err.message });
+    console.error("❌ BULK_UPLOAD_ERROR:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 

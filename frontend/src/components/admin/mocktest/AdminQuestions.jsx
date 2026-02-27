@@ -297,14 +297,16 @@ export default function AdminQuestions() {
       fd.append("file", bulkFile);
       fd.append("marks", bulkMarks);
       fd.append("negative", bulkNegative);
-      await api.post(`/api/admin/mocktests/${id}/questions/bulk-upload`, fd);
+      await api.post(`/api/admin/mocktests/${id}/questions/bulk-upload`, fd, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
       toast.success("Bulk Upload Complete");
       setBulkFile(null);
       setBulkRows([]);
       setQPage(1);
       loadData();
     } catch (err) {
-      toast.error("Bulk upload failed");
+      toast.error(err.response?.data?.message || "Bulk upload failed");
     } finally {
       setIsSubmitting(false);
     }
@@ -415,6 +417,40 @@ export default function AdminQuestions() {
                          <h2 className="text-[11px] font-black text-[#3e4954] uppercase tracking-[0.2em]">create or edit mock test</h2>
                       </div>
 
+                      {/* THUMBNAIL UPLOAD */}
+                      <div className="flex flex-col md:flex-row gap-4 mb-4">
+                        <div className="w-40 h-24 border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden group hover:border-indigo-400 transition-all">
+                           {thumbnailPreview ? (
+                             <img src={thumbnailPreview} className="w-full h-full object-cover" />
+                           ) : (
+                             <ImageIcon size={24} className="text-slate-300 group-hover:text-indigo-400" />
+                           )}
+                        </div>
+                        <div className="flex flex-col justify-center gap-2">
+                           <label className={labelClass}>Exam Thumbnail</label>
+                           <input 
+                             type="file" 
+                             accept="image/*" 
+                             id="thumbUpload" 
+                             className="hidden" 
+                             onChange={e => {
+                               const f = e.target.files[0];
+                               if(f) {
+                                 setThumbnail(f);
+                                 setThumbnailPreview(URL.createObjectURL(f));
+                               }
+                             }} 
+                           />
+                           <label 
+                             htmlFor="thumbUpload" 
+                             className="px-6 py-2 bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:border-indigo-600 hover:text-indigo-600 cursor-pointer transition-all text-center"
+                           >
+                             Choose Image
+                           </label>
+                           <p className="text-[8px] font-bold text-slate-400 tracking-tighter">* Recommended size: 400x240</p>
+                        </div>
+                      </div>
+
                       <div className="grid md:grid-cols-2 gap-6">
                           <div className="space-y-1.5">
                              <label className={labelClass}>Exam Name *</label>
@@ -425,8 +461,6 @@ export default function AdminQuestions() {
                              <input className={`${inputClass} ${getRequiredClass(configForm.subcategory)}`} value={configForm.subcategory} onChange={e => setConfigForm({...configForm, subcategory: e.target.value})} placeholder="e.g. SSC CHSL / GD" />
                           </div>
                        </div>
-
-                       
                    </div>
 
                    {/* PRICING SECTION */}

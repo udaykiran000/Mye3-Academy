@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import { getImageUrl, handleImageError } from "../../utils/imageHelper";
 
 
 const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
+  const navigate = useNavigate();
   const scrollRef = useRef(null);
 
   // 1. DATABASE DYNAMIC CATEGORIES (Tabs)
@@ -56,7 +57,7 @@ const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
 
   return (
     <section id="categories" className="py-20 bg-transparent scroll-mt-24">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="max-w-[1440px] mx-auto px-6 lg:px-8">
         {/* HEADER */}
         <div className="text-left mb-10">
           <h2 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tighter uppercase">
@@ -125,10 +126,28 @@ const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
               const testIcon = getImageUrl(item.thumbnail || item.image);
               const testLabel =
                 item.title || item.subcategory || item.name || "Test Title";
+              
+              // Direct navigation logic
+              const handleTestClick = () => {
+                const effectivePrice = (item.discountPrice > 0 && Number(item.discountPrice) < Number(item.price)) 
+                  ? Number(item.discountPrice) 
+                  : Number(item.price);
+                const isFree = item.isFree === true || effectivePrice <= 0;
+
+                if (isFree) {
+                  navigate(`/student/instructions/${item._id}`);
+                } else {
+                  navigate(`/mocktests/${item._id}`);
+                }
+              };
+
+              const price = (item.discountPrice > 0) ? item.discountPrice : item.price;
+              const isFree = item.isFree === true || price <= 0;
+
               return (
                 <div
                   key={item._id}
-                  onClick={() => onCategoryClick(item)}
+                  onClick={handleTestClick}
                   className="group flex items-center justify-between p-5 bg-white border border-slate-200 rounded-[24px] hover:shadow-[0_20px_45px_-12px_rgba(0,0,0,0.08)] hover:border-emerald-500 transition-all duration-500 cursor-pointer relative overflow-hidden shadow-sm"
                 >
                   <div className="flex items-center gap-4">
@@ -144,9 +163,16 @@ const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-slate-800 font-black text-[15px] group-hover:text-emerald-600 transition-colors uppercase leading-tight tracking-tight">
-                        {testLabel}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-slate-800 font-black text-[15px] group-hover:text-emerald-600 transition-colors uppercase leading-tight tracking-tight">
+                          {testLabel}
+                        </h3>
+                        {isFree ? (
+                          <span className="text-[8px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full font-black uppercase">Free</span>
+                        ) : (
+                          <span className="text-[8px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full font-black uppercase">₹{price}</span>
+                        )}
+                      </div>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Mock Test Series</p>
                     </div>
                   </div>
