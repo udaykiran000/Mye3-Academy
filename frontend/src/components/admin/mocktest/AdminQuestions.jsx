@@ -167,6 +167,15 @@ export default function AdminQuestions() {
     loadData();
   }, [id, isEditMode]);
 
+  // Sync tab with URL
+  useEffect(() => {
+    if (location.pathname.includes("/questions") || location.pathname.includes("/edit/")) {
+      setActiveTab("builder");
+    } else {
+      setActiveTab("settings");
+    }
+  }, [location.pathname]);
+
   // --- DERIVED STATS ---
   const totalMarks = (Number(configForm.totalQuestions) || 0) * (Number(configForm.marksPerQuestion) || 0);
   const totalAssignedQs = testSubjects.reduce((sum, s) => sum + (Number(s.limit) || 0), 0);
@@ -422,6 +431,8 @@ export default function AdminQuestions() {
                         <div className="w-40 h-24 border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden group hover:border-indigo-400 transition-all">
                            {thumbnailPreview ? (
                              <img src={thumbnailPreview} className="w-full h-full object-cover" />
+                           ) : categoryObj?.image ? (
+                             <img src={getImageUrl(categoryObj.image)} className="w-full h-full object-cover opacity-50" />
                            ) : (
                              <ImageIcon size={24} className="text-slate-300 group-hover:text-indigo-400" />
                            )}

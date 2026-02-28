@@ -36,13 +36,42 @@ const Navbar = () => {
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+  const scrollTimeoutRef = useRef(null);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      setScrolled(currentScrollY > 20);
+
+      // Hide on scroll down, show on scroll up
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+      lastScrollY.current = currentScrollY;
+
+      // Reset timer on scroll
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      
+      // Auto-show after 2 seconds of no scrolling
+      if (currentScrollY > 100) {
+        scrollTimeoutRef.current = setTimeout(() => {
+          setIsVisible(true);
+        }, 2000);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
     if (categories.length === 0) dispatch(fetchCategories());
-    return () => window.removeEventListener("scroll", handleScroll);
+    
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
   }, [dispatch, categories.length]);
 
   useEffect(() => {
@@ -96,9 +125,9 @@ const Navbar = () => {
   return (
     <>
       <nav
-        className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? "bg-white border-b border-slate-100 py-2 shadow-sm" : "bg-white/90 backdrop-blur-md py-4"}`}
+        className={`fixed top-0 w-full z-50 transition-all duration-500 transform ${isVisible ? "translate-y-0" : "-translate-y-full"} ${scrolled ? "bg-white border-b border-slate-100 py-2 shadow-sm" : "bg-white/90 backdrop-blur-md py-4"}`}
       >
-        <div className="max-w-7xl mx-auto px-4 md:px-8">
+        <div className="max-w-6xl mx-auto px-4 md:px-8">
           <div className="flex justify-between items-center h-12">
             {/* MOBILE TOP UI */}
             <div className="flex md:hidden items-center justify-between w-full">
@@ -156,58 +185,46 @@ const Navbar = () => {
 
             {/* DESKTOP TOP UI */}
             <div className="hidden md:flex items-center justify-between w-full">
+              
+              {/* === LEFT: Logo only === */}
               <Link
                 to="/"
-                className="flex items-center gap-2 group font-black text-xl italic tracking-tighter"
+                className="flex items-center gap-2 group font-black text-xl italic tracking-tighter flex-shrink-0"
               >
-                <div className="bg-indigo-600 p-1.5 rounded-lg shadow-lg shadow-indigo-100">
+                <div className="bg-indigo-600 p-1.5 shadow-lg shadow-indigo-100">
                   <GraduationCap className="text-white w-5 h-5" />
                 </div>
                 MYE 3 Academy
               </Link>
 
-              <div className="flex items-center gap-8 font-bold text-sm text-slate-600">
+              {/* === CENTER: Nav Links === */}
+              <div className="flex items-center gap-8 font-bold text-sm text-slate-600 absolute left-1/2 -translate-x-1/2">
                 <Link
                   to="/"
-                  className={
-                    location.pathname === "/"
-                      ? "text-indigo-600"
-                      : "hover:text-indigo-600"
-                  }
+                  className={location.pathname === "/" ? "text-indigo-600" : "hover:text-indigo-600 transition-colors"}
                 >
                   Home
                 </Link>
                 <Link
+                  to="/mocktests"
+                  className={location.pathname === "/mocktests" && !location.search.includes("type=") ? "text-indigo-600" : "hover:text-indigo-600 transition-colors"}
+                >
+                  All Tests
+                </Link>
+                <Link
                   to="/mocktests?type=mock"
-                  className={
-                    location.search.includes("type=mock")
-                      ? "text-indigo-600"
-                      : "hover:text-indigo-600"
-                  }
+                  className={location.search.includes("type=mock") ? "text-indigo-600" : "hover:text-indigo-600 transition-colors"}
                 >
                   Mock Tests
                 </Link>
                 <Link
                   to="/mocktests?type=grand"
-                  className={
-                    location.search.includes("type=grand")
-                      ? "text-indigo-600"
-                      : "hover:text-indigo-600"
-                  }
+                  className={location.search.includes("type=grand") ? "text-indigo-600" : "hover:text-indigo-600 transition-colors"}
                 >
                   Grand Tests
                 </Link>
-                <Link
-                  to="/mocktests"
-                  className={
-                    location.pathname === "/mocktests" && !location.search.includes("type=")
-                      ? "text-indigo-600"
-                      : "hover:text-indigo-600"
-                  }
-                >
-                  All Tests
-                </Link>
               </div>
+              {/* ================================= */}
 
               <div className="flex items-center gap-4">
                 {userData ? (
@@ -217,7 +234,7 @@ const Navbar = () => {
                         to={dashboardPath}
                         className="px-5 py-2 text-xs font-black uppercase tracking-widest bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
                       >
-                        {dashboardLabel}
+                        Dashboard
                       </Link>
                     )}
                     {role === "student" && (
@@ -306,6 +323,12 @@ const Navbar = () => {
           {[
             { id: "home", label: "HOME", icon: Home, path: "/" },
             {
+              id: "all",
+              label: "ALL",
+              icon: Search,
+              path: "/mocktests",
+            },
+            {
               id: "mock",
               label: "MOCK",
               icon: ClipboardList,
@@ -316,12 +339,6 @@ const Navbar = () => {
               label: "GRAND",
               icon: Zap,
               path: "/mocktests?type=grand",
-            },
-            {
-              id: "all",
-              label: "ALL",
-              icon: Search,
-              path: "/mocktests",
             },
             {
               id: "profile",

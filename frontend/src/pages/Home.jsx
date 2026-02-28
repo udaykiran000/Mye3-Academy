@@ -30,12 +30,12 @@ import { fetchPublicMockTests } from "../redux/studentSlice";
    ========================================= */
 const RoleSelectionSection = ({ onNavigate }) => {
   return (
-    <section className="py-12 relative bg-slate-200/30 overflow-hidden">
+    <section className="py-24 relative bg-slate-200/30 overflow-hidden">
       {/* Soft Background Accents */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-50/50 rounded-full blur-[100px] -z-10"></div>
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-50/50 rounded-full blur-[100px] -z-10"></div>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
+      <div className="max-w-6xl mx-auto px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* === STUDENT CARD === */}
           <div className="group relative p-6 rounded-[32px] bg-white border border-slate-100 shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-indigo-100/30 transition-all duration-500 hover:-translate-y-2">
@@ -141,7 +141,7 @@ const FAQSection = () => {
   ];
 
   return (
-    <section className="py-12 bg-slate-200/30 border-t border-slate-100 relative">
+    <section className="py-24 bg-slate-200/30 border-t border-slate-100 relative">
       <div className="max-w-3xl mx-auto px-6">
         <h2 className="text-2xl md:text-3xl font-black text-center mb-10 text-slate-800 tracking-tighter uppercase leading-tight">
           Frequently Asked Questions
@@ -186,8 +186,8 @@ const FAQSection = () => {
    3. REDESIGNED: CTA BANNER
    ========================================= */
 const CTASection = ({ onSignup }) => (
-  <section className="relative py-12 px-6 bg-white overflow-hidden">
-    <div className="max-w-7xl mx-auto rounded-[32px] overflow-hidden relative shadow-2xl border border-slate-100">
+  <section className="relative py-24 px-6 bg-white overflow-hidden">
+    <div className="max-w-6xl mx-auto rounded-[32px] overflow-hidden relative shadow-2xl border border-slate-100">
       {/* Vibrant Gradient like Jumbo Xerox Bulk Section */}
       <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-pink-600"></div>
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
@@ -227,11 +227,11 @@ const Home = () => {
     (state) => state.students,
   );
 
-  const mockTests = publicMocktests.filter((t) => !t.isGrandTest).slice(0, 4);
+  const mockTests = publicMocktests.filter((t) => !t.isGrandTest).slice(0, 6);
 
   const grandTests = publicMocktests
     .filter((t) => t.isGrandTest === true)
-    .slice(0, 4);
+    .slice(0, 6);
 
   useEffect(() => {
     dispatch(fetchCategories());
@@ -271,19 +271,9 @@ const Home = () => {
           </div>
         </div>
 
-        {/* SECTION SEPARATOR - VISIBLE LITE GAP */}
-        <div className="bg-slate-200/50 flex items-center justify-center overflow-hidden">
-           <div className="w-full h-14 bg-white rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-y border-slate-200 relative z-20 mx-[-40px]"></div>
-        </div>
-
         {/* FEATURES */}
-        <div className="bg-slate-100 pt-6 pb-12">
+        <div className="bg-slate-100 py-6">
           <FeaturesSection />
-        </div>
-
-        {/* SECTION SEPARATOR - VISIBLE LITE GAP */}
-        <div className="bg-slate-200/50 flex items-center justify-center overflow-hidden">
-           <div className="w-full h-14 bg-white rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-y border-slate-200 relative z-20 mx-[-40px]"></div>
         </div>
 
         {/* MOCK TESTS */}
@@ -300,11 +290,6 @@ const Home = () => {
           />
         </div>
 
-        {/* SECTION SEPARATOR - VISIBLE LITE GAP */}
-        <div className="bg-slate-200/50 flex items-center justify-center overflow-hidden">
-           <div className="w-full h-14 bg-white rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-y border-slate-200 relative z-20 mx-[-40px]"></div>
-        </div>
-
         {/* GRAND TESTS - Subtle contrast bg */}
         <div className="bg-slate-300/20 border-t border-slate-300/40">
           <FeaturedTestsSection
@@ -319,26 +304,11 @@ const Home = () => {
           />
         </div>
 
-        {/* SECTION SEPARATOR - VISIBLE LITE GAP */}
-        <div className="bg-slate-200/50 flex items-center justify-center overflow-hidden">
-           <div className="w-full h-14 bg-white rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-y border-slate-200 relative z-20 mx-[-40px]"></div>
-        </div>
-
         {/* TESTIMONIALS */}
         <TestimonialsSection />
 
-        {/* SECTION SEPARATOR - VISIBLE LITE GAP */}
-        <div className="bg-slate-200/40 flex items-center justify-center overflow-hidden">
-           <div className="w-full h-14 bg-white rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-y border-slate-200 relative z-20 mx-[-40px]"></div>
-        </div>
-
         {/* NEW JOIN SECTION (Bright UI) */}
         <RoleSelectionSection onNavigate={() => navigate("/signup")} />
-
-        {/* SECTION SEPARATOR - VISIBLE LITE GAP */}
-        <div className="bg-slate-200/50 flex items-center justify-center overflow-hidden">
-           <div className="w-full h-14 bg-white rounded-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border-y border-slate-200 relative z-20 mx-[-40px]"></div>
-        </div>
 
         {/* FAQ SECTION (Clean White UI) */}
         <FAQSection />

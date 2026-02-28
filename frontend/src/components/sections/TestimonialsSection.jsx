@@ -30,8 +30,8 @@ const TESTIMONIALS = [
 ];
 
 const TestimonialsSection = () => (
-  <section id="testimonials" className="py-12 bg-slate-200/30 text-slate-800 relative">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <section id="testimonials" className="py-24 bg-slate-200/30 text-slate-800 relative">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Header - Bold & Deep Navy */}
       <h2 className="text-2xl md:text-3xl font-black text-center mb-10 text-slate-900 tracking-tighter uppercase leading-tight">
         What Our <span className="text-indigo-600">Users Say</span>
