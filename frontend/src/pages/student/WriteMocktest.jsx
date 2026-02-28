@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 // ✅ FIX: Use the correct, singular import path for your configured API instance
 import api from "../../api/axios";
 import toast from "react-hot-toast";
@@ -374,6 +375,27 @@ const QuestionNavigationPanel = ({
 const WriteMocktest = () => {
   const { attemptId } = useParams();
   const navigate = useNavigate();
+  const { userData } = useSelector((state) => state.user);
+
+  // ── FULLSCREEN LOCKDOWN ──
+  const [fsWarning, setFsWarning] = useState(false);
+  const [tabViolations, setTabViolations] = useState(0);
+  const MAX_VIOLATIONS = 3;
+
+  const enterFullscreen = () => {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+    setFsWarning(false);
+  };
+
+  const exitFullscreen = () => {
+    if (document.fullscreenElement) {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+  };
 
   const [attempt, setAttempt] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -382,6 +404,7 @@ const WriteMocktest = () => {
   const [answers, setAnswers] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const isSubmittedRef = React.useRef(false); // tracks if exam is done
 
   // Result Modal State
   const [showResultModal, setShowResultModal] = useState(false);
@@ -457,7 +480,7 @@ const WriteMocktest = () => {
       }
 
       if (isSubmitting) return;
-
+      exitFullscreen(); // ← exit fullscreen on submit
       setIsSubmitting(true);
       const toastId = toast.loading(
         isAutoSubmit ? "Auto-submitting test..." : "Submitting test...",
@@ -484,9 +507,12 @@ const WriteMocktest = () => {
 
         toast.dismiss(toastId);
 
+        exitFullscreen();
+        isSubmittedRef.current = true; // mark exam done — stop all warnings
+        setFsWarning(false);
         setResultData({
           score: res.data.score || 0,
-          totalMarks: res.data.totalMarks || attempt.totalMarks || 0, // Use backend totalMarks if available
+          totalMarks: res.data.totalMarks || attempt.totalMarks || 0,
         });
         setShowResultModal(true);
       } catch (err) {
@@ -502,8 +528,45 @@ const WriteMocktest = () => {
 
   const handleTimeUp = useCallback(() => {
     toast.error("Time up! Auto-submitting...");
+    exitFullscreen();
     handleSubmit(true);
   }, [handleSubmit]);
+
+  /* --- LOAD ATTEMPT --- */
+  useEffect(() => {
+    // Auto-enter fullscreen when exam starts
+    enterFullscreen();
+
+    // Detect tab switch / window blur
+    const handleVisibilityChange = () => {
+      if (isSubmittedRef.current) return; // exam done, ignore
+      if (document.hidden) {
+        setFsWarning(true);
+        setTabViolations((v) => {
+          const next = v + 1;
+          if (next >= MAX_VIOLATIONS) {
+            toast.error("Too many tab switches! Auto-submitting...");
+            handleSubmit(true);
+          }
+          return next;
+        });
+      }
+    };
+    const handleBlur = () => {
+      if (isSubmittedRef.current) return; // exam done, ignore
+      if (!document.hidden) {
+        setFsWarning(true);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleBlur);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleBlur);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* --- LOAD ATTEMPT --- */
   useEffect(() => {
@@ -628,8 +691,32 @@ const WriteMocktest = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 overflow-hidden font-sans relative">
-      {/* --- SCORE MODAL (WITH ACCESS CHECK) --- */}
-      {/* --- SCORE MODAL (WITH ACCESS CHECK) --- */}
+
+      {/* ── FULLSCREEN / TAB-SWITCH WARNING OVERLAY ── */}
+      {fsWarning && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm mx-4 p-8 text-center shadow-2xl border-t-4 border-red-500">
+            <div className="text-5xl mb-4">⚠️</div>
+            <h2 className="text-lg font-black text-red-600 uppercase tracking-widest mb-2">
+              Tab Switch Detected!
+            </h2>
+            <p className="text-[13px] text-slate-600 mb-1">
+              Switching tabs or windows is <strong>not allowed</strong> during the exam.
+            </p>
+            <p className="text-[11px] text-red-500 font-bold mb-6">
+              Violation {tabViolations} / {MAX_VIOLATIONS} — Auto-submit at {MAX_VIOLATIONS} violations.
+            </p>
+            <button
+              onClick={enterFullscreen}
+              className="w-full py-3 bg-[#21b731] text-white text-[11px] font-black uppercase tracking-widest hover:bg-[#1a9227] transition-colors"
+            >
+              Return to Exam (Fullscreen)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* --- SCORE MODAL --- */}
       {showResultModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center border border-gray-200">
@@ -686,23 +773,51 @@ const WriteMocktest = () => {
       )}
 
       {/* HEADER */}
-      <header className="fixed top-0 left-0 right-0 z-20 bg-white shadow-lg border-b border-gray-200">
-        <div className="flex justify-between items-center px-4 py-3 sm:px-6">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setIsNavOpen(true)}
-              className="lg:hidden p-2 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <Menu size={24} />
+      <header className="fixed top-0 left-0 right-0 z-20 bg-white shadow-sm border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 py-2.5 sm:px-6">
+
+          {/* LEFT: Logo + Test Name */}
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => setIsNavOpen(true)} className="lg:hidden p-1.5 text-gray-600 hover:bg-gray-100">
+              <Menu size={22} />
             </button>
-            <h1 className="text-xl font-bold text-gray-800 hidden sm:block truncate">
+            <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+              <div className="bg-indigo-600 p-1.5">
+                <span className="text-white text-xs font-black">M3</span>
+              </div>
+              <span className="hidden sm:block text-[11px] font-black text-slate-700 uppercase tracking-widest">MYE3 Academy</span>
+            </Link>
+            <div className="hidden md:block h-4 w-px bg-slate-200" />
+            <span className="hidden md:block text-[11px] font-bold text-slate-500 truncate max-w-[220px]">
               {attempt.mocktestId?.title || "Mock Test"}
-            </h1>
+            </span>
           </div>
-          <Timer
-            expiryTimestamp={new Date(endsAt).getTime()}
-            onTimeUp={handleTimeUp}
-          />
+
+          {/* CENTER: Timer */}
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <Timer
+              expiryTimestamp={new Date(endsAt).getTime()}
+              onTimeUp={handleTimeUp}
+            />
+          </div>
+
+          {/* RIGHT: Dashboard + Profile */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <button
+              onClick={() => { exitFullscreen(); navigate("/student-dashboard"); }}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors"
+            >
+              <Home size={12} /> Dashboard
+            </button>
+            <div className="w-8 h-8 bg-indigo-100 flex items-center justify-center text-indigo-600 font-black text-xs overflow-hidden">
+              {userData?.profilePicture ? (
+                <img src={userData.profilePicture} alt="User" className="w-full h-full object-cover" />
+              ) : (
+                userData?.firstname?.charAt(0).toUpperCase() || "U"
+              )}
+            </div>
+          </div>
+
         </div>
       </header>
 
@@ -759,58 +874,56 @@ const WriteMocktest = () => {
             )}
           </div>
 
-          <div className="sticky bottom-0 z-10 bg-white p-4 shadow-t-lg border-t border-gray-200 flex justify-between items-center">
-            <div className="flex space-x-3">
-              <button
-                disabled={currentIndex === 0 || filteredQuestions.length === 0}
-                onClick={() => setCurrentIndex((i) => i - 1)}
-                className="px-4 py-2 flex items-center bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-300 transition-colors font-semibold"
-              >
-                <ChevronLeft className="h-5 w-5 mr-1" /> Previous
-              </button>
-              <button
-                disabled={
-                  currentIndex === filteredQuestions.length - 1 ||
-                  filteredQuestions.length === 0
-                }
-                onClick={() => setCurrentIndex((i) => i + 1)}
-                className="px-4 py-2 flex items-center bg-cyan-600 text-white rounded-lg disabled:opacity-50 hover:bg-cyan-700 transition-colors font-semibold"
-              >
-                Next <ChevronRight className="h-5 w-5 ml-1" />
-              </button>
-            </div>
-
+          {/* ── BOTTOM NAV BAR: Only Prev / Next ── */}
+          <div className="sticky bottom-0 z-10 bg-white px-4 py-3 shadow-t-lg border-t border-gray-200 flex justify-center items-center gap-3">
             <button
-              onClick={() => handleSubmit(false)}
-              disabled={isSubmitting}
-              className={`px-6 py-3 flex items-center justify-center font-bold rounded-xl transition-all duration-300 shadow-lg transform active:scale-95 ${
-                isSubmitting
-                  ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                  : "bg-green-600 text-white hover:bg-green-700"
-              }`}
+              disabled={currentIndex === 0 || filteredQuestions.length === 0}
+              onClick={() => setCurrentIndex((i) => i - 1)}
+              className="px-5 py-2.5 flex items-center bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-300 transition-colors font-semibold"
             >
-              {isSubmitting ? (
-                <>
-                  <SimpleSpinner size={20} color={"#ffffff"} className="mr-2" />{" "}
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-5 w-5 mr-2" /> Final Submit
-                </>
-              )}
+              <ChevronLeft className="h-5 w-5 mr-1" /> Previous
+            </button>
+            <button
+              disabled={
+                currentIndex === filteredQuestions.length - 1 ||
+                filteredQuestions.length === 0
+              }
+              onClick={() => setCurrentIndex((i) => i + 1)}
+              className="px-5 py-2.5 flex items-center bg-cyan-600 text-white rounded-lg disabled:opacity-50 hover:bg-cyan-700 transition-colors font-semibold"
+            >
+              Next <ChevronRight className="h-5 w-5 ml-1" />
             </button>
           </div>
         </div>
 
-        <aside className="hidden lg:block w-72 flex-shrink-0 border-l border-gray-200 overflow-y-auto custom-scrollbar">
-          <QuestionNavigationPanel
-            questions={navigationQuestions}
-            currentIndex={currentIndex}
-            setCurrentIndex={setCurrentIndex}
-            answers={answers}
-            isMobile={false}
-          />
+        <aside className="hidden lg:flex flex-col w-72 flex-shrink-0 border-l border-gray-200">
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            <QuestionNavigationPanel
+              questions={navigationQuestions}
+              currentIndex={currentIndex}
+              setCurrentIndex={setCurrentIndex}
+              answers={answers}
+              isMobile={false}
+            />
+          </div>
+          {/* ── FINAL SUBMIT pinned at bottom of sidebar ── */}
+          <div className="border-t border-gray-200 p-4 flex-shrink-0 bg-gray-50">
+            <button
+              onClick={() => handleSubmit(false)}
+              disabled={isSubmitting}
+              className={`w-full py-3 flex items-center justify-center gap-2 font-bold rounded-xl transition-all shadow-lg active:scale-95 ${
+                isSubmitting
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-green-600 text-white hover:bg-green-700"
+              }`}
+            >
+              {isSubmitting ? (
+                <><SimpleSpinner size={18} color="#fff" /> Submitting...</>
+              ) : (
+                <><CheckCircle className="h-5 w-5" /> Final Submit</>
+              )}
+            </button>
+          </div>
         </aside>
       </div>
 

@@ -56,10 +56,10 @@ const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
   };
 
   return (
-    <section id="categories" className="py-20 bg-transparent scroll-mt-24">
+    <section id="categories" className="py-24 bg-transparent scroll-mt-24">
       <div className="max-w-[1440px] mx-auto px-6 lg:px-8">
         {/* HEADER */}
-        <div className="text-left mb-10">
+        <div className="text-left mb-5">
           <h2 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tighter uppercase">
             Popular <span className="text-emerald-500">Exams</span>
           </h2>
@@ -69,7 +69,7 @@ const CategoriesSection = ({ categories = [], loading, onCategoryClick }) => {
         </div>
 
         {/* ================= TABS SCROLLBAR AREA ================= */}
-        <div className="relative mb-12 group">
+        <div className="relative mb-6 group">
           {/* Left Arrow Button */}
           <button
             onClick={() => scroll("left")}

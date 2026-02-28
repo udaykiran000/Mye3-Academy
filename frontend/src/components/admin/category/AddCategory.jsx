@@ -22,6 +22,10 @@ const AddCategory = ({ onClose }) => {
     }
   };
 
+  const handleImageError = (e) => {
+    e.target.src = "/logo.png";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !image) {

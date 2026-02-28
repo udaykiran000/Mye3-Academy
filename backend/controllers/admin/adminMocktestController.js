@@ -9,10 +9,10 @@ const getModel = (isGrand) =>
 
 // ✅ HELPER: Finds a test across both collections
 const findTestById = async (id) => {
-  let test = await MockTest.findById(id).populate("category", "name slug");
+  let test = await MockTest.findById(id).populate("category", "name slug image");
   let ModelUsed = MockTest;
   if (!test) {
-    test = await GrandTest.findById(id).populate("category", "name slug");
+    test = await GrandTest.findById(id).populate("category", "name slug image");
     ModelUsed = GrandTest;
   }
   return { test, ModelUsed };
@@ -25,8 +25,8 @@ const findTestById = async (id) => {
 export const getAllAdminMocktests = async (req, res) => {
   try {
     const [mockTests, grandTests] = await Promise.all([
-      MockTest.find({}).select("-questions -attempts").populate("category", "name slug").sort({ createdAt: -1 }),
-      GrandTest.find({}).select("-questions -attempts").populate("category", "name slug").sort({ createdAt: -1 }),
+      MockTest.find({}).select("-questions -attempts").populate("category", "name slug image").sort({ createdAt: -1 }),
+      GrandTest.find({}).select("-questions -attempts").populate("category", "name slug image").sort({ createdAt: -1 }),
     ]);
 
     res.status(200).json({
@@ -51,7 +51,7 @@ export const getMocktestsByCategory = async (req, res) => {
     const Model = getModel(isGrandTest);
     const tests = await Model.find({ categorySlug: category })
       .select("-questions -attempts")
-      .populate("category", "name slug")
+      .populate("category", "name slug image")
       .sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, mocktests: tests });
@@ -66,7 +66,11 @@ export const getMocktestsByCategory = async (req, res) => {
  */
 export const createMockTest = async (req, res) => {
   try {
-    if (req.file) req.body.thumbnail = "/uploads/images/" + req.file.filename;
+    if (req.file) {
+      const relativePath = req.file.path.replace(/\\/g, "/");
+      const uploadsIndex = relativePath.indexOf("uploads/");
+      req.body.thumbnail = uploadsIndex !== -1 ? relativePath.substring(uploadsIndex) : relativePath;
+    }
 
     // Mandatory field checks
     if (!req.body.title || req.body.title.trim() === "") {
@@ -164,7 +168,11 @@ export const updateMockTest = async (req, res) => {
     const { test: mockTest } = await findTestById(id);
     if (!mockTest) return res.status(404).json({ message: "Mock test not found" });
 
-    if (req.file) mockTest.thumbnail = "/uploads/images/" + req.file.filename;
+    if (req.file) {
+      const relativePath = req.file.path.replace(/\\/g, "/");
+      const uploadsIndex = relativePath.indexOf("uploads/");
+      mockTest.thumbnail = uploadsIndex !== -1 ? relativePath.substring(uploadsIndex) : relativePath;
+    }
 
     if (req.body.subjects) {
       const parsed = JSON.parse(req.body.subjects);
@@ -286,16 +294,16 @@ export const getFilteredMocktests = async (req, res) => {
 
     let tests = [];
     if (isGrandTest === "true") {
-      tests = await GrandTest.find(query).select("-questions -attempts").populate("category", "name slug").sort({ createdAt: -1 });
+      tests = await GrandTest.find(query).select("-questions -attempts").populate("category", "name slug image").sort({ createdAt: -1 });
       console.log(`- GrandTests Only: ${tests.length}`);
     } else if (isGrandTest === "false") {
-      tests = await MockTest.find(query).select("-questions -attempts").populate("category", "name slug").sort({ createdAt: -1 });
+      tests = await MockTest.find(query).select("-questions -attempts").populate("category", "name slug image").sort({ createdAt: -1 });
       console.log(`- MockTests Only: ${tests.length}`);
     } else {
       // Both
       const [m, g] = await Promise.all([
-        MockTest.find(query).select("-questions -attempts").populate("category", "name slug").sort({ createdAt: -1 }),
-        GrandTest.find(query).select("-questions -attempts").populate("category", "name slug").sort({ createdAt: -1 }),
+        MockTest.find(query).select("-questions -attempts").populate("category", "name slug image").sort({ createdAt: -1 }),
+        GrandTest.find(query).select("-questions -attempts").populate("category", "name slug image").sort({ createdAt: -1 }),
       ]);
       console.log(`- Combined results: Mock(${m.length}), Grand(${g.length})`);
       tests = [...m, ...g];

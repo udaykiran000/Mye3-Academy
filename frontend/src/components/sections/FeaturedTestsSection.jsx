@@ -84,7 +84,7 @@ const TestCard = ({ test }) => {
         </span>
       )}
 
-      <div className="relative w-full h-44 overflow-hidden">
+      <div className="relative w-full h-32 md:h-36 overflow-hidden">
           <img
             src={imageSource}
             alt={test.title}
@@ -188,20 +188,14 @@ const FeaturedTestsSection = ({
 
   return (
     <section
-      className={`py-10 md:py-12 ${
+      className={`py-20 md:py-24 ${
         isAltBg ? "bg-slate-200/40" : "bg-[#f8fafc]"
       } text-slate-800 relative overflow-hidden`}
     >
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://api.netlify.com/builds/grid.svg')]"></div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 mb-3">
-            <Rocket size={14} className="text-indigo-600 animate-pulse" />
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">
-              Top Rated Series
-            </p>
-          </div>
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="text-center mb-6">
           <h2 className={`text-center text-2xl md:text-3xl font-black uppercase tracking-tighter ${
             title.toLowerCase().includes("grand") 
               ? "bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 drop-shadow-sm px-4 py-1" 
@@ -223,15 +217,22 @@ const FeaturedTestsSection = ({
           </p>
         )}
 
-        <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="flex flex-wrap justify-center gap-6">
           {!loading &&
             displayedTests.map((test) => (
-              <Component key={test._id} test={test} />
+              <div 
+                key={test._id} 
+                className="w-full sm:w-[calc(50%-1.5rem)] md:w-[calc(33.333%-1.5rem)] lg:w-[calc(25%-1.5rem)] xl:w-[calc(16.666%-1.5rem)] flex"
+              >
+                <div className="w-full flex-grow">
+                  <Component test={test} />
+                </div>
+              </div>
             ))}
         </div>
 
         {showViewAll && (
-          <div className="text-center mt-12">
+          <div className="text-center mt-8">
             <button
               onClick={onViewAll}
               className="px-8 py-3 font-black uppercase tracking-[0.2em] text-white bg-indigo-600 rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transform hover:scale-[1.05] transition-all duration-300 text-[10px]"

@@ -24,8 +24,14 @@ export const getCategories = async (req, res) => {
 export const addCategory = async (req, res) => {
   try {
     const { name, description } = req.body;
-    // Logic: Save image path if Multer uploaded a file
-    const image = req.file ? req.file.path.replace(/\\/g, "/") : null;
+    // Logic: Save relative image path if Multer uploaded a file
+    let image = null;
+    if (req.file) {
+      // Ensure we store a relative path using forward slashes (e.g., uploads/images/...)
+      const relativePath = req.file.path.replace(/\\/g, "/");
+      const uploadsIndex = relativePath.indexOf("uploads/");
+      image = uploadsIndex !== -1 ? relativePath.substring(uploadsIndex) : relativePath;
+    }
 
     if (!name) {
       return res.status(400).json({ message: "Category name is required" });
@@ -87,7 +93,10 @@ export const updateCategory = async (req, res) => {
           console.error("Failed to delete old image:", err);
         }
       }
-      category.image = req.file.path.replace(/\\/g, "/");
+      // Ensure we store a relative path using forward slashes (e.g., uploads/images/...)
+      const relativePath = req.file.path.replace(/\\/g, "/");
+      const uploadsIndex = relativePath.indexOf("uploads/");
+      category.image = uploadsIndex !== -1 ? relativePath.substring(uploadsIndex) : relativePath;
     }
 
     await category.save();

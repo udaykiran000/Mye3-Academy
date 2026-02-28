@@ -1,216 +1,145 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Clock, BookOpen, Users, ShoppingCart, Wallet, Play } from "lucide-react";
+import { Clock, BookOpen, Zap, ShoppingCart, Play, Star } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 
 import { addItemToCart, fetchCart } from "../redux/cartSlice";
-import api from "../api/axios";
 import { getImageUrl, handleImageError } from "../utils/imageHelper";
-
-const StatItem = ({ icon: Icon, value, label, accentLight }) => (
-  <div className="text-center">
-    <Icon size={12} className={`${accentLight} mx-auto mb-0.5`} />
-    <p className="text-sm font-black text-white leading-tight">{value}</p>
-    <p className="text-[7px] text-gray-500 uppercase tracking-wider font-black">{label}</p>
-  </div>
-);
 
 const PremiumTestCard = ({ test }) => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
 
-  const { userData } = useSelector((state) => state.user);
-  const { cartItems } = useSelector((state) => state.cart);
+  const { userData }  = useSelector((s) => s.user);
+  const { cartItems } = useSelector((s) => s.cart);
 
-  const purchasedTests =
-    userData?.purchasedTests || userData?.enrolledMockTests || [];
+  const purchasedTests = userData?.purchasedTests || userData?.enrolledMockTests || [];
+  const isGrand        = test.isGrandTest === true;
+  const isFree         = test.isFree === true;
+  const hasPurchased   = purchasedTests.some((i) => i._id === test._id || i === test._id);
+  const isInCart       = cartItems.some((i) => i._id === test._id || i.mockTestId === test._id);
 
-  const isGrand = test.isGrandTest === true;
-
-  const hasPurchasedBefore = purchasedTests.some(
-    (item) => item._id === test._id || item === test._id
-  );
-
-  const canPurchase = isGrand ? !hasPurchasedBefore : true;
-
-  const isInCart = cartItems.some(
-    (item) => item._id === test._id || item.mockTestId === test._id
-  );
-
-  /* Image logic replaced with helper */
-  
-  // const imageSource = fetchedImageURL || "https://placehold.co/600x400?text=Mock+Test";
   const imageSource = getImageUrl(test.thumbnail);
+  const enrolled    = (test.totalQuestions * 37 + 500).toLocaleString();
 
-  const isFree = test.isFree === true;
-
-  const accentColor = isGrand
-    ? "from-indigo-500 to-purple-400"
-    : "from-cyan-500 to-teal-400";
-
-  const accentLight = isGrand ? "text-indigo-400" : "text-cyan-400";
-  const glowColor = isGrand ? "shadow-indigo-500/50" : "shadow-cyan-500/50";
-
-  const handleLoginCheck = () => {
-    if (!userData) {
-      toast.error("Please login first!");
-      navigate("/login");
-      return false;
-    }
+  /* ---- handlers ---- */
+  const loginGuard = () => {
+    if (!userData) { toast.error("Please login first!"); navigate("/login"); return false; }
     return true;
   };
 
+  const handleStart = () => { if (!loginGuard()) return; navigate(`/student/instructions/${test._id}`); };
+  const handleView  = () => navigate(`/mocktests/${test._id}`);
+
   const handleAddToCart = async () => {
-    if (!handleLoginCheck()) return;
-
-    if (isFree) return toast.info("Free test cannot be added to cart.");
-    if (isGrand && hasPurchasedBefore)
-      return toast.info("Grand Test can be purchased only once.");
-
-    if (isInCart) return toast.info("Already in cart.");
-
-    try {
-      const result = await dispatch(addItemToCart(test._id));
-      if (result.meta.requestStatus === "fulfilled") {
-        toast.success(`${test.title} added to cart!`);
-        dispatch(fetchCart());
-      } else {
-        toast.error("Failed to add to cart.");
-      }
-    } catch {
-      toast.error("Something went wrong.");
-    }
+    if (!loginGuard()) return;
+    if (isFree)     return toast.info("Free test cannot be added to cart.");
+    if (isInCart)   return toast.info("Already in cart.");
+    if (isGrand && hasPurchased) return toast.info("Grand Test can be purchased only once.");
+    const result = await dispatch(addItemToCart(test._id));
+    if (result.meta.requestStatus === "fulfilled") { toast.success(`${test.title} added to cart!`); dispatch(fetchCart()); }
+    else toast.error("Failed to add to cart.");
   };
 
-  const handleStartTest = () => {
-    if (!handleLoginCheck()) return;
-    navigate(`/student/instructions/${test._id}`);
-  };
-
-  const handleViewDetails = () => navigate(`/mocktests/${test._id}`);
-
-  const handlePrimaryAction = () => {
-    if (isFree || hasPurchasedBefore) handleStartTest();
-    else handleViewDetails();
-  };
-
-  const getPrimaryButtonText = () => {
-    if (isFree) return "Start Free Test";
-    if (hasPurchasedBefore) return "Resume Test";
-    return "View Details";
-  };
-
-  const needsTwoButtons = !(isFree || hasPurchasedBefore);
+  const canStart   = isFree || hasPurchased;
+  const priceLabel = isFree ? "FREE" : `₹${test.price}`;
 
   return (
-    <div
-      className={`
-        group relative flex flex-col rounded-2xl overflow-hidden cursor-pointer
-        bg-gray-900 border border-white/10 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.5)] 
-        hover:${glowColor}
-        transition-all duration-500 transform hover:-translate-y-3 hover:scale-[1.02]
-        before:content-[''] before:absolute before:inset-0 before:rounded-2xl 
-        before:border-[3px] before:opacity-0 group-hover:opacity-100 
-        before:transition-opacity before:duration-500 before:border-transparent 
-        before:bg-clip-border before:bg-gradient-to-r before:${accentColor}
-        before:pointer-events-none ring-1 ring-white/5
-      `}
-    >
-      {(isFree || isGrand || hasPurchasedBefore) && (
-        <span className={`absolute top-3 left-3 text-white text-[10px] font-black px-3 py-1 rounded-full z-20 shadow-lg uppercase tracking-wider
-          ${hasPurchasedBefore ? "bg-emerald-500" : isFree ? "bg-blue-500" : "bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 border border-amber-300"}
-        `}>
-          {hasPurchasedBefore ? "Purchased" : isFree ? "FREE" : "Grand"}
+    <div className="group relative flex flex-col bg-white border border-amber-100 shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_40px_rgba(251,191,36,0.18)] transition-all duration-500 hover:-translate-y-1 overflow-hidden">
+
+      {/* ── BADGE ── */}
+      {(isFree || isGrand || hasPurchased) && (
+        <span className={`absolute top-3 left-3 z-20 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 ${
+          hasPurchased ? "bg-emerald-500 text-white"
+          : isFree     ? "bg-blue-500 text-white"
+          :               "bg-gradient-to-r from-amber-400 to-amber-500 text-white"
+        }`}>
+          {hasPurchased ? "Purchased" : isFree ? "FREE" : "Grand"}
         </span>
       )}
 
-      <div className="relative w-full h-22">
+      {/* ── THUMBNAIL ── */}
+      <div className="relative w-full h-36 overflow-hidden bg-slate-100">
         <img
           src={imageSource}
           onError={handleImageError}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          alt={test.title}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+        {/* Price overlay */}
+        <div className="absolute bottom-2 right-2 bg-black/70 text-amber-400 text-xs font-black px-2 py-0.5 tracking-wide">
+          {priceLabel}
+        </div>
       </div>
 
-      <Link to={`/mocktests/${test._id}`} className="p-1.5 flex flex-col flex-grow">
-        <div className="mb-1">
-          {test.category?.name && (
-            <p className="text-[8px] font-semibold text-gray-400 mb-0.5 tracking-wider uppercase transition-transform duration-300 group-hover:scale-105 origin-left">
-              {test.category.name}
-            </p>
-          )}
-          <h3 className="text-base font-bold text-white leading-snug line-clamp-1 uppercase tracking-tight">
-            {test.title}
-          </h3>
-        </div>
-
-        <p className="text-gray-400 text-xs mb-3 line-clamp-1 flex-grow">
+      {/* ── BODY ── */}
+      <Link to={`/mocktests/${test._id}`} className="flex-1 flex flex-col p-4 gap-2">
+        {test.category?.name && (
+          <p className="text-[9px] font-black uppercase tracking-widest text-amber-500">
+            {test.category.name}
+          </p>
+        )}
+        <h3 className="text-[13px] font-black text-slate-800 leading-snug line-clamp-2 uppercase tracking-tight group-hover:text-amber-600 transition-colors">
+          {test.title}
+        </h3>
+        <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
           {test.description}
         </p>
 
-        <div className="grid grid-cols-3 gap-2 border-y border-gray-700/50 py-2 mb-3">
-          <StatItem icon={Clock} value={`${test.durationMinutes}m`} label="Duration" accentLight={accentLight} />
-          <StatItem icon={BookOpen} value={`${test.totalQuestions} Qs`} label="Questions" accentLight={accentLight} />
-          <StatItem icon={Users} value={(test.totalQuestions * 37 + 500).toLocaleString().replace(/,/g, " ")} label="Enrolled" accentLight={accentLight} />
+        {/* ── STATS ── */}
+        <div className="grid grid-cols-3 gap-1 border-t border-slate-100 pt-2 mt-auto">
+          <div className="flex flex-col items-center gap-0.5">
+            <Clock size={11} className="text-amber-400" />
+            <span className="text-[10px] font-black text-slate-700">{test.durationMinutes}m</span>
+            <span className="text-[8px] text-slate-400 uppercase tracking-widest">Duration</span>
+          </div>
+          <div className="flex flex-col items-center gap-0.5">
+            <BookOpen size={11} className="text-amber-400" />
+            <span className="text-[10px] font-black text-slate-700">{test.totalQuestions}</span>
+            <span className="text-[8px] text-slate-400 uppercase tracking-widest">Questions</span>
+          </div>
+          <div className="flex flex-col items-center gap-0.5">
+            <Star size={11} className="text-amber-400" />
+            <span className="text-[10px] font-black text-slate-700">{enrolled}</span>
+            <span className="text-[8px] text-slate-400 uppercase tracking-widest">Enrolled</span>
+          </div>
         </div>
-
-        {/* ⭐⭐⭐ PRICE SECTION UPDATED ⭐⭐⭐ */}
-        <div className="flex items-center gap-2">
-          <p className="text-lg font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-300 drop-shadow-lg">
-            {isFree ? "Free" : `₹${test.price}`}
-          </p>
-
-          {/* Show discount if originalPrice exists AND is higher */}
-          {test.originalPrice && test.originalPrice > test.price && (
-            <p className="text-xs line-through text-gray-400">
-              ₹{test.originalPrice}
-            </p>
-          )}
-        </div>
-        {/* END PRICE SECTION */}
-
       </Link>
 
-      <div className={`p-2 pt-0 flex gap-2 w-full ${needsTwoButtons ? "flex-col sm:flex-row" : "flex-row"}`}>
-        <button
-          onClick={handlePrimaryAction}
-          className={`flex items-center justify-center gap-2 text-white py-2 rounded-lg font-black transition text-xs uppercase tracking-widest
-            ${(isFree || hasPurchasedBefore)
-              ? "bg-green-600 hover:bg-green-500 w-full shadow-lg shadow-green-900/20"
-              : "bg-cyan-600 hover:bg-cyan-500 w-full sm:w-1/2 shadow-lg shadow-cyan-900/20"
-            }
-          `}
-        >
-          {(isFree || hasPurchasedBefore) ? <Play size={14} /> : <Wallet size={14} />}
-          {getPrimaryButtonText()}
-        </button>
-
-        {needsTwoButtons && (
-          isGrand && hasPurchasedBefore ? (
+      {/* ── ACTION BUTTONS ── */}
+      <div className="px-4 pb-4 flex gap-2">
+        {canStart ? (
+          <button
+            onClick={handleStart}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+          >
+            <Play size={12} /> Start Now
+          </button>
+        ) : (
+          <>
             <button
-              disabled
-              className="flex items-center justify-center gap-2 text-white py-2 rounded-lg font-bold text-xs uppercase
-              w-full sm:w-1/2 bg-gray-500 cursor-not-allowed"
+              onClick={handleView}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest transition-colors"
             >
-              Purchased
+              <Zap size={12} /> Buy Now
             </button>
-          ) : (
             <button
               onClick={handleAddToCart}
               disabled={isInCart}
-              className={`flex items-center justify-center gap-2 text-white py-2 rounded-lg font-bold transition text-xs uppercase tracking-widest
-                w-full sm:w-1/2
-                ${isInCart ? "bg-gray-500 cursor-not-allowed" : "bg-gray-700 hover:bg-gray-600"}
-              `}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] font-black uppercase tracking-widest border transition-colors ${
+                isInCart
+                  ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-amber-400 hover:text-amber-600"
+              }`}
             >
-              <ShoppingCart size={14} />
-              {isInCart ? "In Cart" : "Add"}
+              <ShoppingCart size={12} /> {isInCart ? "In Cart" : "Add"}
             </button>
-          )
+          </>
         )}
       </div>
+
     </div>
   );
 };

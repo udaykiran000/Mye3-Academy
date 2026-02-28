@@ -21,21 +21,25 @@ export const getAllCategories = async (req, res) => {
  */
 export const getPublishedMockTests = async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, q } = req.query;
     let filter = { isPublished: true };
 
     if (category && category.toLowerCase() !== "all") {
       filter.categorySlug = category.toLowerCase().trim();
     }
 
+    if (q) {
+      filter.title = { $regex: q, $options: "i" };
+    }
+
     // Fetch from both collections in parallel
     const [mockTests, grandTests] = await Promise.all([
       MockTest.find(filter)
-        .populate("category", "name slug")
+        .populate("category", "name slug image")
         .select("-questions -attempts")
         .lean(),
       GrandTest.find(filter)
-        .populate("category", "name slug")
+        .populate("category", "name slug image")
         .select("-questions -attempts")
         .lean(),
     ]);
@@ -67,12 +71,12 @@ export const getMockTestById = async (req, res) => {
     
     // Search both collections
     let test = await MockTest.findById(id)
-      .populate("category", "name slug")
+      .populate("category", "name slug image")
       .select("-questions -attempts"); 
       
     if (!test) {
       test = await GrandTest.findById(id)
-        .populate("category", "name slug")
+        .populate("category", "name slug image")
         .select("-questions -attempts");
     }
 
