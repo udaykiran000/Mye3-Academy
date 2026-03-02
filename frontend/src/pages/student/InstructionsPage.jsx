@@ -21,6 +21,7 @@ import {
   BarChart2,
   AlertCircle,
   Info,
+  ArrowLeft,
 } from "lucide-react";
 
 const InstructionsPage = () => {
@@ -161,6 +162,13 @@ const InstructionsPage = () => {
   return (
     <div className="min-h-screen bg-[#f8fafc] py-12 px-4 mt-8">
       <div className="max-w-4xl mx-auto">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors mb-5"
+        >
+          <ArrowLeft size={12} /> Go Back
+        </button>
+
         {/* HEADER SECTION */}
         <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6 shadow-sm">
           <div className="flex items-center gap-3 mb-2">
@@ -204,7 +212,9 @@ const InstructionsPage = () => {
             },
             {
               label: "Time Limit",
-              value: `${Number(durationMinutes) || (Number(totalQuestions) * 2) || 30} Mins`,
+              value: test.durationMinutes > 0 
+                ? `${test.durationMinutes} Mins` 
+                : (test.totalQuestions > 0 ? `${test.totalQuestions * 2} Mins` : "—"),
               icon: Clock,
               color: "text-blue-500",
             },
@@ -276,7 +286,7 @@ const InstructionsPage = () => {
                       Correct
                     </p>
                     <p className="text-sm font-bold text-emerald-700">
-                      +{totalQuestions > 0 ? (totalMarks / totalQuestions).toFixed(1).replace(/\.0$/, '') : 1}
+                      +{test.marksPerQuestion || (totalQuestions > 0 ? (totalMarks / totalQuestions).toFixed(1).replace(/\.0$/, '') : 1)}
                     </p>
                   </div>
                   <div className="bg-red-50 p-2 rounded border border-red-100">

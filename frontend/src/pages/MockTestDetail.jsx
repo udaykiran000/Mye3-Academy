@@ -76,7 +76,13 @@ export default function MockTestDetail() {
 
     const stats = [
         { icon: <BookOpen size={14} />, label: "Questions", val: test.totalQuestions || 0 },
-        { icon: <Clock size={14} />, label: "Duration", val: `${test.durationMinutes || 0} min` },
+        { 
+            icon: <Clock size={14} />, 
+            label: "Duration", 
+            val: test.durationMinutes > 0 
+                ? `${test.durationMinutes} min` 
+                : (test.totalQuestions > 0 ? `${test.totalQuestions * 2} min` : "—") 
+        },
         { icon: <FileText size={14} />, label: "Total Marks", val: test.totalMarks || 0 },
         { icon: <MinusCircle size={14} />, label: "Negative", val: test.negativeMarking || "None" },
     ];
@@ -209,7 +215,12 @@ export default function MockTestDetail() {
                             <div className="px-5 py-3 border-b border-slate-50 flex flex-col gap-2">
                                 {[
                                     { label: "Questions", val: test.totalQuestions || 0 },
-                                    { label: "Duration", val: `${test.durationMinutes || 0} min` },
+                                    { 
+                                        label: "Duration", 
+                                        val: test.durationMinutes > 0 
+                                            ? `${test.durationMinutes} min` 
+                                            : (test.totalQuestions > 0 ? `${test.totalQuestions * 2} min` : "—") 
+                                    },
                                     { label: "Total Marks", val: test.totalMarks || 0 },
                                 ].map((s, i) => (
                                     <div key={i} className="flex items-center justify-between">

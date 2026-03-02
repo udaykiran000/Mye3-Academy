@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Clock, BookOpen, Zap, ShoppingCart, Play, Star } from "lucide-react";
+import { Clock, BookOpen, Unlock, ShoppingCart, Play, FileText } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 
@@ -11,13 +11,15 @@ const PremiumTestCard = ({ test }) => {
   const dispatch = useDispatch();
   const navigate  = useNavigate();
 
-  const { userData }  = useSelector((s) => s.user);
+  const { userData, myMockTests }  = useSelector((s) => s.user);
   const { cartItems } = useSelector((s) => s.cart);
 
   const purchasedTests = userData?.purchasedTests || userData?.enrolledMockTests || [];
   const isGrand        = test.isGrandTest === true;
   const isFree         = test.isFree === true;
-  const hasPurchased   = purchasedTests.some((i) => i._id === test._id || i === test._id);
+  
+  const hasPurchased   = purchasedTests.some((i) => i._id === test._id || i === test._id) || 
+                       myMockTests?.some((t) => t._id === test._id);
   const isInCart       = cartItems.some((i) => i._id === test._id || i.mockTestId === test._id);
 
   const imageSource = getImageUrl(test.thumbnail);
@@ -77,9 +79,11 @@ const PremiumTestCard = ({ test }) => {
       {/* ── BODY ── */}
       <Link to={`/mocktests/${test._id}`} className="flex-1 flex flex-col p-4 gap-2">
         {test.category?.name && (
-          <p className="text-[9px] font-black uppercase tracking-widest text-amber-500">
-            {test.category.name}
-          </p>
+          <div className="flex">
+            <span className="px-2.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 rounded-full text-[9px] font-black uppercase tracking-wider">
+              {test.category.name}
+            </span>
+          </div>
         )}
         <h3 className="text-[13px] font-black text-slate-800 leading-snug line-clamp-2 uppercase tracking-tight group-hover:text-amber-600 transition-colors">
           {test.title}
@@ -89,21 +93,25 @@ const PremiumTestCard = ({ test }) => {
         </p>
 
         {/* ── STATS ── */}
-        <div className="grid grid-cols-3 gap-1 border-t border-slate-100 pt-2 mt-auto">
-          <div className="flex flex-col items-center gap-0.5">
-            <Clock size={11} className="text-amber-400" />
-            <span className="text-[10px] font-black text-slate-700">{test.durationMinutes}m</span>
-            <span className="text-[8px] text-slate-400 uppercase tracking-widest">Duration</span>
+        <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 mt-auto">
+          <div className="flex flex-col items-center gap-1">
+            <Clock size={12} className="text-amber-500" />
+            <span className="text-[11px] font-black text-slate-800 leading-none">
+              {test.durationMinutes > 0 
+                ? `${test.durationMinutes}m` 
+                : (test.totalQuestions > 0 ? `${test.totalQuestions * 2}m` : "—")}
+            </span>
+            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none">Duration</span>
           </div>
-          <div className="flex flex-col items-center gap-0.5">
-            <BookOpen size={11} className="text-amber-400" />
-            <span className="text-[10px] font-black text-slate-700">{test.totalQuestions}</span>
-            <span className="text-[8px] text-slate-400 uppercase tracking-widest">Questions</span>
+          <div className="flex flex-col items-center gap-1">
+            <FileText size={12} className="text-amber-500" />
+            <span className="text-[11px] font-black text-slate-800 leading-none">{test.totalMarks || "0"}</span>
+            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none">Marks</span>
           </div>
-          <div className="flex flex-col items-center gap-0.5">
-            <Star size={11} className="text-amber-400" />
-            <span className="text-[10px] font-black text-slate-700">{enrolled}</span>
-            <span className="text-[8px] text-slate-400 uppercase tracking-widest">Enrolled</span>
+          <div className="flex flex-col items-center gap-1">
+            <BookOpen size={12} className="text-amber-500" />
+            <span className="text-[11px] font-black text-slate-800 leading-none">{test.totalQuestions || 0}</span>
+            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none">Questions</span>
           </div>
         </div>
       </Link>
@@ -113,28 +121,29 @@ const PremiumTestCard = ({ test }) => {
         {canStart ? (
           <button
             onClick={handleStart}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 rounded-xl"
           >
-            <Play size={12} /> Start Now
+            <Play size={12} fill="currentColor" /> Start Test
           </button>
         ) : (
           <>
             <button
               onClick={handleView}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-amber-100 rounded-xl"
             >
-              <Zap size={12} /> Buy Now
+              <Unlock size={12} strokeWidth={3} /> Unlock
             </button>
             <button
               onClick={handleAddToCart}
               disabled={isInCart}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] font-black uppercase tracking-widest border transition-colors ${
+              title={isInCart ? "Already in cart" : "Add to Cart"}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] font-black uppercase tracking-widest border transition-all rounded-xl ${
                 isInCart
-                  ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
-                  : "bg-white text-slate-600 border-slate-200 hover:border-amber-400 hover:text-amber-600"
+                  ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed shadow-none"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-amber-400 hover:text-amber-600 hover:bg-amber-50 shadow-sm hover:shadow-md"
               }`}
             >
-              <ShoppingCart size={12} /> {isInCart ? "In Cart" : "Add"}
+              <ShoppingCart size={12} strokeWidth={3} /> {isInCart ? "Added" : "Add"}
             </button>
           </>
         )}

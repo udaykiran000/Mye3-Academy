@@ -45,7 +45,8 @@ export const startTestAttempt = async (req, res) => {
     }
 
     const now = new Date();
-    // Use admin-defined duration or fallback to auto-calc (2 mins per qn)
+    // ✅ Use admin-defined duration (Strictly required for published tests now)
+    // Fallback only exists for legacy data or unexpected edge cases
     const durationMins = Number(mocktest.durationMinutes) || (selected.length * 2);
     const endsAt = new Date(now.getTime() + durationMins * 60000);
 

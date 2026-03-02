@@ -12,6 +12,8 @@ import {
   BarChart4,
   Library,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Settings,
   Layout,
   Clock,
@@ -113,7 +115,7 @@ export default function AdminQuestions() {
         setIsFree(raw.isFree);
         setIsPublished(raw.isPublished);
 
-        const mPerQ = raw.totalQuestions > 0 ? (raw.totalMarks / raw.totalQuestions).toString() : "";
+        const mPerQ = raw.marksPerQuestion?.toString() || (raw.totalQuestions > 0 ? (raw.totalMarks / raw.totalQuestions).toFixed(1).replace(/\.0$/, '') : "1");
 
         setConfigForm({
           subcategory: raw.subcategory || "",
@@ -122,7 +124,7 @@ export default function AdminQuestions() {
           durationMinutes: raw.durationMinutes?.toString() || "",
           totalQuestions: raw.totalQuestions?.toString() || "",
           marksPerQuestion: mPerQ,
-          negativeMarking: raw.negativeMarking?.toString() || "0.25",
+          negativeMarking: raw.negativeMarking?.toString() || "0",
           price: raw.price?.toString() || "",
         });
 
@@ -262,13 +264,6 @@ export default function AdminQuestions() {
       setThumbnailPreview(null);
       setQPage(1);
       if (document.getElementById("qFileInput")) document.getElementById("qFileInput").value = "";
-
-      // Silently sync test-level settings (duration, negativeMarking) to DB
-      const settingsPatch = new FormData();
-      if (configForm.durationMinutes) settingsPatch.append("durationMinutes", configForm.durationMinutes);
-      settingsPatch.append("negativeMarking", qForm.negative !== "" ? qForm.negative : 0);
-      settingsPatch.append("marksPerQuestion", qForm.marks || 0);
-      api.put(`/api/admin/mocktests/${id}`, settingsPatch).catch(() => {});
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save question.");
     } finally {
@@ -340,9 +335,11 @@ export default function AdminQuestions() {
           <div className="flex items-center gap-2 text-[10px] font-black text-[#7e7e7e] uppercase tracking-widest">
             <Link to="/admin" className="hover:text-[#21b731] transition-colors">Home</Link>
             <ChevronRight size={12} className="text-slate-300" />
-            <Link to="/admin/mocktests" className="hover:text-[#21b731] transition-colors">Categories</Link>
+            <Link to="/admin/categories" className="hover:text-[#21b731] transition-colors">Categories</Link>
             <ChevronRight size={12} className="text-slate-300" />
-            <span className="text-[#21b731]">{isEditMode ? "Mock Test" : "Setup"}</span>
+            <Link to={`/admin/mocktests/${categorySlug}`} className="hover:text-[#21b731] transition-colors">{categorySlug}</Link>
+            <ChevronRight size={12} className="text-slate-300" />
+            <span className="text-[#21b731]">{isEditMode ? "Mock Test" : "New"}</span>
           </div>
 
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2 pb-2 border-b border-slate-200">
@@ -489,7 +486,7 @@ export default function AdminQuestions() {
                              {!isFree && (
                                <div className="space-y-2 animate-in zoom-in-95 duration-300">
                                  <label className={labelClass}>Enrollment Fee (₹)</label>
-                                 <input type="number" className={inputClass} value={configForm.price} onChange={e => setConfigForm({...configForm, price: e.target.value})} placeholder="0.00" />
+                                 <input type="number" className={inputClass} value={configForm.price} onChange={e => setConfigForm({...configForm, price: e.target.value})} placeholder="0" min="0" />
                                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">* Pricing to unlock.</p>
                                </div>
                              )}
@@ -500,7 +497,7 @@ export default function AdminQuestions() {
                    {/* ACTION SECTION */}
                    <div className="pt-4 border-t border-slate-100 flex justify-end">
                       <button type="submit" disabled={isSubmitting} className="px-10 py-3.5 bg-[#21b731] text-white text-[12px] font-black uppercase tracking-[0.2em] shadow-lg hover:bg-[#1a9227] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3">
-                         <Save size={18} /> {isEditMode ? "Save Changes" : "Register & Add"}
+                         <Save size={18} /> {isEditMode ? "Save Changes" : "Create Mock Test"}
                       </button>
                    </div>
                 </div>

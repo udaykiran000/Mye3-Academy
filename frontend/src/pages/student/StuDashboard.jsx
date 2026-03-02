@@ -54,7 +54,7 @@ export default function StuDashboard() {
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 pt-20 md:pt-6 p-4 sm:p-6 lg:p-8 overflow-y-auto">
         {/* Pass userData for header display while profile is loading */}
-        <StuHeader user={userProfile || userData} />
+        <StuHeader user={userProfile || userData} setActiveTab={setActiveTab} />
 
         <div className="mt-6">
           {activeTab === "overview" && <DashboardOverview />}

@@ -31,6 +31,7 @@ const MockTestSchema = new mongoose.Schema({
     totalQuestions: { type: Number, default: 0 },
     durationMinutes: { type: Number, default: null }, // null = auto-calc from questions.length * 2
     totalMarks: { type: Number, default: 0 },
+    marksPerQuestion: { type: Number, default: 1 }, 
     negativeMarking: { type: Number, default: 0 },
     price: { type: Number, default: 0 },
     discountPrice: { type: Number, default: 0 },
