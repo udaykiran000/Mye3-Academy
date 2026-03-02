@@ -134,6 +134,7 @@ export const createMockTest = async (req, res) => {
       durationMinutes: duration,
       totalQuestions: totalQns,
       totalMarks: Number(req.body.totalMarks) || 0,
+      marksPerQuestion: Number(req.body.marksPerQuestion) || 1,
       negativeMarking: Number(req.body.negativeMarking) || 0,
       price: Number(req.body.price) || 0,
       isFree: isTestFree,
@@ -187,7 +188,7 @@ export const updateMockTest = async (req, res) => {
       if (!req.body.totalQuestions) mockTest.totalQuestions = calcTotal;
     }
 
-    const fields = ["title", "description", "subcategory", "totalMarks", "totalQuestions", "negativeMarking", "price", "discountPrice"];
+    const fields = ["title", "description", "subcategory", "totalMarks", "totalQuestions", "marksPerQuestion", "negativeMarking", "price", "discountPrice"];
     fields.forEach((field) => {
       if (req.body[field] !== undefined) {
         mockTest[field] = req.body[field];
@@ -240,11 +241,19 @@ export const togglePublish = async (req, res) => {
     if (!test) return res.status(404).json({ message: "Test not found" });
 
     if (!test.isPublished) {
+      // ✅ STRICT VALIDATION FOR PUBLISHING
+      const errors = [];
+      if (!test.title || test.title.trim() === "New Mock Test") errors.push("Test title is missing");
+      if (!test.subcategory || test.subcategory.trim() === "") errors.push("Sub-category is missing");
+      if (!test.durationMinutes || Number(test.durationMinutes) <= 0) errors.push("Duration must be set (greater than 0)");
+      
       const questionCount = test.questions?.length || 0;
-      if (questionCount < 1) {
+      if (questionCount < 1) errors.push("Add at least one question");
+
+      if (errors.length > 0) {
         return res.status(400).json({
           success: false,
-          message: "Cannot publish an empty test. Please add at least one question.",
+          message: `Cannot publish: ${errors.join(", ")}.`,
         });
       }
     }

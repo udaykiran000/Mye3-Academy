@@ -17,12 +17,11 @@ const findTestById = async (id) => {
 
 // ✅ Sync stats helper — only overrides duration if it was never manually set (null = auto mode)
 const syncTestStats = (test) => {
+  // 1. Recalculate counts based on actual embedded questions
   test.totalQuestions = test.questions.length;
-  
-  // Calculate total marks based on embedded questions
   test.totalMarks = test.questions.reduce((sum, q) => sum + (Number(q.marks) || 0), 0);
 
-  // Auto-rebuild subjects from embedded questions
+  // 2. Sync subjects/sections mapping
   const subjectMap = {};
   test.questions.forEach(q => {
     if (q.category) {
@@ -30,10 +29,10 @@ const syncTestStats = (test) => {
       subjectMap[name] = (subjectMap[name] || 0) + 1;
     }
   });
-  // Only update subjects if admin hasn't manually configured them with limits
-  // If subjects were already set with specific limits, merge — don't overwrite limits
+
   const existingMap = {};
   (test.subjects || []).forEach(s => { if (s.name) existingMap[s.name] = s; });
+  
   test.subjects = Object.entries(subjectMap).map(([name, count]) => ({
     name,
     easy: existingMap[name]?.easy ?? count,
@@ -41,8 +40,15 @@ const syncTestStats = (test) => {
     hard: existingMap[name]?.hard ?? 0,
   }));
 
-  // If admin never set a duration (null = auto-mode), keep as null so frontend can compute live
-  if (test.durationMinutes === null || test.durationMinutes === undefined || test.durationMinutes === 0) {
+  // 3. Negative Marking Sync
+  // If ALL questions have the same negative marking, sync it to the test level
+  const uniqueNegatives = [...new Set(test.questions.map(q => Number(q.negative) || 0))];
+  if (uniqueNegatives.length === 1) {
+    test.negativeMarking = uniqueNegatives[0];
+  }
+
+  // 4. Duration Management
+  if (test.durationMinutes !== null && test.durationMinutes <= 0) {
     test.durationMinutes = null;
   }
 };
@@ -268,8 +274,8 @@ export const bulkUploadQuestions = async (req, res) => {
         category: sub.toLowerCase().trim(),
         questionType: "mcq",
         difficulty: diff,
-        marks: globalMarks ?? (Number(clean.marks) || 1),
-        negative: globalNegative ?? (Number(clean.negative || clean.negativemark || clean.negmarks) || 0),
+        marks: globalMarks ?? (Number(clean.marks) || Number(test.marksPerQuestion) || 1),
+        negative: globalNegative ?? (Number(clean.negative || clean.negativemark || clean.negmarks) || Number(test.negativeMarking) || 0),
         options: [
           { text: optionA },
           { text: optionB },
@@ -292,6 +298,10 @@ export const bulkUploadQuestions = async (req, res) => {
 
 
     test.questions.push(...validQuestions);
+
+    // ✅ Sync test-level marking scheme if global values were provided
+    if (globalNegative !== null) test.negativeMarking = globalNegative;
+
     syncTestStats(test);
     
     try {

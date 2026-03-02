@@ -20,14 +20,20 @@ const MockTestCard = ({ test, isEmbedded = false, index = 0 }) => {
       ? Number(test.discountPrice)
       : Number(test.price);
 
-  const isFree = test.isFree === true || effectivePrice <= 0 || isPurchased;
+  const canStart = test.isFree === true || effectivePrice <= 0 || isPurchased;
+  const isPaidNotPurchased = !test.isFree && effectivePrice > 0 && !isPurchased;
 
   const handleAction = () => {
     if (!userData) {
       toast.error("Please login to continue");
       return navigate("/login");
     }
-    navigate(`/mocktests/${test._id}`);
+    // If not purchased, go to detail/buy page. If purchased/free, go to instructions
+    if (canStart) {
+        navigate(`/student/instructions/${test._id}`);
+    } else {
+        navigate(`/mocktests/${test._id}`);
+    }
   };
 
   const imgSrc = test.thumbnail
@@ -73,17 +79,17 @@ const MockTestCard = ({ test, isEmbedded = false, index = 0 }) => {
           />
         </motion.div>
 
-        {/* FREE badge — top-right */}
-        {isFree && (
-          <motion.div
+        {/* PRICE/FREE badge — top-right */}
+        <motion.div
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.06 + 0.22, duration: 0.25 }}
-            className="absolute top-2 right-2 bg-emerald-500 text-white text-[8px] font-black tracking-widest px-2 py-0.5"
-          >
-            FREE
-          </motion.div>
-        )}
+            className={`absolute top-2 right-2 text-white text-[8px] font-black tracking-widest px-2 py-0.5 shadow-sm ${
+                test.isFree || effectivePrice <= 0 ? "bg-emerald-500" : (isPurchased ? "bg-blue-500" : "bg-amber-500")
+            }`}
+        >
+            {isPurchased ? "ENROLLED" : (test.isFree || effectivePrice <= 0 ? "FREE" : `₹${effectivePrice}`)}
+        </motion.div>
 
         {/* Hover shimmer overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 pointer-events-none" />
@@ -96,14 +102,13 @@ const MockTestCard = ({ test, isEmbedded = false, index = 0 }) => {
           {test.title}
         </h3>
 
-        {/* Category accent */}
-        <div className="flex items-center gap-1.5">
-          <div
-            className={`h-0.5 w-3 group-hover:w-5 transition-all duration-300 ${
-              test.isGrandTest ? "bg-amber-400" : "bg-emerald-400"
-            }`}
-          />
-          <span className="text-[8px] font-black text-slate-400 tracking-widest font-poppins">
+        {/* Category chip accent */}
+        <div className="flex items-center pt-0.5">
+          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider font-poppins shadow-sm ${
+            test.isGrandTest 
+              ? "bg-amber-50 text-amber-600 border border-amber-100" 
+              : "bg-emerald-50 text-emerald-600 border border-emerald-100"
+          }`}>
             {test.subcategory || test.category?.name || "General"}
           </span>
         </div>
@@ -115,7 +120,9 @@ const MockTestCard = ({ test, isEmbedded = false, index = 0 }) => {
           {[
             {
               label: "Duration",
-              val: test.durationMinutes > 0 ? `${test.durationMinutes}m` : "—",
+              val: test.durationMinutes > 0 
+                ? `${test.durationMinutes}m` 
+                : (test.totalQuestions > 0 ? `${test.totalQuestions * 2}m` : "—"),
               icon: <Clock size={12} />,
             },
             {
@@ -136,7 +143,7 @@ const MockTestCard = ({ test, isEmbedded = false, index = 0 }) => {
               <div className="text-[10px] font-black text-[#3e4954] leading-none">
                 {stat.val}
               </div>
-              <div className="text-[7px] font-bold text-slate-400 tracking-tighter">
+              <div className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">
                 {stat.label}
               </div>
             </div>
@@ -154,12 +161,14 @@ const MockTestCard = ({ test, isEmbedded = false, index = 0 }) => {
             handleAction();
           }}
           className={`w-full py-2.5 flex items-center justify-center text-[9px] font-black tracking-widest text-white transition-colors duration-200 ${
-            test.isGrandTest
-              ? "bg-amber-500 hover:bg-amber-600"
-              : "bg-[#21b731] hover:bg-[#1a9227]"
+            !canStart
+              ? "bg-[#3e4954] hover:bg-black shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
+              : (test.isGrandTest
+                ? "bg-amber-500 hover:bg-amber-600"
+                : "bg-[#21b731] hover:bg-[#1a9227]")
           }`}
         >
-          View Test
+          {canStart ? "Start Test" : "Unlock Test"}
         </motion.button>
       </div>
     </motion.div>

@@ -184,9 +184,9 @@ const Navbar = () => {
             </div>
 
             {/* DESKTOP TOP UI */}
-            <div className="hidden md:flex items-center justify-between w-full">
+            <div className="hidden md:flex items-center justify-between w-full gap-6">
               
-              {/* === LEFT: Logo only === */}
+              {/* === LEFT: Logo === */}
               <Link
                 to="/"
                 className="flex items-center gap-2 group font-black text-xl italic tracking-tighter flex-shrink-0"
@@ -197,8 +197,8 @@ const Navbar = () => {
                 MYE 3 Academy
               </Link>
 
-              {/* === CENTER: Nav Links === */}
-              <div className="flex items-center gap-8 font-bold text-sm text-slate-600 absolute left-1/2 -translate-x-1/2">
+              {/* === CENTER: Nav Links (evenly spaced) === */}
+              <div className="flex items-center gap-8 font-bold text-sm text-slate-600 mx-auto">
                 <Link
                   to="/"
                   className={location.pathname === "/" ? "text-indigo-600" : "hover:text-indigo-600 transition-colors"}
@@ -223,12 +223,28 @@ const Navbar = () => {
                 >
                   Grand Tests
                 </Link>
+                {/* Cart lives next to nav links */}
+                {role === "student" && (
+                  <Link
+                    to="/cart"
+                    className="relative p-1 text-slate-600 hover:text-indigo-600 transition-colors"
+                  >
+                    <ShoppingCart size={20} />
+                    {cartItems.length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-white">
+                        {cartItems.length}
+                      </span>
+                    )}
+                  </Link>
+                )}
               </div>
-              {/* ================================= */}
 
-              <div className="flex items-center gap-4">
+              {/* === RIGHT: Actions === */}
+              <div className="flex items-center gap-4 flex-shrink-0">
                 {userData ? (
-                  <div className="flex items-center gap-5">
+                  <div className="flex items-center gap-4">
+                    {/* Divider between nav links and actions */}
+                    <div className="w-px h-5 bg-slate-200 flex-shrink-0" />
                     {showDashboardBtn && (
                       <Link
                         to={dashboardPath}
@@ -237,19 +253,7 @@ const Navbar = () => {
                         Dashboard
                       </Link>
                     )}
-                    {role === "student" && (
-                      <Link
-                        to="/cart"
-                        className="relative p-2 text-slate-600 hover:text-indigo-600 transition-colors"
-                      >
-                        <ShoppingCart size={22} />
-                        {cartItems.length > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
-                            {cartItems.length}
-                          </span>
-                        )}
-                      </Link>
-                    )}
+
                     <div className="relative">
                       <button
                         onClick={() =>
@@ -313,6 +317,7 @@ const Navbar = () => {
                 )}
               </div>
             </div>
+
           </div>
         </div>
       </nav>
