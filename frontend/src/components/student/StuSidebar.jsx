@@ -185,7 +185,9 @@ const StuSidebar = ({ activeTab, setActiveTab }) => {
         />
       </div>
 
-      <div className="hidden md:block h-screen sticky top-0">{SidebarContent}</div>
+      <div className="hidden md:block h-screen sticky top-0 transition-all">
+        {SidebarContent}
+      </div>
 
       <AnimatePresence>
         {isMobileOpen && (
@@ -210,7 +212,43 @@ const StuSidebar = ({ activeTab, setActiveTab }) => {
                 >
                   <X size={20} />
                 </button>
-                {SidebarContent}
+                {/* For mobile, we want it always expanded within its container */}
+                <div className="h-full w-full pointer-events-auto">
+                    {/* We override the sidebar internal motion div for mobile to stay at 280 */}
+                    <motion.div
+                        animate={{ width: 280, opacity: 1 }}
+                        className="h-full bg-white flex flex-col"
+                    >
+                         {/* Re-using same structure manually for mobile to avoid hover logic issues */}
+                         <div className="px-6 py-8 flex items-center gap-4">
+                            <div className="shrink-0 w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg">
+                                <GraduationCap size={24} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black text-slate-800 tracking-tighter italic">Mye3</h2>
+                                <p className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] leading-none mt-0.5">Student Dashboard</p>
+                            </div>
+                        </div>
+                        <nav className="px-3 space-y-1 flex-grow overflow-y-auto">
+                            {MENU.map((m, i) => {
+                                const Icon = m.icon;
+                                const isActive = activeTab === m.key;
+                                return (
+                                    <div key={i} onClick={() => { setActiveTab(m.key); setIsMobileOpen(false); }} className={`flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer ${isActive ? "bg-blue-50 text-blue-600" : "text-slate-500"}`}>
+                                        <Icon size={20} />
+                                        <span className="text-[14px] font-bold">{m.label}</span>
+                                    </div>
+                                );
+                            })}
+                        </nav>
+                        <div className="p-4 border-t border-slate-100">
+                             <button onClick={handleLogout} className="flex items-center gap-4 px-4 py-3 rounded-2xl w-full text-rose-600 bg-rose-50">
+                                <LogOut size={20} />
+                                <span className="text-[13px] font-bold">Secure Logout</span>
+                             </button>
+                        </div>
+                    </motion.div>
+                </div>
               </div>
             </motion.div>
           </>

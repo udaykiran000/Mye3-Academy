@@ -1,5 +1,5 @@
 // frontend/src/pages/student/StuDashboard.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import StuSidebar from "../../components/student/StuSidebar";
 import StuHeader from "../../components/student/StuHeader";
@@ -9,6 +9,7 @@ import PerformanceHistory from "./PerformanceHistory";
 import ProfileSettings from "./ProfileSettings";
 import MyTests from "./MyTests";
 import StudentDoubts from "./StudentDoubts";
+import Cart from "../Cart";
 
 import { initSocket, disconnectSocket } from "../../socket";
 import { fetchStudentDoubts } from "../../redux/doubtSlice";
@@ -16,6 +17,7 @@ import { fetchStudentProfile } from "../../redux/studentSlice";
 
 export default function StuDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
+  const mainRef = useRef(null);
 
   // LOGIC CONNECTIVITY FIX: Get Profile from studentSlice and Auth from userSlice
   const userProfile = useSelector((state) => state.students.studentProfile);
@@ -46,13 +48,21 @@ export default function StuDashboard() {
     }
   }, [userData?._id, dispatch]);
 
+  // SCROLL TO TOP ON TAB CHANGE
+  useEffect(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTo(0, 0);
+    }
+    window.scrollTo(0, 0);
+  }, [activeTab]);
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen bg-gray-50 flex overflow-hidden">
       {/* SIDEBAR */}
       <StuSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 pt-20 md:pt-6 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+      <main ref={mainRef} className="flex-1 pt-20 md:pt-6 p-4 sm:p-6 lg:p-8 overflow-y-auto">
         {/* Pass userData for header display while profile is loading */}
         <StuHeader user={userProfile || userData} setActiveTab={setActiveTab} />
 
@@ -60,6 +70,7 @@ export default function StuDashboard() {
           {activeTab === "overview" && <DashboardOverview />}
           {activeTab === "my-tests" && <MyTests />}
           {activeTab === "explore" && <ExploreTests />}
+          {activeTab === "enrollment" && <Cart />}
           {activeTab === "performance" && <PerformanceHistory />}
           {activeTab === "settings" && <ProfileSettings />}
           {activeTab === "doubts" && <StudentDoubts />}
