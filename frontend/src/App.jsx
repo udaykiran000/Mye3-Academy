@@ -41,8 +41,6 @@ import InstructionsPage from "./pages/student/InstructionsPage";
 import StuDashboard from "./pages/student/StuDashboard";
 import AllMockTests from "./pages/AllMockTests";
 import MockTestDetail from "./pages/MockTestDetail";
-import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
 import ReviewSolutions from "./pages/student/ReviewSolutions";
 import StudentDoubts from "./pages/student/StudentDoubts";
 
@@ -139,22 +137,7 @@ const App = () => {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/cart"
-            element={
-              <ProtectedRoute>
-                <Cart />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/checkout"
-            element={
-              <ProtectedRoute>
-                <Checkout />
-              </ProtectedRoute>
-            }
-          />
+
           <Route
             path="/student/doubts"
             element={

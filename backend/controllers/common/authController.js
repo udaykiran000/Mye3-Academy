@@ -390,42 +390,40 @@ export const updateUserProfile = async (req, res) => {
 
     // 1. Handle Avatar Upload (Delete old one to save space)
     if (req.file) {
-      if (user.avatar && fs.existsSync(user.avatar)) {
+      // Delete old avatar if it exists (use relative path to resolve absolute)
+      if (user.avatar && !user.avatar.startsWith('http')) {
         try {
-          fs.unlinkSync(user.avatar);
+          const { fileURLToPath } = await import('url');
+          const { dirname, join } = await import('path');
+          const __dir = dirname(fileURLToPath(import.meta.url));
+          const absOld = join(__dir, '../../', user.avatar);
+          const fsm = await import('fs');
+          if (fsm.existsSync(absOld)) fsm.unlinkSync(absOld);
         } catch (err) {
           console.error("Failed to delete old avatar:", err);
         }
       }
-      // Store relative path for easier frontend handling if needed, or keep full path.
-      // Usually storing 'uploads/images/filename' is best.
-      user.avatar = req.file.path.replace(/\\/g, "/"); 
+      // Store RELATIVE path only: 'uploads/images/filename.jpg'
+      // req.file.path is absolute e.g. D:/project/backend/uploads/images/x.jpg
+      const rawPath = req.file.path.replace(/\\/g, "/");
+      const uploadsIdx = rawPath.indexOf("uploads/");
+      user.avatar = uploadsIdx !== -1 ? rawPath.slice(uploadsIdx) : rawPath;
       updates.push("Profile Picture");
     }
 
-    // 2. Update Basic Fields
-    if (req.body.firstName && req.body.firstName !== user.firstname) {
-      user.firstname = req.body.firstName;
-      if (!updates.includes("Name")) updates.push("Name");
-    }
-    if (req.body.firstname && req.body.firstname !== user.firstname) {
-      user.firstname = req.body.firstname;
-      if (!updates.includes("Name")) updates.push("Name");
-    }
 
-    if (req.body.lastName && req.body.lastName !== user.lastname) {
-      user.lastname = req.body.lastName;
-      if (!updates.includes("Name")) updates.push("Name");
-    }
-    if (req.body.lastname && req.body.lastname !== user.lastname) {
-      user.lastname = req.body.lastname;
-      if (!updates.includes("Name")) updates.push("Name");
-    }
+    // 2. Update Basic Fields — always assign with fallback to prevent Mongoose required-field errors
+    const newFirstName = req.body.firstName || req.body.firstname || null;
+    const newLastName  = req.body.lastName  || req.body.lastname  || null;
 
-    if (
-      (req.body.phoneNumber && req.body.phoneNumber !== user.phoneNumber) ||
-      (req.body.phone && req.body.phone !== user.phoneNumber)
-    ) {
+    if (newFirstName !== null) {
+      if (newFirstName !== user.firstname) updates.push("Name");
+      user.firstname = newFirstName || user.firstname;
+    }
+    // lastname: always provide a value (empty string → keep existing) so required validation passes
+    user.lastname = (newLastName && newLastName.trim()) ? newLastName.trim() : (user.lastname || "");
+
+    if (req.body.phoneNumber || req.body.phone) {
       user.phoneNumber = req.body.phoneNumber || req.body.phone;
       updates.push("Phone Number");
     }

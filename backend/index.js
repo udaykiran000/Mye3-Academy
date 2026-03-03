@@ -28,8 +28,7 @@ import doubtInstructorRoutes from "./routes/instructor/doubtInstructorRoutes.js"
 import institutionDashboardRoutes from "./routes/institution/institutionDashboardRoutes.js";
 
 // Student Section
-import studentRoute from "./routes/student/studentRoute.js";        
-import cartRoute from "./routes/student/cartRoute.js";              
+import studentRoute from "./routes/student/studentRoute.js";              
 import paymentRoute from "./routes/student/paymentRoute.js";        
 import doubtStudentRoutes from "./routes/student/doubtStudentRoutes.js";
 import studentDashboardRoute from "./routes/student/studentDashboardRoute.js";
@@ -99,7 +98,7 @@ app.use("/api/institution", institutionDashboardRoutes);
 
 // Student Section
 app.use("/api/student", studentRoute);
-app.use("/api/cart", cartRoute);
+
 app.use("/api/payment", paymentRoute);
 app.use("/api/student/dashboard", studentDashboardRoute);
 app.use("/api/student/doubts", doubtStudentRoutes);

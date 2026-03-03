@@ -250,7 +250,8 @@ const studentSlice = createSlice({
       })
       .addCase(fetchPerformanceHistory.fulfilled, (state, action) => {
         state.attemptsHistoryStatus = "succeeded";
-        state.attemptsHistory = action.payload;
+        // API returns { success, attempts } — extract the array properly
+        state.attemptsHistory = action.payload.attempts || action.payload || [];
       })
       .addCase(fetchPerformanceHistory.rejected, (state, action) => {
         state.attemptsHistoryStatus = "failed";

@@ -1,7 +1,7 @@
 import React from 'react';
 
 // Classy, Vibrant StatCard for a premium dashboard feel
-export const StatCard = ({ icon, title, value, subValue, color }) => {
+export const StatCard = ({ icon, title, value, subValue, color, onClick }) => {
   // Map color names to Tailwind decorative tokens
   const colorMap = {
     blue: { bg: 'bg-blue-500', text: 'text-blue-500', light: 'bg-blue-50', border: 'border-blue-100' },
@@ -14,7 +14,10 @@ export const StatCard = ({ icon, title, value, subValue, color }) => {
   const theme = colorMap[color] || colorMap.blue;
 
   return (
-    <div className={`relative group ${theme.bg} p-5 rounded-[24px] shadow-lg border border-transparent hover:scale-105 transition-all duration-500 overflow-hidden`}>
+    <div 
+      onClick={onClick}
+      className={`relative group ${theme.bg} p-5 rounded-[24px] shadow-lg border border-transparent hover:scale-105 transition-all duration-500 overflow-hidden ${onClick ? 'cursor-pointer' : ''}`}
+    >
       {/* Subtle Background Shape */}
       <div className="absolute -top-4 -right-4 w-20 h-20 bg-white/20 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-700"></div>
       

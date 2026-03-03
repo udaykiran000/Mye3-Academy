@@ -22,6 +22,7 @@ import {
   AlertCircle,
   Info,
   ArrowLeft,
+  GraduationCap,
 } from "lucide-react";
 
 const InstructionsPage = () => {

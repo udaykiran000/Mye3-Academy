@@ -79,9 +79,10 @@ export const createOrder = async (req, res) => {
     // 3. Initialize Razorpay or Mock
     let orderId;
     
-    // Fallback logic: if keyId is "test", name is "Mock", or keyId is EMPTY, use mock branch
+    // Fallback logic: if keyId is "test", name is "Mock", or isTestMode is true, use mock branch
     const isMock = activeGateway.credentials.keyId === "test" || 
                    activeGateway.name === "Mock" || 
+                   activeGateway.isTestMode === true ||
                    !activeGateway.credentials.keyId;
 
     if (isMock) {
@@ -161,7 +162,7 @@ export const verifyPayment = async (req, res) => {
 
     let isAuthentic = false;
 
-    if (activeGateway.credentials.keyId === "test" || activeGateway.name === "Mock") {
+    if (activeGateway.credentials.keyId === "test" || activeGateway.name === "Mock" || activeGateway.isTestMode === true) {
        if (razorpay_order_id.startsWith("mock_order_")) {
            isAuthentic = true;
        }

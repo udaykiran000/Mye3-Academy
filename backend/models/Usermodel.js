@@ -10,10 +10,11 @@ const userSchema = new mongoose.Schema(
     },
     lastname: { 
       type: String, 
-      required: true, 
+      required: false,
       trim: true, 
-      default: "User" // ⭐ Added Default (Prevents Google Crash)
+      default: "" 
     },
+
     phoneNumber: { 
       type: String, 
       required: true,

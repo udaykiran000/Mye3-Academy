@@ -94,6 +94,16 @@ const userSlice = createSlice({
         // ✅ ADDED: Reducer to reset the status for a manual refresh
         clearMyMockTestsStatus: (state) => {
             state.myMockTestsStatus = "idle";
+        },
+        // ✅ ADDED: Update purchased tests locally
+        addPurchasedTest: (state, action) => {
+            if (state.userData) {
+                if (!state.userData.purchasedTests) {
+                    state.userData.purchasedTests = [];
+                }
+                state.userData.purchasedTests.push(action.payload);
+                localStorage.setItem("userData", JSON.stringify(state.userData));
+            }
         }
     },
     extraReducers: (builder) => {
@@ -118,5 +128,5 @@ const userSlice = createSlice({
 });
 
 // ✅ EXPORT the new action
-export const { setUserData, logoutUser, clearMyMockTestsStatus } = userSlice.actions;
+export const { setUserData, logoutUser, clearMyMockTestsStatus, addPurchasedTest } = userSlice.actions;
 export default userSlice.reducer;

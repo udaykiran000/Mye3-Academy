@@ -14,8 +14,6 @@ import {
   Home,
   ClipboardList,
   Zap,
-  ShoppingBag,
-  ShoppingCart,
 } from "lucide-react";
 
 import { logoutUser } from "../redux/userSlice";
@@ -28,7 +26,6 @@ const Navbar = () => {
   const location = useLocation();
 
   const { userData } = useSelector((state) => state.user);
-  const { cartItems } = useSelector((state) => state.cart);
   const { items: categories } = useSelector((state) => state.category);
   const { filters } = useSelector((state) => state.students);
 
@@ -223,20 +220,7 @@ const Navbar = () => {
                 >
                   Grand Tests
                 </Link>
-                {/* Cart lives next to nav links */}
-                {role === "student" && (
-                  <Link
-                    to="/cart"
-                    className="relative p-1 text-slate-600 hover:text-indigo-600 transition-colors"
-                  >
-                    <ShoppingCart size={20} />
-                    {cartItems.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border border-white">
-                        {cartItems.length}
-                      </span>
-                    )}
-                  </Link>
-                )}
+
               </div>
 
               {/* === RIGHT: Actions === */}
