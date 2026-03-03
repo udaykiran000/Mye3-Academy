@@ -25,14 +25,15 @@ const syncTestStats = (test) => {
   const subjectMap = {};
   test.questions.forEach(q => {
     if (q.category) {
-      const name = q.category.trim().toLowerCase();
+      // Preserve original casing from the last entered question for that category
+      const name = q.category.trim();
       subjectMap[name] = (subjectMap[name] || 0) + 1;
     }
   });
 
   const existingMap = {};
   (test.subjects || []).forEach(s => { if (s.name) existingMap[s.name] = s; });
-  
+
   test.subjects = Object.entries(subjectMap).map(([name, count]) => ({
     name,
     easy: existingMap[name]?.easy ?? count,
@@ -89,6 +90,11 @@ export const addQuestion = async (req, res) => {
 
     // Remove invalid fields that embed schema doesn't need
     delete questionData._id;
+
+    // Update test-level duration if provided
+    if (req.body.durationMinutes && Number(req.body.durationMinutes) > 0) {
+      test.durationMinutes = Number(req.body.durationMinutes);
+    }
 
     test.questions.push(questionData);
     syncTestStats(test);
@@ -197,7 +203,7 @@ export const bulkUploadQuestions = async (req, res) => {
     console.log("🔍 Headers:", req.headers['content-type']);
     console.log("🔍 req.file:", req.file);
     console.log("🔍 req.body keys:", Object.keys(req.body));
-    
+
     const filePath = req.file?.path;
     if (!filePath) {
       console.error("❌ No file found in request. Check field name and middleware.");
@@ -225,7 +231,11 @@ export const bulkUploadQuestions = async (req, res) => {
     const firstRow = parsedRows[0] || {};
     const rawKeys = Object.keys(firstRow);
     console.log("🔍 CSV Column Headers (raw):", rawKeys);
-    
+
+    // Global marks/negative from frontend form — override per-row CSV values
+    const globalMarks = Number(req.body.marks) > 0 ? Number(req.body.marks) : null;
+    const globalNegative = req.body.negative !== undefined && req.body.negative !== "" ? Number(req.body.negative) : null;
+
     for (const row of parsedRows) {
       // Normalize column keys: remove ALL spaces, dots, underscores, dashes → lowercase
       const clean = {};
@@ -237,41 +247,37 @@ export const bulkUploadQuestions = async (req, res) => {
       console.log("📝 Normalized keys:", Object.keys(clean));
 
       // FLEXIBLE FIELD DETECTION — try many possible column name patterns
-      const title = 
+      const title =
         clean.question || clean.questiontext || clean.qtext || clean.title ||
         clean.q || clean.ques || clean.questiontitle || clean.stmt ||
         // fallback: find any key that contains "question" or "q"
         Object.entries(clean).find(([k]) => k.includes("question"))?.[1] ||
         Object.entries(clean).find(([k]) => k.startsWith("q") && clean[k]?.length > 10)?.[1];
 
-      const sub = 
-        clean.subject || clean.category || clean.subjectname || clean.sub || 
+      const sub =
+        clean.subject || clean.category || clean.subjectname || clean.sub ||
         clean.section || clean.topic || "general"; // default to general if no subject column
-      
+
       const optionA = clean.optionatext || clean.optiona || clean.opta || clean.a || clean.option1 || clean.ans1 || clean.opt1 || clean.choice1 || "";
       const optionB = clean.optionbtext || clean.optionb || clean.optb || clean.b || clean.option2 || clean.ans2 || clean.opt2 || clean.choice2 || "";
       const optionC = clean.optionctext || clean.optionc || clean.optc || clean.c || clean.option3 || clean.ans3 || clean.opt3 || clean.choice3 || "";
       const optionD = clean.optiondtext || clean.optiond || clean.optd || clean.d || clean.option4 || clean.ans4 || clean.opt4 || clean.choice4 || "";
-      
-      const correctIdx = clean.correctindex || clean.correct || clean.answer || 
+
+      const correctIdx = clean.correctindex || clean.correct || clean.answer ||
         clean.answerindex || clean.correctoption || clean.key || clean.ans || "0";
-      
+
       const diff = (clean.level || clean.difficulty || clean.diff || clean.complexity || "easy").toLowerCase();
 
-      console.log(`  → title: "${title?.substring(0,30)}" | sub: "${sub}" | A:"${optionA}" B:"${optionB}"`);
+      console.log(`  → title: "${title?.substring(0, 30)}" | sub: "${sub}" | A:"${optionA}" B:"${optionB}"`);
 
       if (!title) {
         console.log("  ⚠️ Skipping row (no title found)");
         continue;
       }
 
-      // Global marks/negative from frontend form — override per-row CSV values
-      const globalMarks = Number(req.body.marks) > 0 ? Number(req.body.marks) : null;
-      const globalNegative = req.body.negative !== undefined && req.body.negative !== "" ? Number(req.body.negative) : null;
-
       validQuestions.push({
         title,
-        category: sub.toLowerCase().trim(),
+        category: sub.trim(),
         questionType: "mcq",
         difficulty: diff,
         marks: globalMarks ?? (Number(clean.marks) || Number(test.marksPerQuestion) || 1),
@@ -299,17 +305,20 @@ export const bulkUploadQuestions = async (req, res) => {
 
     test.questions.push(...validQuestions);
 
-    // ✅ Sync test-level marking scheme if global values were provided
+    // ✅ Sync test-level duration and marking scheme if global values were provided
+    if (req.body.durationMinutes && Number(req.body.durationMinutes) > 0) {
+      test.durationMinutes = Number(req.body.durationMinutes);
+    }
     if (globalNegative !== null) test.negativeMarking = globalNegative;
 
     syncTestStats(test);
-    
+
     try {
       await test.save();
     } catch (saveErr) {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      return res.status(400).json({ 
-        success: false, 
+      return res.status(400).json({
+        success: false,
         message: "Database Validation Failed: " + (Object.values(saveErr.errors || {}).map(e => e.message).join(", ") || saveErr.message)
       });
     }
@@ -364,7 +373,7 @@ export const deleteQuestion = async (req, res) => {
     await test.save();
 
     // Also delete from standalone Question collection if it exists there (backwards compat)
-    await Question.findByIdAndDelete(qId).catch(() => {});
+    await Question.findByIdAndDelete(qId).catch(() => { });
 
     res.status(200).json({ success: true, message: "Question deleted successfully" });
   } catch (err) {

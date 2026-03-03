@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchStudentProfile } from "../../redux/studentSlice";
 import api from "../../api/axios";
@@ -88,24 +88,25 @@ const StuSidebar = ({ activeTab, setActiveTab }) => {
     >
       {/* BRAND SECTION */}
       <div className="px-6 py-8 flex items-center gap-4">
-        <div 
-            onClick={() => setIsPinned(!isPinned)}
-            className="shrink-0 w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg cursor-pointer hover:rotate-6 transition-transform"
+        <Link
+          to="/"
+          className="shrink-0 w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg cursor-pointer hover:rotate-6 transition-transform"
         >
-            <GraduationCap size={24} strokeWidth={2.5} />
-        </div>
+          <GraduationCap size={24} strokeWidth={2.5} />
+        </Link>
         <AnimatePresence>
-            {expandedSidebar && (
-                <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    className="overflow-hidden whitespace-nowrap"
-                >
-                    <h2 className="text-xl font-black text-slate-800 tracking-tighter italic">Mye3</h2>
-                    <p className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] leading-none mt-0.5">Student Dashboard</p>
-                </motion.div>
-            )}
+          {expandedSidebar && (
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              className="overflow-hidden whitespace-nowrap cursor-pointer"
+              onClick={() => navigate("/")}
+            >
+              <h2 className="text-xl font-black text-slate-800 tracking-tighter italic">Mye3</h2>
+              <p className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] leading-none mt-0.5">Student Dashboard</p>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
@@ -128,25 +129,25 @@ const StuSidebar = ({ activeTab, setActiveTab }) => {
                 `}
               >
                 {isActive && (
-                  <motion.div 
+                  <motion.div
                     layoutId="active-pill-stu"
-                    className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1.5 bg-blue-600 rounded-r-full shadow-sm" 
+                    className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1.5 bg-blue-600 rounded-r-full shadow-sm"
                   />
                 )}
-                
+
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="shrink-0 relative z-10" />
-                
+
                 <AnimatePresence>
-                    {expandedSidebar && (
-                        <motion.span 
-                            initial={{ opacity: 0, x: -5 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -5 }}
-                            className="text-[14px] font-bold whitespace-nowrap overflow-hidden"
-                        >
-                            {m.label}
-                        </motion.span>
-                    )}
+                  {expandedSidebar && (
+                    <motion.span
+                      initial={{ opacity: 0, x: -5 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -5 }}
+                      className="text-[14px] font-bold whitespace-nowrap overflow-hidden"
+                    >
+                      {m.label}
+                    </motion.span>
+                  )}
                 </AnimatePresence>
               </div>
             </div>
@@ -156,20 +157,20 @@ const StuSidebar = ({ activeTab, setActiveTab }) => {
 
       {/* FOOTER */}
       <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
-        <button 
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className={`
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className={`
                 flex items-center gap-4 px-4 py-3 rounded-2xl transition-all group w-full
                 ${expandedSidebar ? "bg-rose-50 text-rose-600 shadow-sm border border-rose-100" : "text-slate-500 hover:text-rose-600 hover:bg-rose-50"}
             `}
         >
-            <LogOut size={20} className="shrink-0" />
-            {expandedSidebar && (
-                <span className="text-[13px] font-bold whitespace-nowrap">
-                    {isLoggingOut ? "Signing out..." : "Secure Logout"}
-                </span>
-            )}
+          <LogOut size={20} className="shrink-0" />
+          {expandedSidebar && (
+            <span className="text-[13px] font-bold whitespace-nowrap">
+              {isLoggingOut ? "Signing out..." : "Secure Logout"}
+            </span>
+          )}
         </button>
       </div>
     </motion.div>
@@ -178,7 +179,7 @@ const StuSidebar = ({ activeTab, setActiveTab }) => {
   return (
     <>
       <div className="md:hidden fixed top-0 left-0 w-full p-4 bg-white/95 backdrop-blur-md z-50 flex justify-between items-center shadow-sm border-b border-slate-100">
-        <h1 className="text-xl font-black text-blue-600 italic">Mye3</h1>
+        <Link to="/" className="text-xl font-black text-blue-600 italic">Mye3</Link>
         <Menu
           className="text-slate-600 cursor-pointer"
           onClick={() => setIsMobileOpen(true)}
@@ -206,7 +207,7 @@ const StuSidebar = ({ activeTab, setActiveTab }) => {
               className="fixed left-0 top-0 h-screen z-[160] md:hidden w-[280px]"
             >
               <div className="h-full bg-white relative">
-                <button 
+                <button
                   onClick={() => setIsMobileOpen(false)}
                   className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 z-[170]"
                 >

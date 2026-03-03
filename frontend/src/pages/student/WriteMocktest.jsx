@@ -200,18 +200,16 @@ const QuestionRenderer = ({ question, answers, handleAnswer }) => {
             <button
               key={idx}
               onClick={() => handleAnswer(qId, "mcq", idx)}
-              className={`w-full text-left p-4 rounded-lg flex items-center space-x-4 transition-all duration-150 border-2 ${
-                chosen
+              className={`w-full text-left p-4 rounded-lg flex items-center space-x-4 transition-all duration-150 border-2 ${chosen
                   ? "bg-cyan-100 border-cyan-500 shadow-md"
                   : "bg-white border-gray-300 hover:bg-gray-50"
-              }`}
+                }`}
             >
               <span
-                className={`w-6 h-6 flex items-center justify-center rounded-full font-bold text-sm flex-shrink-0 ${
-                  chosen
+                className={`w-6 h-6 flex items-center justify-center rounded-full font-bold text-sm flex-shrink-0 ${chosen
                     ? "bg-cyan-600 text-white"
                     : "bg-gray-200 text-gray-600"
-                }`}
+                  }`}
               >
                 {optionLabel}
               </span>
@@ -253,9 +251,9 @@ const QuestionRenderer = ({ question, answers, handleAnswer }) => {
         <span>
           Negative:{" "}
           <strong className="text-red-500">
-            {question.globalNegative !== undefined && question.globalNegative > 0 
-                ? question.globalNegative 
-                : (question.negative || 0)}
+            {question.globalNegative !== undefined && question.globalNegative > 0
+              ? question.globalNegative
+              : (question.negative || 0)}
           </strong>
         </span>
       </div>
@@ -273,6 +271,8 @@ const QuestionNavigationPanel = ({
   answers,
   isMobile,
   onClose,
+  expiryTimestamp,
+  onTimeUp,
 }) => {
   const getQuestionStatus = (qid) => {
     const answer = answers[qid];
@@ -317,6 +317,13 @@ const QuestionNavigationPanel = ({
           </button>
         )}
       </h3>
+      {/* Exam Lockdown: Timer relocated from header to sidebar */}
+      <div className="mb-4">
+        <Timer
+          expiryTimestamp={expiryTimestamp}
+          onTimeUp={onTimeUp}
+        />
+      </div>
       <div className="grid grid-cols-2 gap-2 text-xs font-medium mb-4 p-3 bg-white rounded-lg shadow-sm">
         <div className="flex items-center">
           <span className="w-4 h-4 rounded-full bg-green-500 mr-2 flex-shrink-0"></span>
@@ -565,7 +572,7 @@ const WriteMocktest = () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("blur", handleBlur);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* --- LOAD ATTEMPT --- */
@@ -574,10 +581,10 @@ const WriteMocktest = () => {
       try {
         const { data } = await api.get(`/api/student/attempt/${attemptId}`);
         if (data.success && data.attempt) {
-            setAttempt(data.attempt);
+          setAttempt(data.attempt);
         } else {
-            // Fallback for older structure or errors
-            setAttempt(data);
+          // Fallback for older structure or errors
+          setAttempt(data);
         }
 
         // ✅ ACCESS CONTROL LOGIC:
@@ -698,20 +705,18 @@ const WriteMocktest = () => {
           <div className="bg-white w-full max-w-sm mx-4 p-8 text-center shadow-2xl border-t-4 border-red-500">
             <div className="text-5xl mb-4">⚠️</div>
             <h2 className="text-lg font-black text-red-600 uppercase tracking-widest mb-2">
-              Tab Switch Detected!
+              Security Protocol Active
             </h2>
             <p className="text-[13px] text-slate-600 mb-1">
-              Switching tabs or windows is <strong>not allowed</strong> during the exam.
+              Switching tabs or exiting fullscreen is monitored.
             </p>
             <p className="text-[11px] text-red-500 font-bold mb-6">
-              Violation {tabViolations} / {MAX_VIOLATIONS} — Auto-submit at {MAX_VIOLATIONS} violations.
+              Warning {tabViolations} / {MAX_VIOLATIONS}
             </p>
             <button
               onClick={enterFullscreen}
-              className="w-full py-3 bg-[#21b731] text-white text-[11px] font-black uppercase tracking-widest hover:bg-[#1a9227] transition-colors"
-            >
-              Return to Exam (Fullscreen)
-            </button>
+              className="w-full py-3 bg-[#21b731] text-white text-[11px] font-black uppercase tracking-widest hover:bg-[#1a9227] transition-colors shadow-lg"
+            >Continue Exam</button>
           </div>
         </div>
       )}
@@ -772,73 +777,29 @@ const WriteMocktest = () => {
         </div>
       )}
 
-      {/* HEADER */}
-      <header className="fixed top-0 left-0 right-0 z-20 bg-white shadow-sm border-b border-gray-200">
-        <div className="flex items-center justify-between px-4 py-2.5 sm:px-6">
-
-          {/* LEFT: Logo + Test Name */}
-          <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setIsNavOpen(true)} className="lg:hidden p-1.5 text-gray-600 hover:bg-gray-100">
-              <Menu size={22} />
-            </button>
-            <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-              <div className="bg-indigo-600 p-1.5">
-                <span className="text-white text-xs font-black">M3</span>
-              </div>
-              <span className="hidden sm:block text-[11px] font-black text-slate-700 uppercase tracking-widest">MYE3 Academy</span>
-            </Link>
-            <div className="hidden md:block h-4 w-px bg-slate-200" />
-            <span className="hidden md:block text-[11px] font-bold text-slate-500 truncate max-w-[220px]">
-              {attempt.mocktestId?.title || "Mock Test"}
-            </span>
-          </div>
-
-          {/* CENTER: Timer */}
-          <div className="absolute left-1/2 -translate-x-1/2">
-            <Timer
-              expiryTimestamp={new Date(endsAt).getTime()}
-              onTimeUp={handleTimeUp}
-            />
-          </div>
-
-          {/* RIGHT: Dashboard + Profile */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <button
-              onClick={() => { exitFullscreen(); navigate("/student-dashboard"); }}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-colors"
-            >
-              <Home size={12} /> Dashboard
-            </button>
-            <div className="w-8 h-8 bg-indigo-100 flex items-center justify-center text-indigo-600 font-black text-xs overflow-hidden">
-              {userData?.profilePicture ? (
-                <img src={userData.profilePicture} alt="User" className="w-full h-full object-cover" />
-              ) : (
-                userData?.firstname?.charAt(0).toUpperCase() || "U"
-              )}
-            </div>
-          </div>
-
-        </div>
-      </header>
-
-      {/* CONTENT */}
-      <div className="flex flex-grow overflow-hidden pt-[60px]">
+      {/* CONTENT: pt-[60px] removed to hide the header space */}
+      <div className="flex flex-grow overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="sticky top-0 z-10 bg-white p-4 shadow-sm flex flex-col sm:flex-row justify-between items-center border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-cyan-700 mb-2 sm:mb-0">
-              Question {questionNumber} of {totalQuestionCount}
-              <span className="text-gray-500 ml-4 font-normal text-sm">
-                ({totalAnswered} Answered)
-              </span>
-            </h2>
-            <div className="relative w-full sm:w-auto">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1 mb-1 self-start">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">LIVE EXAMINATION</span>
+              </div>
+              <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight">
+                Question {questionNumber} of {totalQuestionCount}
+                <span className="text-slate-400 ml-4 font-bold text-sm">
+                  ({totalAnswered} Answered)
+                </span>
+              </h2>
+            </div>
+            <div className="relative w-full sm:w-auto mt-2 sm:mt-0">
               <select
                 value={selectedSubject}
                 onChange={(e) => {
                   setSelectedSubject(e.target.value);
                   setCurrentIndex(0);
                 }}
-                className="block w-full sm:w-48 px-3 py-2 border border-gray-300 bg-white rounded-lg shadow-sm focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                className="block w-full sm:w-48 px-3 py-2 border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-slate-500 focus:border-slate-500 text-[11px] font-black uppercase tracking-widest"
               >
                 <option value="all">All Sections</option>
                 {subjects.slice(1).map((s) => (
@@ -852,13 +813,19 @@ const WriteMocktest = () => {
 
           <div className="p-4 sm:p-6 overflow-y-auto flex-grow custom-scrollbar">
             {current && (current.id || current._id) ? (
-              <div className="bg-white p-6 rounded-xl shadow-lg">
+              <div className="bg-white p-6 shadow-sm border border-slate-200 flex flex-col">
+                <div className="lg:hidden mb-4">
+                  <Timer
+                    expiryTimestamp={new Date(endsAt).getTime()}
+                    onTimeUp={handleTimeUp}
+                  />
+                </div>
                 <QuestionRenderer
                   question={{
                     ...current,
-                    marksPerQuestion: attempt.totalQuestions > 0 
-                        ? (attempt.totalMarks / attempt.totalQuestions).toFixed(1).replace(/\.0$/, '') 
-                        : current.marks,
+                    marksPerQuestion: attempt.totalQuestions > 0
+                      ? (attempt.totalMarks / attempt.totalQuestions).toFixed(1).replace(/\.0$/, '')
+                      : current.marks,
                     globalNegative: attempt.negativeMarking
                   }}
                   answers={answers}
@@ -866,7 +833,7 @@ const WriteMocktest = () => {
                 />
               </div>
             ) : (
-              <div className="text-center p-10 bg-white rounded-xl shadow-lg text-gray-500">
+              <div className="text-center p-10 bg-white border border-slate-200 text-gray-400 font-bold uppercase text-[11px] tracking-widest">
                 {filteredQuestions.length === 0
                   ? "No questions match the current subject filter."
                   : "No questions found in this section or test."}
@@ -874,14 +841,14 @@ const WriteMocktest = () => {
             )}
           </div>
 
-          {/* ── BOTTOM NAV BAR: Only Prev / Next ── */}
-          <div className="sticky bottom-0 z-10 bg-white px-4 py-3 shadow-t-lg border-t border-gray-200 flex justify-center items-center gap-3">
+          {/* ── BOTTOM NAV BAR ── */}
+          <div className="sticky bottom-0 z-10 bg-white px-4 py-3 border-t border-slate-200 flex justify-center items-center gap-3">
             <button
               disabled={currentIndex === 0 || filteredQuestions.length === 0}
               onClick={() => setCurrentIndex((i) => i - 1)}
-              className="px-5 py-2.5 flex items-center bg-gray-200 text-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-300 transition-colors font-semibold"
+              className="px-6 py-3 flex items-center bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-30 disabled:grayscale transition-colors font-black uppercase text-[10px] tracking-widest"
             >
-              <ChevronLeft className="h-5 w-5 mr-1" /> Previous
+              <ChevronLeft className="h-4 w-4 mr-2" /> Previous
             </button>
             <button
               disabled={
@@ -889,14 +856,14 @@ const WriteMocktest = () => {
                 filteredQuestions.length === 0
               }
               onClick={() => setCurrentIndex((i) => i + 1)}
-              className="px-5 py-2.5 flex items-center bg-cyan-600 text-white rounded-lg disabled:opacity-50 hover:bg-cyan-700 transition-colors font-semibold"
+              className="px-6 py-3 flex items-center bg-cyan-600 text-white hover:bg-cyan-700 disabled:opacity-30 disabled:grayscale transition-colors font-black uppercase text-[10px] tracking-widest"
             >
-              Next <ChevronRight className="h-5 w-5 ml-1" />
+              Next <ChevronRight className="h-4 w-4 ml-2" />
             </button>
           </div>
         </div>
 
-        <aside className="hidden lg:flex flex-col w-72 flex-shrink-0 border-l border-gray-200">
+        <aside className="hidden lg:flex flex-col w-72 flex-shrink-0 border-l border-slate-200 bg-slate-50/30">
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             <QuestionNavigationPanel
               questions={navigationQuestions}
@@ -904,21 +871,22 @@ const WriteMocktest = () => {
               setCurrentIndex={setCurrentIndex}
               answers={answers}
               isMobile={false}
+              expiryTimestamp={new Date(endsAt).getTime()}
+              onTimeUp={handleTimeUp}
             />
           </div>
           {/* ── FINAL SUBMIT pinned at bottom of sidebar ── */}
-          <div className="border-t border-gray-200 p-4 flex-shrink-0 bg-gray-50">
+          <div className="border-t border-slate-200 p-4 flex-shrink-0 bg-white">
             <button
               onClick={() => handleSubmit(false)}
               disabled={isSubmitting}
-              className={`w-full py-3 flex items-center justify-center gap-2 font-bold rounded-xl transition-all shadow-lg active:scale-95 ${
-                isSubmitting
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              className={`w-full py-4 flex items-center justify-center gap-2 font-black uppercase text-xs tracking-widest transition-all active:scale-95 shadow-lg ${isSubmitting
+                  ? "bg-slate-300 text-slate-500 cursor-not-allowed"
                   : "bg-green-600 text-white hover:bg-green-700"
-              }`}
+                }`}
             >
               {isSubmitting ? (
-                <><SimpleSpinner size={18} color="#fff" /> Submitting...</>
+                <><SimpleSpinner size={18} color="#fff" /> PROCESSING...</>
               ) : (
                 <><CheckCircle className="h-5 w-5" /> Final Submit</>
               )}
@@ -937,6 +905,8 @@ const WriteMocktest = () => {
               answers={answers}
               isMobile={true}
               onClose={() => setIsNavOpen(false)}
+              expiryTimestamp={new Date(endsAt).getTime()}
+              onTimeUp={handleTimeUp}
             />
           </div>
         </div>

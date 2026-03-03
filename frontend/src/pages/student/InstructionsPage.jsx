@@ -1,7 +1,7 @@
 // frontend/src/pages/student/InstructionsPage.jsx
 
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams, Navigate } from "react-router-dom";
+import { useNavigate, useParams, Navigate, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import {
   fetchMyMockTests,
@@ -46,12 +46,12 @@ const InstructionsPage = () => {
         console.log("📡 FETCHING DETAILS FOR:", id);
         const { data } = await api.get(`/api/public/mocktests/${id}`);
         console.log("✅ FETCH SUCCESS:", data);
-        
+
         if (data.success && data.test) {
-            setTest(data.test);
+          setTest(data.test);
         } else {
-            console.error("❌ INVALID DATA:", data);
-            setFetchError(true);
+          console.error("❌ INVALID DATA:", data);
+          setFetchError(true);
         }
       } catch (error) {
         console.error("❌ AXIOS ERROR:", error);
@@ -62,18 +62,18 @@ const InstructionsPage = () => {
     };
 
     if (mocktestId) {
-        // 1. First try to find in Redux store (if available)
-        const foundInStore = myMockTests?.find((t) => t._id === mocktestId);
-        
-        if (foundInStore) {
-            console.log("✅ FOUND IN STORE:", foundInStore.title);
-            setTest(foundInStore);
-        } 
-        // 2. If not in store, and store is not loading, fetch from API
-        else if (myMockTestsStatus !== "loading") {
-            console.log("⚠️ NOT IN STORE, FETCHING API...");
-            fetchTestDetails(mocktestId);
-        }
+      // 1. First try to find in Redux store (if available)
+      const foundInStore = myMockTests?.find((t) => t._id === mocktestId);
+
+      if (foundInStore) {
+        console.log("✅ FOUND IN STORE:", foundInStore.title);
+        setTest(foundInStore);
+      }
+      // 2. If not in store, and store is not loading, fetch from API
+      else if (myMockTestsStatus !== "loading") {
+        console.log("⚠️ NOT IN STORE, FETCHING API...");
+        fetchTestDetails(mocktestId);
+      }
     }
   }, [myMockTestsStatus, myMockTests, mocktestId]);
 
@@ -126,17 +126,17 @@ const InstructionsPage = () => {
   }
 
   if (fetchError) {
-      return (
-        <div className="flex flex-col justify-center items-center h-[90vh] bg-slate-50">
-          <AlertCircle size={40} className="text-red-500" />
-          <p className="mt-4 text-slate-500 font-medium">
-            Unable to load test details. Please try again later.
-          </p>
-          <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-            Retry
-          </button>
-        </div>
-      );
+    return (
+      <div className="flex flex-col justify-center items-center h-[90vh] bg-slate-50">
+        <AlertCircle size={40} className="text-red-500" />
+        <p className="mt-4 text-slate-500 font-medium">
+          Unable to load test details. Please try again later.
+        </p>
+        <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          Retry
+        </button>
+      </div>
+    );
   }
 
   if (
@@ -161,162 +161,165 @@ const InstructionsPage = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] py-12 px-4 mt-8">
-      <div className="max-w-4xl mx-auto">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors mb-5"
-        >
-          <ArrowLeft size={12} /> Go Back
-        </button>
-
-        {/* HEADER SECTION */}
-        <div className="bg-white border border-slate-200 rounded-lg p-6 mb-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="bg-blue-100 p-2 rounded">
-              <FileText className="text-blue-600" size={24} />
+      <div className="max-w-3xl mx-auto">
+        <div className="flex justify-between items-center mb-5">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors"
+          >
+            <ArrowLeft size={12} /> Go Back
+          </button>
+          <Link
+            to="/"
+            className="flex items-center gap-1.5 font-black text-sm italic tracking-tighter text-slate-700 hover:text-blue-600 transition-colors"
+          >
+            <div className="bg-blue-600 p-1">
+              <GraduationCap className="text-white w-3 h-3" strokeWidth={3} />
             </div>
-            <h1 className="text-2xl font-bold text-slate-800">{title}</h1>
+            Mye3 Academy
+          </Link>
+        </div>
+
+        {/* HEADER SECTION — SHARP */}
+        <div className="bg-white border border-slate-200 p-4 mb-4 shadow-sm">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="bg-blue-600 p-1.5">
+              <FileText className="text-white" size={20} />
+            </div>
+            <h1 className="text-xl font-bold text-slate-800 uppercase tracking-tight">{title}</h1>
           </div>
-          <p className="text-slate-500 text-sm ml-11">
-            Please read all instructions carefully before starting the
-            examination.
+          <p className="text-slate-500 text-[11px] ml-10">
+            Please read all instructions carefully before starting the examination.
           </p>
         </div>
 
-        {/* ATTEMPT INFO ALERT */}
+        {/* ATTEMPT INFO ALERT — SHARP */}
         {test.price > 0 && (
           <div
-            className={`mb-6 p-4 rounded-lg border flex items-center gap-4 ${
-              isPurchaseRequired
-                ? "bg-red-50 border-red-200 text-red-700"
-                : "bg-blue-50 border-blue-200 text-blue-700"
-            }`}
+            className={`mb-4 p-3 border flex items-center gap-4 ${isPurchaseRequired
+              ? "bg-red-50 border-red-200 text-red-700"
+              : "bg-blue-50 border-blue-200 text-blue-700"
+              }`}
           >
-            <AlertCircle size={20} />
-            <div className="text-sm">
-              <span className="font-bold">Attempt Policy:</span> You have used{" "}
+            <AlertCircle size={18} />
+            <div className="text-[11px]">
+              <span className="font-bold uppercase tracking-wide">Attempt Policy:</span> You have used{" "}
               <strong>{test.attemptsMade || 0}</strong> of{" "}
-              <strong>{test.maxAttempts || 1}</strong> allowed attempts.
+              <strong>{test.maxAttempts || 1}</strong> consumed.
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* STATS TILES */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* STATS TILES — SHARP */}
           {[
             {
               label: "Questions",
               value: totalQuestions,
               icon: HelpCircle,
-              color: "text-orange-500",
+              color: "text-orange-600",
             },
             {
               label: "Time Limit",
-              value: test.durationMinutes > 0 
-                ? `${test.durationMinutes} Mins` 
+              value: test.durationMinutes > 0
+                ? `${test.durationMinutes} Mins`
                 : (test.totalQuestions > 0 ? `${test.totalQuestions * 2} Mins` : "—"),
               icon: Clock,
-              color: "text-blue-500",
+              color: "text-blue-600",
             },
             {
               label: "Max Marks",
               value: totalMarks,
               icon: BarChart2,
-              color: "text-emerald-500",
+              color: "text-emerald-600",
             },
           ].map((item, idx) => (
             <div
               key={idx}
-              className="bg-white border border-slate-200 rounded-lg p-5 flex items-center gap-4"
+              className="bg-white border border-slate-200 p-4 flex items-center gap-3 shadow-sm"
             >
-              <item.icon className={item.color} size={28} />
+              <item.icon className={item.color} size={24} />
               <div>
-                <p className="text-xs font-bold text-slate-400 uppercase">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                   {item.label}
                 </p>
-                <p className="text-lg font-bold text-slate-800">{item.value}</p>
+                <p className="text-base font-black text-slate-800">{item.value}</p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* MAIN CONTENT CARD */}
-        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm mb-8">
-          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-            <h2 className="font-bold text-slate-700 flex items-center gap-2">
-              <Info size={18} className="text-slate-400" /> Exam Guidelines
+        {/* MAIN CONTENT CARD — SHARP */}
+        <div className="bg-white border border-slate-200 shadow-sm mb-6 overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50">
+            <h2 className="font-black text-slate-700 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
+              <Info size={16} className="text-slate-400" /> Exam Guidelines
             </h2>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="p-5 space-y-6">
             <section>
-              <h3 className="text-sm font-bold text-slate-800 mb-2">
+              <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest mb-2">
                 Description
               </h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
+              <p className="text-slate-600 text-xs leading-relaxed font-medium">
                 {description ||
                   "General mock test instructions apply to this examination."}
               </p>
             </section>
 
-            <section className="grid md:grid-cols-2 gap-4">
+            <section className="grid md:grid-cols-2 gap-6 border-t border-slate-50 pt-6">
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-800">
+                <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">
                   Rules & Regulations
                 </h3>
-                <ul className="text-xs text-slate-600 space-y-2">
-                  <li className="flex gap-2">
-                    <span>•</span> Ensure stable internet connection.
+                <ul className="text-[10px] text-slate-500 space-y-2 font-bold uppercase tracking-tight">
+                  <li className="flex gap-2 items-start">
+                    <span className="w-1.5 h-1.5 bg-blue-600 mt-1 shrink-0"></span> Stable internet required.
                   </li>
-                  <li className="flex gap-2">
-                    <span>•</span> Do not refresh or close the browser tab.
+                  <li className="flex gap-2 items-start">
+                    <span className="w-1.5 h-1.5 bg-blue-600 mt-1 shrink-0"></span> Refreshing will end attempt.
                   </li>
-                  <li className="flex gap-2">
-                    <span>•</span> The timer will not stop once started.
+                  <li className="flex gap-2 items-start">
+                    <span className="w-1.5 h-1.5 bg-blue-600 mt-1 shrink-0"></span> Timer keeps running.
                   </li>
                 </ul>
               </div>
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-800">
+                <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest">
                   Marking Scheme
                 </h3>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-emerald-50 p-2 rounded border border-emerald-100">
-                    <p className="text-[10px] font-bold text-emerald-600 uppercase">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-emerald-50 p-2 border border-emerald-100">
+                    <p className="text-[9px] font-black text-emerald-600 uppercase mb-0.5">
                       Correct
                     </p>
-                    <p className="text-sm font-bold text-emerald-700">
-                      +{test.marksPerQuestion || (totalQuestions > 0 ? (totalMarks / totalQuestions).toFixed(1).replace(/\.0$/, '') : 1)}
+                    <p className="text-xs font-black text-emerald-700">
+                      +{test.marksPerQuestion || 1} M
                     </p>
                   </div>
-                  <div className="bg-red-50 p-2 rounded border border-red-100">
-                    <p className="text-[10px] font-bold text-red-600 uppercase">
+                  <div className="bg-red-50 p-2 border border-red-100">
+                    <p className="text-[9px] font-black text-red-600 uppercase mb-0.5">
                       Wrong
                     </p>
-                    <p className="text-sm font-bold text-red-700">
-                      -{test.negativeMarking || 0}
+                    <p className="text-xs font-black text-red-700">
+                      -{test.negativeMarking || 0} M
                     </p>
-                  </div>
-                  <div className="bg-slate-50 p-2 rounded border border-slate-200">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase">
-                      Skip
-                    </p>
-                    <p className="text-sm font-bold text-slate-700">0</p>
                   </div>
                 </div>
               </div>
             </section>
 
             {subjects?.length > 0 && (
-              <section className="pt-4 border-t border-slate-100">
-                <h3 className="text-sm font-bold text-slate-800 mb-3">
+              <section className="pt-5 border-t border-slate-100">
+                <h3 className="text-[10px] font-black text-slate-800 uppercase tracking-widest mb-3">
                   Included Sections
                 </h3>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {subjects.map((s, i) => (
                     <span
                       key={i}
-                      className="px-3 py-1 bg-slate-100 text-slate-600 rounded text-xs font-medium border border-slate-200"
+                      className="px-3 py-1.5 bg-slate-100 text-slate-700 text-[9px] font-black uppercase tracking-widest border border-slate-200"
                     >
                       {s.name}
                     </span>
@@ -327,46 +330,44 @@ const InstructionsPage = () => {
           </div>
         </div>
 
-        {/* ACTION BUTTON AREA */}
+        {/* ACTION BUTTON AREA — SHARP */}
         <div className="text-center space-y-4">
           {isPurchaseRequired ? (
             <button
               onClick={() => navigate(`/mocktests/${mocktestId}`)}
-              className="w-full md:w-80 bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-md shadow-md transition-all flex items-center justify-center gap-2 mx-auto"
+              className="w-full md:w-72 bg-red-600 hover:bg-red-700 text-white font-black py-3.5 shadow-md transition-all flex items-center justify-center gap-2 mx-auto uppercase tracking-widest text-[11px]"
             >
-              <Zap size={18} /> Buy New Attempt
+              <Zap size={16} /> Buy New Attempt
             </button>
           ) : isCompleted ? (
             <button
               onClick={() =>
                 navigate(`/student/report/${test.latestAttemptId}`)
               }
-              className="w-full md:w-80 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-md shadow-md transition-all flex items-center justify-center gap-2 mx-auto"
+              className="w-full md:w-72 bg-indigo-900 hover:bg-black text-white font-black py-3.5 shadow-md transition-all flex items-center justify-center gap-2 mx-auto uppercase tracking-widest text-[11px]"
             >
-              <BarChart2 size={18} /> View Performance Report
+              <BarChart2 size={16} /> View Analytics Report
             </button>
           ) : (
             <button
               onClick={handleStartTest}
               disabled={loading}
-              className={`w-full md:w-80 font-bold py-3.5 rounded-md shadow-md transition-all flex items-center justify-center gap-2 mx-auto ${
-                isInProgress
-                  ? "bg-orange-600 hover:bg-orange-700"
-                  : "bg-blue-600 hover:bg-blue-700"
-              } text-white disabled:bg-slate-300`}
+              className={`w-full md:w-72 font-black py-3.5 shadow-md transition-all flex items-center justify-center gap-2 mx-auto uppercase tracking-widest text-[11px] ${isInProgress
+                ? "bg-amber-600 hover:bg-amber-700"
+                : "bg-blue-600 hover:bg-blue-700"
+                } text-white disabled:bg-slate-300`}
             >
               {loading ? (
-                <ClipLoader size={18} color="#fff" />
+                <ClipLoader size={16} color="#fff" />
               ) : (
-                <Play size={18} />
+                <Play size={16} fill="white" />
               )}
-              {isInProgress ? "Resume Examination" : "Start Examination Now"}
+              {isInProgress ? "Resume Examination" : "Start Examination"}
             </button>
           )}
 
-          <p className="text-xs text-slate-400 font-medium">
-            Note: System will automatically submit the test when the timer
-            reaches zero.
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">
+            AUTO-SUBMIT AT 00:00
           </p>
         </div>
       </div>
@@ -376,4 +377,4 @@ const InstructionsPage = () => {
 
 export default InstructionsPage;
 
-// recompile trigger
+// style updated - reduced card sizes

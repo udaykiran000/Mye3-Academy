@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAdminProfile } from "../../redux/adminSlice";
 import api from "../../api/axios";
@@ -56,14 +56,14 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  
+
   const { adminProfile } = useSelector((state) => state.admin || {});
-  
+
   const [isHovering, setIsHovering] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [openMenus, setOpenMenus] = useState({}); // Track multiple open accordions
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  
+
   const sidebarRef = useRef(null);
   const hoverTimer = useRef(null);
   const leaveTimer = useRef(null);
@@ -76,7 +76,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
   useEffect(() => {
     const activeParent = MENU.find(m => m.children?.some(c => location.pathname === c.path));
     if (activeParent) {
-        setOpenMenus(prev => ({ ...prev, [activeParent.key]: true }));
+      setOpenMenus(prev => ({ ...prev, [activeParent.key]: true }));
     }
   }, [location.pathname]);
 
@@ -95,8 +95,8 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
 
   const toggleMenu = (key) => {
     setOpenMenus(prev => ({
-        ...prev,
-        [key]: !prev[key]
+      ...prev,
+      [key]: !prev[key]
     }));
     if (!expandedSidebar) setIsPinned(true);
   };
@@ -133,24 +133,25 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     >
       {/* BRAND SECTION */}
       <div className="px-6 py-8 flex items-center gap-4">
-        <div 
-            onClick={() => setIsPinned(!isPinned)}
-            className="shrink-0 w-11 h-11 rounded-2xl bg-[#5654F7] flex items-center justify-center text-white shadow-lg cursor-pointer hover:rotate-6 transition-transform"
+        <Link
+          to="/"
+          className="shrink-0 w-11 h-11 rounded-2xl bg-[#5654F7] flex items-center justify-center text-white shadow-lg cursor-pointer hover:rotate-6 transition-transform"
         >
-            <GraduationCap size={24} strokeWidth={2.5} />
-        </div>
+          <GraduationCap size={24} strokeWidth={2.5} />
+        </Link>
         <AnimatePresence>
-            {expandedSidebar && (
-                <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    className="overflow-hidden whitespace-nowrap"
-                >
-                    <h2 className="text-xl font-black text-slate-800 tracking-tighter italic">Mye3</h2>
-                    <p className="text-[10px] font-bold text-[#5654F7] uppercase tracking-[0.2em] leading-none mt-0.5">Academy Admin</p>
-                </motion.div>
-            )}
+          {expandedSidebar && (
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              className="overflow-hidden whitespace-nowrap cursor-pointer"
+              onClick={() => navigate("/")}
+            >
+              <h2 className="text-xl font-black text-slate-800 tracking-tighter italic">Mye3</h2>
+              <p className="text-[10px] font-bold text-[#5654F7] uppercase tracking-[0.2em] leading-none mt-0.5">Academy Admin</p>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
@@ -165,12 +166,12 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
             <div key={i} className="mb-1">
               <div
                 onClick={() => {
-                    if (m.children) {
-                        toggleMenu(m.key);
-                    } else {
-                        navigate(m.path);
-                        setMobileOpen(false);
-                    }
+                  if (m.children) {
+                    toggleMenu(m.key);
+                  } else {
+                    navigate(m.path);
+                    setMobileOpen(false);
+                  }
                 }}
                 className={`
                     relative flex items-center gap-4 px-4 py-3 rounded-none cursor-pointer group transition-all
@@ -178,32 +179,32 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                 `}
               >
                 {isActiveParent && !m.children && (
-                  <motion.div 
+                  <motion.div
                     layoutId="active-pill"
-                    className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1.5 bg-[#5654F7] rounded-r-full shadow-sm" 
+                    className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1.5 bg-[#5654F7] rounded-r-full shadow-sm"
                   />
                 )}
-                
+
                 <Icon size={20} strokeWidth={isActiveParent ? 2.5 : 2} className="shrink-0 relative z-10" />
-                
+
                 <AnimatePresence>
-                    {expandedSidebar && (
-                        <motion.span 
-                            initial={{ opacity: 0, x: -5 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -5 }}
-                            className="text-[14px] font-bold whitespace-nowrap overflow-hidden"
-                        >
-                            {m.label}
-                        </motion.span>
-                    )}
+                  {expandedSidebar && (
+                    <motion.span
+                      initial={{ opacity: 0, x: -5 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -5 }}
+                      className="text-[14px] font-bold whitespace-nowrap overflow-hidden"
+                    >
+                      {m.label}
+                    </motion.span>
+                  )}
                 </AnimatePresence>
 
                 {m.children && expandedSidebar && (
-                    <ChevronDown 
-                        size={16} 
-                        className={`ml-auto opacity-40 transition-transform ${isDropdownOpen ? "rotate-180 text-[#5654F7] opacity-100" : ""}`} 
-                    />
+                  <ChevronDown
+                    size={16}
+                    className={`ml-auto opacity-40 transition-transform ${isDropdownOpen ? "rotate-180 text-[#5654F7] opacity-100" : ""}`}
+                  />
                 )}
               </div>
 
@@ -252,7 +253,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                     className="absolute left-full ml-2 top-0 bg-white border border-slate-100 shadow-2xl rounded-2xl w-48 p-2 z-[110]"
                   >
                     <div className="px-3 py-2 border-b border-slate-50 mb-1">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{m.label}</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{m.label}</p>
                     </div>
                     {m.children.map((c, idx) => (
                       <div
@@ -280,20 +281,20 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
 
       {/* FOOTER */}
       <div className="mt-auto p-4 border-t border-slate-100 bg-slate-50/50">
-        <button 
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className={`
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className={`
                 flex items-center gap-4 px-4 py-3 rounded-2xl transition-all group w-full
                 ${expandedSidebar ? "bg-rose-50 text-rose-600 shadow-sm border border-rose-100" : "text-slate-500 hover:text-rose-600 hover:bg-rose-50"}
             `}
         >
-            <LogOut size={20} className="shrink-0" />
-            {expandedSidebar && (
-                <span className="text-[13px] font-bold whitespace-nowrap">
-                    {isLoggingOut ? "Signing out..." : "Secure Logout"}
-                </span>
-            )}
+          <LogOut size={20} className="shrink-0" />
+          {expandedSidebar && (
+            <span className="text-[13px] font-bold whitespace-nowrap">
+              {isLoggingOut ? "Signing out..." : "Secure Logout"}
+            </span>
+          )}
         </button>
       </div>
     </motion.div>
@@ -320,7 +321,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
             >
               <div className="h-full bg-white">
                 <div className="h-full w-full">
-                    {SidebarContent}
+                  {SidebarContent}
                 </div>
               </div>
             </motion.div>
