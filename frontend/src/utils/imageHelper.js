@@ -1,21 +1,26 @@
 
 // Helper to construct full image URLs
 export const getImageUrl = (path) => {
-  if (!path) return "https://placehold.co/400x250?text=No+Image";
+  if (!path) return null;
   if (path.startsWith("http")) return path;
-  
-  // Use VITE_SERVER_URL or default to localhost:8000
-  const baseUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:8000";
-  
-  // Normalize path for Windows/Unix compatibility (replace \ with /)
-  const normalizedPath = path.replace(/\\/g, "/");
-  
-  // Ensure we don't double slash or miss a slash
-  const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
-  const cleanPath = normalizedPath.startsWith("/") ? normalizedPath : `/${normalizedPath}`;
-  
-  return `${cleanBase}${cleanPath}`;
+
+  const baseUrl = (import.meta.env.VITE_SERVER_URL || "http://localhost:8000").replace(/\/$/, "");
+
+  // Normalize slashes (Windows paths use backslash)
+  let normalized = path.replace(/\\/g, "/");
+
+  // Strip absolute path prefix if present (e.g. "D:/project/backend/uploads/...")
+  const uploadsIdx = normalized.indexOf("uploads/");
+  if (uploadsIdx > 0) {
+    normalized = normalized.slice(uploadsIdx);
+  }
+
+  // Ensure single leading slash
+  const cleanPath = normalized.startsWith("/") ? normalized : `/${normalized}`;
+
+  return `${baseUrl}${cleanPath}`;
 };
+
 
 // Startard onError handler for images
 export const handleImageError = (e) => {

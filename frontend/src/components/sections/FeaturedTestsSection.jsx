@@ -5,12 +5,11 @@ import {
   Users,
   Rocket,
   Wallet,
-  ShoppingCart,
   Play,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { addItemToCart } from "../../redux/cartSlice";
+import { fetchPublicTestById } from "../../redux/mockTestSlice";
 import { toast } from "react-toastify";
 import api from "../../api/axios";
 import { getImageUrl, handleImageError } from "../../utils/imageHelper";
@@ -54,11 +53,7 @@ const TestCard = ({ test }) => {
     return true;
   };
 
-  const handleAddToCart = () => {
-    if (!handleLoginCheck()) return;
-    dispatch(addItemToCart(test._id));
-    toast.success(`${test.title} added to cart!`);
-  };
+
 
   const handleStartTest = () => {
     if (!handleLoginCheck()) return;
@@ -152,16 +147,11 @@ const TestCard = ({ test }) => {
           <>
             <button
               onClick={handleViewDetails}
-              className={`flex items-center justify-center gap-2 w-1/2 text-white py-3.5 rounded-xl font-black transition bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 uppercase tracking-widest text-xs`}
+              className={`flex items-center justify-center gap-2 w-full text-white py-3.5 rounded-xl font-black transition bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-100 uppercase tracking-widest text-xs`}
             >
               <Wallet size={18} /> Buy Now
             </button>
-            <button
-              onClick={handleAddToCart}
-              className="flex items-center justify-center gap-2 w-1/2 bg-slate-50 hover:bg-slate-100 text-slate-700 py-3.5 rounded-xl font-black transition border border-slate-100 uppercase tracking-widest text-xs"
-            >
-              <ShoppingCart size={18} /> Add
-            </button>
+
           </>
         )}
       </div>

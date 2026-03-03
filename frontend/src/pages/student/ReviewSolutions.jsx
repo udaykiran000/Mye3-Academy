@@ -1,12 +1,8 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-
-// --- REDUX ACTIONS ---
 import { fetchAttemptResult } from "../../redux/studentSlice";
-import { createStudentDoubt } from "../../redux/doubtSlice"; // Imported from your doubtSlice
-
-// --- ICONS ---
+import { createStudentDoubt } from "../../redux/doubtSlice";
 import {
   ArrowLeft,
   CheckCircle,
@@ -19,634 +15,497 @@ import {
   MessageCircle,
   Send,
   Loader2,
+  Target,
+  MinusCircle,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
 } from "lucide-react";
 
-// --- HELPER: Image URL ---
-const BASE_URL = "import.meta.env.VITE_SERVER_URL";
+const BASE_URL = import.meta.env.VITE_SERVER_URL || "";
 const getImageUrl = (path) => {
   if (!path) return null;
   if (path.startsWith("http")) return path;
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${BASE_URL}${normalizedPath}`;
+  return `${BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 };
 
 const ReviewSolutions = () => {
   const { attemptId } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch(); // Redux State: Exam Data
+  const dispatch = useDispatch();
 
-  const { reviewData, reviewStatus, reviewError } = useSelector(
-    (state) => state.students,
-  ); 
-  
-  // Logic Fix: Handle wrapped response { success: true, attempt: ... }
+  const { reviewData, reviewStatus, reviewError } = useSelector((s) => s.students);
   const attempt = reviewData?.attempt || reviewData;
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isSidebarOpen, setSidebarOpen] = useState(false); // Local State: Doubt Modal
-
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isDoubtModalOpen, setDoubtModalOpen] = useState(false);
   const [doubtText, setDoubtText] = useState("");
-  const [submissionStatus, setSubmissionStatus] = useState("idle"); // idle | loading | success
-  // Fetch Attempt Data on Mount
+  const [submissionStatus, setSubmissionStatus] = useState("idle");
 
   useEffect(() => {
-    if (attemptId) {
-      dispatch(fetchAttemptResult(attemptId));
-    }
-  }, [dispatch, attemptId]); // --- DATA PROCESSING ---
+    if (attemptId) dispatch(fetchAttemptResult(attemptId));
+  }, [dispatch, attemptId]);
 
+  /* ── Processed questions ── */
   const processedQuestions = useMemo(() => {
-    if (!attempt || !attempt.questions) return [];
+    if (!attempt?.questions) return [];
     return attempt.questions.map((q) => {
-      // Find user's answer for this question
-      const userAnsObj = attempt.answers?.find(
-        (a) => a.questionId === (q._id || q.id),
-      ); // Determine Status
+      const userAnsObj = attempt.answers?.find((a) => a.questionId === (q._id || q.id));
       let status = "unanswered";
       let userSelected = null;
-
       if (userAnsObj) {
         userSelected = userAnsObj.selectedAnswer;
         status = userAnsObj.isCorrect ? "correct" : "wrong";
       }
-
-      return {
-        ...q,
-        userSelected,
-        status, // correct | wrong | unanswered
-        isPassageChild: !!q.parentQuestionId,
-      };
+      return { ...q, userSelected, status, isPassageChild: !!q.parentQuestionId };
     });
   }, [attempt]);
 
-  const currentQ = processedQuestions[currentIndex]; 
-  
-  // --- DEBUGGING ---
-  useEffect(() => {
-    if (attempt) {
-        console.log("Attempt Data:", attempt);
-        console.log("Current Question:", currentQ);
+  /* ── Score breakdown ── */
+  const scoreBreakdown = useMemo(() => {
+    if (!processedQuestions.length) return null;
+    let correct = 0, wrong = 0, skipped = 0, earned = 0, deducted = 0;
+    for (const q of processedQuestions) {
+      if (q.status === "correct") { correct++; earned += Number(q.marks) || 0; }
+      else if (q.status === "wrong") { wrong++; deducted += Number(q.negative) || 0; }
+      else skipped++;
     }
-  }, [attempt, currentQ]);
+    const total = earned - deducted;
+    const maxMarks = processedQuestions.reduce((s, q) => s + (Number(q.marks) || 0), 0);
+    const pct = maxMarks > 0 ? ((total / maxMarks) * 100).toFixed(1) : "0.0";
+    return { correct, wrong, skipped, earned, deducted, total, maxMarks, pct };
+  }, [processedQuestions]);
 
-  // --- HANDLER: Submit Doubt ---
+  const currentQ = processedQuestions[currentIndex];
 
+  /* ── Doubt submit ── */
   const handleDoubtSubmit = useCallback(async () => {
     if (!doubtText.trim() || !currentQ) return;
-
-    setSubmissionStatus("loading"); // 1. Safe access to Mock Test ID from attempt
-
-    const mockTestId =
-      attempt?.mockTest?._id ||
-      attempt?.mocktestId?._id ||
-      attempt?.mocktestId ||
-      null; // 2. Construct Payload
-
+    setSubmissionStatus("loading");
+    const mockTestId = attempt?.mockTest?._id || attempt?.mocktestId?._id || attempt?.mocktestId || null;
     const payload = {
       text: doubtText,
       questionId: currentQ._id || currentQ.id,
-      attemptId: attemptId,
-      mocktestId: mockTestId, // Ensure subject is not null/empty (Backend requires it)
-      subject: currentQ.subject || currentQ.category || "General", // Match Mongoose Enum (assuming "mocktest" is the correct enum value)
+      attemptId,
+      mocktestId: mockTestId,
+      subject: currentQ.subject || currentQ.category || "General",
       type: "mocktest",
     };
-
     try {
-      const resultAction = await dispatch(createStudentDoubt(payload));
+      const res = await dispatch(createStudentDoubt(payload));
+      if (createStudentDoubt.fulfilled.match(res)) {
+        setSubmissionStatus("success");
+        setTimeout(() => { setDoubtModalOpen(false); setSubmissionStatus("idle"); setDoubtText(""); }, 1500);
+      } else setSubmissionStatus("idle");
+    } catch { setSubmissionStatus("idle"); }
+  }, [doubtText, currentQ, attempt, attemptId, dispatch]);
 
-      if (createStudentDoubt.fulfilled.match(resultAction)) {
-        setSubmissionStatus("success"); // Clear and close after a brief delay for UX
-        setTimeout(() => {
-          setDoubtModalOpen(false);
-          setSubmissionStatus("idle");
-          setDoubtText("");
-        }, 1500);
-      } else {
-        setSubmissionStatus("idle");
-      }
-    } catch (error) {
-      console.error("Doubt submission error:", error);
-      setSubmissionStatus("idle");
-    }
-  }, [doubtText, currentQ, attempt, attemptId, dispatch]); // --- RENDER HELPERS ---
+  /* ── Status helpers ── */
+  const statusMap = {
+    correct: { bg: "bg-emerald-50 border-emerald-300 text-emerald-800", icon: <CheckCircle className="w-5 h-5 text-emerald-600" />, label: "Correct Answer" },
+    wrong:   { bg: "bg-rose-50 border-rose-300 text-rose-800",          icon: <XCircle className="w-5 h-5 text-rose-600" />,          label: "Wrong Answer"   },
+    unanswered: { bg: "bg-amber-50 border-amber-300 text-amber-800",    icon: <AlertCircle className="w-5 h-5 text-amber-600" />,      label: "Not Attempted"  },
+  };
+  const statusInfo = statusMap[currentQ?.status] || statusMap.unanswered;
+  const marksLabel = currentQ?.status === "correct"
+    ? `+${currentQ.marks}`
+    : currentQ?.status === "wrong"
+    ? `-${currentQ.negative || 0}`
+    : "±0";
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "correct":
-        return "bg-emerald-100 text-emerald-700 border-emerald-300";
-      case "wrong":
-        return "bg-rose-100 text-rose-700 border-rose-300";
-      default:
-        return "bg-gray-100 text-gray-600 border-gray-300";
-    }
-  }; // --- LOADING / ERROR STATES ---
-
-  if (reviewStatus === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-               {" "}
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-cyan-500"></div>
-             {" "}
-      </div>
-    );
-  }
-
-  if (reviewStatus === "failed" || !reviewData) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-800">
-                <AlertCircle className="w-16 h-16 text-red-500 mb-4" />       {" "}
-        <h2 className="text-2xl font-bold">Failed to load results</h2>       {" "}
-        <p className="mb-6 text-gray-500">
-          {reviewError || "Unknown error occurred"}
-        </p>
-               {" "}
-        <button
-          onClick={() => navigate("/student-dashboard")}
-          className="px-6 py-2 bg-gray-800 text-white rounded-lg"
-        >
-                    Go to Dashboard        {" "}
-        </button>
-             {" "}
-      </div>
-    );
-  }
+  /* ── Loading / Error ── */
+  if (reviewStatus === "loading") return (
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f9fc]">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-500" />
+    </div>
+  );
+  if (reviewStatus === "failed" || !reviewData) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8f9fc] gap-4">
+      <AlertCircle className="w-14 h-14 text-rose-500" />
+      <h2 className="text-2xl font-black text-slate-800">Failed to load results</h2>
+      <p className="text-slate-500">{reviewError || "Unknown error"}</p>
+      <button onClick={() => navigate("/student-dashboard")} className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm">Go to Dashboard</button>
+    </div>
+  );
 
   return (
-    <div className="flex h-screen bg-[#F3F4F6] font-sans overflow-hidden">
-                  {/* --- SIDEBAR (NAVIGATION) --- */}     {" "}
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 w-72 bg-white/80 backdrop-blur-md border-r border-gray-200 transform transition-transform duration-300 lg:relative lg:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
-      >
-               {" "}
-        <div className="flex flex-col h-full">
-                    {/* Sidebar Header */}         {" "}
-          <div className="p-6 border-b border-gray-100">
-                         
-            <h2 className="text-xl font-black text-gray-800 tracking-tight flex items-center gap-2">
-                              <Award className="text-cyan-600" />               
-              Review Panel              
-            </h2>
-                         
-            <div className="mt-4 flex justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                             {" "}
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>{" "}
-                Correct
-              </div>
-                             {" "}
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-rose-500"></span> Wrong
-              </div>
-                             {" "}
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-gray-400"></span> Skip
-              </div>
-                           
+    <div className="flex h-screen bg-[#f0f2f8] font-sans overflow-hidden">
+
+      {/* ═══════════════════════════════════════
+          SIDEBAR
+      ═══════════════════════════════════════ */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-100
+        flex flex-col transition-transform duration-300 shadow-xl
+        lg:relative lg:shadow-none lg:translate-x-0
+        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+      `}>
+
+        {/* Sidebar top — branding */}
+        <div className="px-4 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-900 to-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center">
+              <Award size={16} className="text-white" />
             </div>
-                     {" "}
-          </div>
-                    {/* Question Grid */}         {" "}
-          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                       {" "}
-            <div className="grid grid-cols-4 gap-2">
-                           {" "}
-              {processedQuestions.map((q, idx) => {
-                // Determine color
-                let colorClass =
-                  "bg-gray-100 text-gray-400 border-transparent hover:bg-gray-200";
-                if (q.status === "correct")
-                  colorClass =
-                    "bg-emerald-500 text-white shadow-md shadow-emerald-200";
-                if (q.status === "wrong")
-                  colorClass =
-                    "bg-rose-500 text-white shadow-md shadow-rose-200";
-                const isActive = currentIndex === idx;
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setCurrentIndex(idx);
-                      setSidebarOpen(false);
-                    }}
-                    className={`h-10 w-10 rounded-lg text-sm font-bold flex items-center justify-center transition-all duration-200 border-2 ${colorClass} ${isActive ? "ring-2 ring-cyan-500 ring-offset-2 scale-110 z-10" : ""}`}
-                  >
-                                         {idx + 1}                   
-                  </button>
-                );
-              })}
-                         {" "}
+            <div>
+              <h2 className="text-sm font-black text-white leading-none">Review Panel</h2>
+              <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest mt-0.5">
+                {processedQuestions.length} Questions
+              </p>
             </div>
-                     {" "}
           </div>
-                             {" "}
-          <div className="p-4 border-t border-gray-100">
-                         
-            <button
-              onClick={() => navigate("/student-dashboard")}
-              className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-black transition"
-            >
-                              Exit Review              
-            </button>
-                     {" "}
+          {/* Status legend row */}
+          <div className="flex items-center gap-3 mt-3">
+            {[
+              { color: "bg-emerald-500", label: "Correct" },
+              { color: "bg-rose-500",    label: "Wrong"   },
+              { color: "bg-slate-400",   label: "Skip"    },
+            ].map(({ color, label }) => (
+              <div key={label} className="flex items-center gap-1">
+                <span className={`w-2 h-2 rounded-full ${color}`} />
+                <span className="text-[9px] font-bold text-white/60 uppercase tracking-wide">{label}</span>
+              </div>
+            ))}
           </div>
-                 {" "}
         </div>
-             {" "}
-      </aside>
-            {/* --- MAIN CONTENT --- */}     {" "}
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-                {/* Mobile Header */}       {" "}
-        <header className="h-16 bg-white/80 backdrop-blur-sm border-b border-gray-200 flex items-center justify-between px-4 lg:hidden z-30">
-                     
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 bg-gray-100 rounded-lg"
-          >
-                          <Menu size={20} className="text-gray-700" />         
-             
-          </button>
-                     
-          <span className="font-bold text-gray-800">
-            Q {currentIndex + 1} / {processedQuestions.length}
-          </span>
-                     
-          <button
-            onClick={() => navigate("/student-dashboard")}
-            className="p-2 bg-gray-100 rounded-lg"
-          >
-                          <ArrowLeft size={20} className="text-gray-700" />     
-                 
-          </button>
-                 {" "}
-        </header>
-                {/* Scrollable Question Area */}       {" "}
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar">
-                     
-          <div className="max-w-4xl mx-auto space-y-6 pb-20">
-                                        {/* STATUS BANNER */}             {" "}
-            <div
-              className={`p-4 rounded-xl border flex flex-wrap items-center justify-between shadow-sm gap-3 ${getStatusColor(currentQ?.status)}`}
-            >
-                               
-              <div className="flex items-center gap-3">
-                                   {" "}
-                {currentQ?.status === "correct" && (
-                  <CheckCircle className="w-6 h-6" />
-                )}
-                                   {" "}
-                {currentQ?.status === "wrong" && (
-                  <XCircle className="w-6 h-6" />
-                )}
-                                   {" "}
-                {currentQ?.status === "unanswered" && (
-                  <AlertCircle className="w-6 h-6" />
-                )}
-                                   {" "}
-                <span className="text-lg font-bold capitalize">
-                  {currentQ?.status} Answer
-                </span>
-                                 
-              </div>
-                               
-              <span className="text-sm font-semibold opacity-75">
-                Marks:{" "}
-                {currentQ?.status === "correct"
-                  ? `+${currentQ.marks}`
-                  : currentQ?.status === "wrong"
-                    ? `-${currentQ.negative}`
-                    : "0"}
-              </span>
-                           {" "}
+
+        {/* Question grid */}
+        <div className="flex-1 overflow-y-auto p-3">
+          <div className="grid grid-cols-5 gap-1.5">
+            {processedQuestions.map((q, idx) => {
+              let cls = "bg-slate-100 text-slate-500 border-transparent hover:bg-slate-200";
+              if (q.status === "correct") cls = "bg-emerald-500 text-white shadow-sm shadow-emerald-200";
+              if (q.status === "wrong")   cls = "bg-rose-500 text-white shadow-sm shadow-rose-200";
+              const isActive = currentIndex === idx;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => { setCurrentIndex(idx); setSidebarOpen(false); }}
+                  className={`h-9 w-full rounded-lg text-xs font-black flex items-center justify-center transition-all border-2 ${cls} ${isActive ? "ring-2 ring-indigo-500 ring-offset-1 scale-110 z-10" : ""}`}
+                >{idx + 1}</button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Score breakdown */}
+        {scoreBreakdown && (
+          <div className="mx-3 mb-3 rounded-xl border border-slate-100 overflow-hidden shadow-sm">
+            <div className="px-3 py-2 bg-slate-900 flex items-center gap-2">
+              <Target size={11} className="text-white" />
+              <span className="text-[9px] font-black text-white uppercase tracking-widest">Score Breakdown</span>
             </div>
-                          {/* PARENT PASSAGE */}             {" "}
-            {currentQ?.parentQuestionId && (
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-xl shadow-inner">
-                                   {" "}
-                <h3 className="text-blue-900 font-bold mb-2 flex items-center gap-2">
-                  <BookOpen size={18} /> Reference Passage
-                </h3>
-                                   {" "}
-                {/* ⭐ FIX: Use questionText from parentQuestionId */}         
-                         {" "}
-                <p className="text-gray-700 whitespace-pre-line text-sm leading-relaxed">
-                  {currentQ.parentQuestionId.title}
-                </p>
-                                   {" "}
-                {currentQ.parentQuestionId.questionImageUrl && (
-                  <img
-                    src={getImageUrl(
-                      currentQ.parentQuestionId.questionImageUrl,
-                    )}
-                    className="mt-4 rounded-lg border w-full max-h-60 object-contain bg-white"
-                    alt="Passage"
+            {/* Counts */}
+            <div className="grid grid-cols-3 divide-x divide-slate-100 bg-white">
+              {[
+                { val: scoreBreakdown.correct, label: "Correct", cls: "text-emerald-600" },
+                { val: scoreBreakdown.wrong,   label: "Wrong",   cls: "text-rose-600" },
+                { val: scoreBreakdown.skipped, label: "Skipped", cls: "text-slate-500" },
+              ].map(({ val, label, cls }) => (
+                <div key={label} className="flex flex-col items-center py-2">
+                  <span className={`text-sm font-black ${cls}`}>{val}</span>
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wide">{label}</span>
+                </div>
+              ))}
+            </div>
+            {/* Calc */}
+            <div className="bg-slate-50 border-t border-slate-100 px-3 py-2 space-y-1">
+              <div className="flex justify-between">
+                <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1"><CheckCircle size={9} /> Earned</span>
+                <span className="text-[10px] font-black text-emerald-700">+{scoreBreakdown.earned}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[10px] font-bold text-rose-600 flex items-center gap-1"><MinusCircle size={9} /> Negative</span>
+                <span className="text-[10px] font-black text-rose-700">−{scoreBreakdown.deducted}</span>
+              </div>
+              <div className="flex justify-between items-center border-t border-slate-200 pt-1 mt-0.5">
+                <span className="text-[10px] font-black text-slate-700 uppercase tracking-wide">Total</span>
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-base font-black ${scoreBreakdown.total < 0 ? "text-rose-700" : "text-slate-900"}`}>
+                    {scoreBreakdown.total}
+                  </span>
+                  <span className="text-[9px] text-slate-400 font-bold">/ {scoreBreakdown.maxMarks}</span>
+                </div>
+              </div>
+              {/* Progress bar */}
+              <div>
+                <div className="flex justify-between mb-0.5">
+                  <span className="text-[9px] font-bold text-slate-400">Performance</span>
+                  <span className={`text-[9px] font-black ${Number(scoreBreakdown.pct) >= 50 ? "text-emerald-600" : "text-rose-600"}`}>
+                    {scoreBreakdown.pct}%
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${Number(scoreBreakdown.pct) >= 50 ? "bg-emerald-500" : "bg-rose-500"}`}
+                    style={{ width: `${Math.max(0, Math.min(100, Number(scoreBreakdown.pct)))}%` }}
                   />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Exit */}
+        <div className="px-3 pb-3">
+          <button
+            onClick={() => navigate("/student-dashboard?tab=performance")}
+            className="w-full py-2.5 bg-slate-900 hover:bg-black text-white rounded-xl font-black text-xs uppercase tracking-widest transition flex items-center justify-center gap-2"
+          >
+            <LogOut size={13} />Exit Review
+          </button>
+        </div>
+      </aside>
+
+      {/* ═══════════════════════════════════════
+          MAIN CONTENT
+      ═══════════════════════════════════════ */}
+      <main className="flex-1 flex flex-col h-full overflow-hidden">
+
+        {/* Top bar — 3-column layout: left | center | right */}
+        <header className="h-12 bg-white border-b border-slate-100 flex items-center px-4 shrink-0 shadow-sm relative">
+          {/* LEFT: Mobile menu (mobile) | Back button (desktop) */}
+          <div className="flex items-center">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-1.5 bg-slate-100 rounded-lg mr-2">
+              <Menu size={18} className="text-slate-700" />
+            </button>
+            <button
+              onClick={() => navigate("/student-dashboard?tab=performance")}
+              className="flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-indigo-600 transition px-2.5 py-1.5 rounded-lg hover:bg-indigo-50 border border-transparent hover:border-indigo-100"
+            >
+              <ArrowLeft size={13} /><span className="hidden sm:inline">My Performance</span>
+            </button>
+          </div>
+
+          {/* CENTER: Q nav — absolutely centered */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
+            <button
+              onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+              disabled={currentIndex === 0}
+              className="p-1.5 rounded-lg bg-slate-100 disabled:opacity-30 hover:bg-slate-200 transition"
+            >
+              <ChevronLeft size={16} className="text-slate-700" />
+            </button>
+            <span className="text-xs font-black text-slate-700 uppercase tracking-widest">
+              Q {currentIndex + 1} <span className="text-slate-400 font-bold">/ {processedQuestions.length}</span>
+            </span>
+            <button
+              onClick={() => setCurrentIndex((i) => Math.min(processedQuestions.length - 1, i + 1))}
+              disabled={currentIndex === processedQuestions.length - 1}
+              className="p-1.5 rounded-lg bg-slate-100 disabled:opacity-30 hover:bg-slate-200 transition"
+            >
+              <ChevronRight size={16} className="text-slate-700" />
+            </button>
+          </div>
+
+          {/* RIGHT: Ask Doubt */}
+          <div className="ml-auto">
+            <button
+              onClick={() => setDoubtModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-black border border-indigo-100 hover:bg-indigo-100 transition"
+            >
+              <MessageCircle size={13} /><span className="hidden sm:inline">Ask Doubt</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Scrollable question area */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="px-5 py-4 space-y-4">
+
+            {/* Status banner */}
+            <div className={`flex items-center justify-between px-4 py-3 rounded-xl border ${statusInfo.bg} shadow-sm`}>
+              <div className="flex items-center gap-2.5">
+                {statusInfo.icon}
+                <span className="font-black text-sm">{statusInfo.label}</span>
+              </div>
+              <span className={`text-sm font-black px-3 py-1 rounded-full bg-white/60 border ${
+                currentQ?.status === "correct" ? "border-emerald-300 text-emerald-700" :
+                currentQ?.status === "wrong"   ? "border-rose-300 text-rose-700" :
+                "border-amber-300 text-amber-700"
+              }`}>
+                Marks: {marksLabel}
+              </span>
+            </div>
+
+            {/* Passage */}
+            {currentQ?.parentQuestionId && (
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl">
+                <h3 className="text-blue-900 font-black text-xs uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <BookOpen size={13} />Reference Passage
+                </h3>
+                <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">{currentQ.parentQuestionId.title}</p>
+                {currentQ.parentQuestionId.questionImageUrl && (
+                  <img src={getImageUrl(currentQ.parentQuestionId.questionImageUrl)}
+                    className="mt-3 rounded-lg border w-full max-h-48 object-contain bg-white" alt="Passage" />
                 )}
-                                 
               </div>
             )}
-                          {/* QUESTION CARD */}             {" "}
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-                               
-              <div className="p-6 lg:p-8">
-                                    {/* Header + Doubt Button (Desktop) */}     
-                             {" "}
-                <div className="flex justify-between items-start gap-4 mb-4">
-                                         {" "}
-                  <h2 className="text-xl lg:text-2xl font-bold text-gray-800 leading-snug">
-                                               
-                    <span className="text-cyan-500 mr-2">
-                      Q{currentIndex + 1}.
-                    </span>
-                                               
-                    {/* ⭐ FIX: Use questionText instead of title */}           
-                                   {currentQ?.title}                     
-                     {" "}
+
+            {/* Question card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+              <div className="p-5">
+                {/* Question header — no duplicate Ask Doubt here */}
+                <div className="mb-4">
+                  <h2 className="text-base font-black text-slate-800 leading-snug">
+                    <span className="text-indigo-500 mr-1.5">Q{currentIndex + 1}.</span>
+                    {currentQ?.title}
                   </h2>
-                                                                 {" "}
-                  <button
-                    onClick={() => setDoubtModalOpen(true)}
-                    className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-bold border border-indigo-100 hover:bg-indigo-100 transition whitespace-nowrap"
-                  >
-                                                <MessageCircle size={16} />     
-                                          Ask Doubt                        {" "}
-                  </button>
-                                     {" "}
                 </div>
-                                                        {/* Question Image */} 
-                                 {" "}
+
+                {/* Question image */}
                 {currentQ?.questionImageUrl && (
-                  <div className="mb-6 rounded-xl overflow-hidden border border-gray-100 bg-gray-50">
-                                               
-                    <img
-                      src={getImageUrl(currentQ.questionImageUrl)}
-                      className="w-full max-h-96 object-contain"
-                      alt="Question"
-                    />
-                                           {" "}
+                  <div className="mb-4 rounded-xl overflow-hidden border border-slate-100 bg-slate-50">
+                    <img src={getImageUrl(currentQ.questionImageUrl)}
+                      className="w-full max-h-72 object-contain" alt="Question" />
                   </div>
                 )}
-                                    {/* OPTIONS */}                   {" "}
-                <div className="space-y-3 mt-6">
-                                         
-                  {currentQ?.questionType?.toLowerCase() === "mcq" &&
-                    currentQ.options.map((opt, idx) => {
-                      const isUserSelected =
-                        String(idx) === String(currentQ.userSelected);
-                      const isCorrectOption = currentQ.correct?.includes(idx); // Style Logic
 
-                      let cardStyle =
-                        "border-gray-200 bg-white hover:bg-gray-50";
-                      let icon = (
-                        <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-xs font-bold">
+                {/* MCQ options */}
+                {currentQ?.questionType?.toLowerCase() === "mcq" && (
+                  <div className="space-y-2.5 mt-4">
+                    {currentQ.options.map((opt, idx) => {
+                      const isUserSelected = String(idx) === String(currentQ.userSelected);
+                      const isCorrectOption = currentQ.correct?.includes(idx);
+                      let cardStyle = "border-slate-200 bg-slate-50/50 hover:bg-slate-50";
+                      let iconEl = (
+                        <span className="w-6 h-6 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-black shrink-0">
                           {String.fromCharCode(65 + idx)}
                         </span>
                       );
-
                       if (isCorrectOption) {
-                        cardStyle =
-                          "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500";
-                        icon = (
-                          <CheckCircle className="w-6 h-6 text-emerald-600" />
-                        );
+                        cardStyle = "border-emerald-400 bg-emerald-50";
+                        iconEl = <CheckCircle className="w-6 h-6 text-emerald-500 shrink-0" />;
                       } else if (isUserSelected && !isCorrectOption) {
-                        cardStyle =
-                          "border-rose-500 bg-rose-50 ring-1 ring-rose-500";
-                        icon = <XCircle className="w-6 h-6 text-rose-600" />;
+                        cardStyle = "border-rose-400 bg-rose-50";
+                        iconEl = <XCircle className="w-6 h-6 text-rose-500 shrink-0" />;
                       }
-
                       return (
-                        <div
-                          key={idx}
-                          className={`relative p-4 rounded-xl border-2 transition-all flex items-start gap-4 ${cardStyle}`}
-                        >
-                                                         {" "}
-                          <div className="flex-shrink-0 mt-0.5">{icon}</div>   
-                                                     {" "}
+                        <div key={idx} className={`relative flex items-start gap-3 p-3.5 rounded-xl border-2 transition-all ${cardStyle}`}>
+                          {iconEl}
                           <div className="flex-1">
-                                                               
-                            <p
-                              className={`text-base font-medium ${isCorrectOption ? "text-emerald-900" : "text-gray-700"}`}
-                            >
+                            <p className={`text-sm font-semibold ${isCorrectOption ? "text-emerald-900" : "text-slate-700"}`}>
                               {opt.text}
                             </p>
-                                                               
                             {opt.imageUrl && (
-                              <img
-                                src={getImageUrl(opt.imageUrl)}
-                                className="mt-2 h-20 rounded border bg-white"
-                                alt="option"
-                              />
+                              <img src={getImageUrl(opt.imageUrl)} className="mt-2 h-16 rounded border bg-white object-contain" alt="option" />
                             )}
-                                                           {" "}
                           </div>
-                                                         {" "}
                           {isUserSelected && (
-                            <span className="absolute top-2 right-2 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded bg-gray-800 text-white opacity-20">
+                            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-slate-700 text-white opacity-70">
                               Your Choice
                             </span>
                           )}
-                                                       
                         </div>
                       );
                     })}
-                                                                 
-                  {/* MANUAL ANSWER */}                       
-                  {currentQ?.questionType === "manual" && (
-                    <div className="space-y-4">
-                                                 {" "}
-                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                                       
-                        <span className="text-xs font-bold text-gray-500 uppercase">
-                          Your Answer
-                        </span>
-                                                       
-                        <p className="text-gray-800 font-medium mt-1">
-                          {currentQ.userSelected || "No Answer"}
-                        </p>
-                                                   {" "}
-                      </div>
-                                                 {" "}
-                      <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-                                                       
-                        <span className="text-xs font-bold text-emerald-600 uppercase">
-                          Correct Answer
-                        </span>
-                                                       
-                        <p className="text-emerald-900 font-medium mt-1">
-                          {currentQ.correctManualAnswer}
-                        </p>
-                                                   {" "}
-                      </div>
-                                               
+                  </div>
+                )}
+
+                {/* Manual answer */}
+                {currentQ?.questionType === "manual" && (
+                  <div className="space-y-3 mt-4">
+                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Your Answer</span>
+                      <p className="text-slate-800 font-semibold text-sm">{currentQ.userSelected || "No Answer Given"}</p>
                     </div>
-                  )}
-                                     {" "}
-                </div>
-                                 
+                    <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200">
+                      <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest block mb-1">Correct Answer</span>
+                      <p className="text-emerald-900 font-semibold text-sm">{currentQ.correctManualAnswer}</p>
+                    </div>
+                  </div>
+                )}
               </div>
-                               {/* EXPLANATION AREA */}                 
-              <div className="bg-slate-50 border-t border-slate-200 p-6 lg:p-8">
-                                   {" "}
-                <div className="flex justify-between items-center mb-3">
-                                         {" "}
-                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                               <BookOpen size={16} />{" "}
-                    Explanation                        {" "}
+
+              {/* Explanation */}
+              <div className="border-t border-slate-100 bg-slate-50/70 px-5 py-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                    <BookOpen size={13} />Explanation
                   </h3>
-                                                                 {" "}
-                  {/* Mobile Ask Doubt Button */}                       {" "}
                   <button
                     onClick={() => setDoubtModalOpen(true)}
                     className="md:hidden flex items-center gap-1 text-indigo-600 text-xs font-bold px-2 py-1 bg-indigo-50 rounded border border-indigo-100"
                   >
-                                               <MessageCircle size={14} /> Ask
-                    Doubt                        {" "}
+                    <MessageCircle size={12} />Ask
                   </button>
-                                     {" "}
                 </div>
-                                                       {" "}
-                <div className="prose prose-slate max-w-none text-slate-700">
-                                         
-                  {currentQ?.explanation ? (
-                    <p>{currentQ.explanation}</p>
-                  ) : (
-                    <p className="italic text-slate-400">
-                      No explanation provided for this question.
-                    </p>
-                  )}
-                                     {" "}
-                </div>
-                                 
+                {currentQ?.explanation
+                  ? <p className="text-slate-600 text-sm leading-relaxed">{currentQ.explanation}</p>
+                  : <p className="text-slate-400 italic text-sm">No explanation provided.</p>}
               </div>
-                           {" "}
             </div>
-                       
-          </div>
-                 {" "}
-        </div>
-                {/* Footer Navigation (Mobile) */}       {" "}
-        <div className="bg-white border-t border-gray-200 p-4 lg:hidden flex justify-between">
-                     
-          <button
-            disabled={currentIndex === 0}
-            onClick={() => setCurrentIndex((i) => i - 1)}
-            className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 disabled:opacity-50 font-bold"
-          >
-                          Previous            
-          </button>
-                     
-          <button
-            disabled={currentIndex === processedQuestions.length - 1}
-            onClick={() => setCurrentIndex((i) => i + 1)}
-            className="px-4 py-2 rounded-lg bg-cyan-600 text-white disabled:opacity-50 font-bold"
-          >
-                          Next            
-          </button>
-                 {" "}
-        </div>
-             {" "}
-      </main>
-            {/* --- MOBILE SIDEBAR OVERLAY --- */}     {" "}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
-      )}
-            {/* --- ASK DOUBT MODAL --- */}     {" "}
-      {isDoubtModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-                     
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl transform transition-all scale-100 border border-gray-100">
-                                        {/* Modal Header */}             {" "}
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-2xl">
-                               
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                   {" "}
-                <MessageCircle className="text-indigo-600" size={20} />         
-                          Raise a Doubt                  
-              </h3>
-                               
+
+            {/* Bottom nav */}
+            <div className="flex justify-between pb-4">
               <button
-                onClick={() => setDoubtModalOpen(false)}
-                className="p-1 hover:bg-gray-200 rounded-full transition"
+                disabled={currentIndex === 0}
+                onClick={() => setCurrentIndex((i) => i - 1)}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-black text-slate-600 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-slate-50 transition shadow-sm"
               >
-                                    <X size={20} className="text-gray-500" />   
-                             
+                <ChevronLeft size={14} />Previous
               </button>
-                           {" "}
+              <button
+                disabled={currentIndex === processedQuestions.length - 1}
+                onClick={() => setCurrentIndex((i) => i + 1)}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-black text-white bg-indigo-600 rounded-xl disabled:opacity-30 hover:bg-indigo-700 transition shadow-sm"
+              >
+                Next<ChevronRight size={14} />
+              </button>
             </div>
-                          {/* Modal Body */}             {" "}
-            <div className="p-6">
-                               
+          </div>
+        </div>
+      </main>
+
+      {/* Mobile sidebar overlay */}
+      {isSidebarOpen && (
+        <div className="fixed inset-0 bg-black/40 z-30 lg:hidden backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* ── Ask Doubt Modal ── */}
+      {isDoubtModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-slate-100">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+              <h3 className="font-black text-slate-800 flex items-center gap-2">
+                <MessageCircle className="text-indigo-600" size={18} />Raise a Doubt
+              </h3>
+              <button onClick={() => setDoubtModalOpen(false)} className="p-1 hover:bg-slate-200 rounded-full">
+                <X size={18} className="text-slate-500" />
+              </button>
+            </div>
+            <div className="p-5">
               <div className="mb-4">
-                                   {" "}
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                  Ref Question
-                </label>
-                                   {" "}
-                <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200 line-clamp-2">
-                                         {currentQ?.title}               
-                     {" "}
-                </p>
-                                 
+                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1.5">Question Ref</label>
+                <p className="text-sm text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200 line-clamp-2">{currentQ?.title}</p>
               </div>
-                               
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                Your Query
-              </label>
-                               
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1.5">Your Query</label>
               <textarea
                 value={doubtText}
                 onChange={(e) => setDoubtText(e.target.value)}
                 placeholder="Describe your doubt clearly..."
-                className="w-full h-32 p-3 text-sm text-gray-700 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none bg-white transition"
-              ></textarea>
-                               {/* Success Message */}                 
+                className="w-full h-28 p-3 text-sm text-slate-700 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none bg-white"
+              />
               {submissionStatus === "success" && (
-                <div className="mt-3 flex items-center gap-2 text-emerald-600 text-sm font-bold bg-emerald-50 p-2 rounded-lg">
-                                         <CheckCircle size={16} /> Doubt
-                  submitted successfully!                    {" "}
+                <div className="mt-2 flex items-center gap-1.5 text-emerald-600 text-xs font-bold bg-emerald-50 p-2 rounded-lg">
+                  <CheckCircle size={14} />Doubt submitted!
                 </div>
               )}
-                           {" "}
             </div>
-                          {/* Modal Footer */}             {" "}
-            <div className="p-4 border-t border-gray-100 flex justify-end gap-3 rounded-b-2xl bg-gray-50">
-                               
-              <button
-                onClick={() => setDoubtModalOpen(false)}
-                className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition"
-              >
-                                    Cancel                  
-              </button>
-                               
+            <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50 rounded-b-2xl">
+              <button onClick={() => setDoubtModalOpen(false)} className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-lg transition">Cancel</button>
               <button
                 onClick={handleDoubtSubmit}
                 disabled={submissionStatus === "loading" || !doubtText.trim()}
-                className={`flex items-center gap-2 px-6 py-2 text-sm font-bold text-white rounded-lg shadow-lg transition ${submissionStatus === "loading" ? "bg-indigo-400" : "bg-indigo-600 hover:bg-indigo-700"} disabled:opacity-70 disabled:cursor-not-allowed`}
+                className={`flex items-center gap-2 px-5 py-2 text-sm font-bold text-white rounded-lg shadow-md transition ${submissionStatus === "loading" ? "bg-indigo-400" : "bg-indigo-600 hover:bg-indigo-700"} disabled:opacity-70`}
               >
-                                   {" "}
-                {submissionStatus === "loading" ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" /> Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send size={16} /> Submit Doubt
-                  </>
-                )}
-                                 
+                {submissionStatus === "loading" ? <><Loader2 size={14} className="animate-spin" />Sending...</> : <><Send size={14} />Submit</>}
               </button>
-                           {" "}
             </div>
-                       
           </div>
-                 {" "}
         </div>
       )}
-         {" "}
     </div>
   );
 };

@@ -23,9 +23,12 @@ const StuHeader = ({ user, setActiveTab }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const searchRef = useRef(null);
 
-  // ─── CART (purchased tests count) ────────────────────────────
+  // ─── AUTH DATA ───────────────────────────────────────────────
   const { userData } = useSelector((state) => state.user);
-  const purchasedCount = userData?.purchasedTests?.length || 0;
+  const { studentProfile } = useSelector((state) => state.students);
+
+  // Resolved avatar — prefer fresh studentProfile over login snapshot
+  const resolvedAvatar = studentProfile?.avatar || userData?.avatar || null;
 
   // ─── LEADERBOARD / RANK ───────────────────────────────────────
   const { globalLeaderboard, globalLeaderboardStatus, publicMocktests } = useSelector(
@@ -127,7 +130,7 @@ const StuHeader = ({ user, setActiveTab }) => {
   };
 
   const handleEnrollClick = () => {
-    if (setActiveTab) setActiveTab('enrollment');
+    if (setActiveTab) setActiveTab('explore');
   };
 
   const handleExploreTest = (test) => {
@@ -139,7 +142,7 @@ const StuHeader = ({ user, setActiveTab }) => {
   const rankLabel = myRank === 1 ? '🥇' : myRank === 2 ? '🥈' : myRank === 3 ? '🥉' : myRank ? `#${myRank}` : null;
 
   return (
-    <header className="mb-6 relative">
+    <header className="mb-4 relative">
       {/* ── ELITE RIBBON ── */}
       <div className="relative bg-gradient-to-r from-[#1a3a6b] via-[#1e4db7] to-[#1a3a9e] rounded-2xl px-3 py-2.5 shadow-xl border border-blue-400/20 flex items-center gap-3 flex-wrap xl:flex-nowrap">
         {/* Glows — clipped separately so they don't overflow */}
@@ -148,35 +151,10 @@ const StuHeader = ({ user, setActiveTab }) => {
           <div className="absolute bottom-0 left-1/3 w-40 h-40 bg-indigo-500 rounded-full blur-[70px] opacity-15" />
         </div>
 
-        {/* ── PROFILE AVATAR (clickable → settings) ── */}
-        <button
-          onClick={handleProfileClick}
-          className="relative group flex-shrink-0 focus:outline-none"
-          title="View Profile"
-        >
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-300 to-indigo-400 p-0.5 shadow-lg group-hover:scale-105 transition-transform duration-300">
-            <div className="w-full h-full bg-[#1a3a6b] rounded-[10px] overflow-hidden flex items-center justify-center">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={displayName}
-                  className="w-full h-full object-cover"
-                  onError={(e) => { e.target.style.display = 'none'; }}
-                />
-              ) : (
-                <span className="text-sm font-black text-white uppercase">
-                  {user?.firstname?.charAt(0) || 'S'}
-                </span>
-              )}
-            </div>
-          </div>
-          {/* Online dot */}
-          <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-blue-900 rounded-full" />
-        </button>
 
-        {/* ── GREETING + RANK ── */}
-        <div className="flex flex-col min-w-fit">
-          <h1 className="text-sm font-black text-white tracking-tight leading-none mb-0.5">
+
+        <div className="flex flex-col min-w-fit pl-2 flex-1">
+          <h1 className="text-sm font-black text-white tracking-tight leading-none">
             Hi,{' '}
             <button
               onClick={handleProfileClick}
@@ -186,15 +164,10 @@ const StuHeader = ({ user, setActiveTab }) => {
             </button>
             !
           </h1>
-          <div className="flex items-center gap-1.5">
-            <p className="text-[9px] text-blue-200/70 font-bold uppercase tracking-widest hidden sm:block">
-              Control Center
-            </p>
-          </div>
         </div>
 
-        {/* ── LEFT ACTIONS (SEARCH, ENROLL, NOTIFICATIONS) ── */}
-        <div className="flex items-center gap-10 flex-1 ml-4 h-10 border-l border-white/10 pl-10">
+        {/* ── ACTIONS (SEARCH, ENROLL, NOTIFICATIONS, PROFILE) ── */}
+        <div className="flex items-center gap-6 ml-auto h-10">
           {/* SEARCH BAR */}
           <div className="relative flex items-center group w-full max-w-[180px]">
             <Search className="absolute left-3 text-slate-400 group-focus-within:text-blue-400 transition-colors" size={14} />
@@ -206,13 +179,12 @@ const StuHeader = ({ user, setActiveTab }) => {
             />
           </div>
 
-          {/* ADD TO ENROLL BUTTON */}
           <button
-            onClick={handleEnrollClick}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-black text-[11px] uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
+            onClick={() => setActiveTab('my-tests')}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-[11px] uppercase tracking-wider shadow-lg shadow-blue-500/20 transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
           >
             <BookOpen size={14} />
-            Add to Enroll
+            My Enrolls
           </button>
 
           {/* 🔔 NOTIFICATIONS WITH TEXT */}
@@ -238,7 +210,7 @@ const StuHeader = ({ user, setActiveTab }) => {
               )}
             </button>
 
-            {/* Notification Dropdown (logic remains same) */}
+            {/* Notification Dropdown */}
             <AnimatePresence>
               {showNotifications && (
                 <motion.div
@@ -246,12 +218,12 @@ const StuHeader = ({ user, setActiveTab }) => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.97 }}
                   transition={{ duration: 0.18 }}
-                  className="absolute top-full left-0 mt-3 w-80 bg-white border border-slate-200 shadow-2xl z-[200] rounded-2xl overflow-hidden"
+                  className="absolute top-full right-0 mt-3 w-80 bg-white border border-slate-200 shadow-2xl z-[200] rounded-2xl overflow-hidden text-left"
                 >
                   <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center gap-2">
-                      <Bell size={12} className="text-rose-500" />
-                      <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Inbox</p>
+                       <Bell size={12} className="text-rose-500" />
+                       <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Inbox</p>
                     </div>
                     <button
                       onClick={() => { setNotifications([]); setShowNotifications(false); }}
@@ -287,20 +259,17 @@ const StuHeader = ({ user, setActiveTab }) => {
               )}
             </AnimatePresence>
           </div>
-        </div>
 
-        {/* ── RIGHT ACTIONS (PROFILE ONLY) ── */}
-        <div className="flex items-center gap-3 ml-auto flex-shrink-0 relative z-10 pr-2">
-          {/* 👤 PROFILE ICON BUTTON */}
+          {/* 👤 PROFILE ICON BUTTON integrated */}
           <button
             onClick={handleProfileClick}
-            className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 p-0.5 shadow-lg hover:scale-105 active:scale-95 transition-all"
+            className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 p-0.5 shadow-lg hover:scale-105 active:scale-95 transition-all ml-4"
           >
             <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center font-black text-blue-400 text-xs overflow-hidden">
-              {userData?.avatar ? (
-                 <img src={getImageUrl(userData.avatar)} alt="avatar" className="w-full h-full object-cover" />
+              {resolvedAvatar ? (
+                 <img src={getImageUrl(resolvedAvatar)} alt="avatar" className="w-full h-full object-cover" />
               ) : (
-                userData?.firstname?.charAt(0).toUpperCase()
+                (userData?.firstname || studentProfile?.firstname)?.charAt(0).toUpperCase()
               )}
             </div>
           </button>

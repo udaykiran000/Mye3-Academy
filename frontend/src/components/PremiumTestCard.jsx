@@ -1,10 +1,10 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Clock, BookOpen, Unlock, ShoppingCart, Play, FileText } from "lucide-react";
+import { Clock, BookOpen, Unlock, Play, FileText } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 
-import { addItemToCart, fetchCart } from "../redux/cartSlice";
+import { fetchPublicTestById } from "../redux/mockTestSlice";
 import { getImageUrl, handleImageError } from "../utils/imageHelper";
 
 const PremiumTestCard = ({ test }) => {
@@ -12,7 +12,6 @@ const PremiumTestCard = ({ test }) => {
   const navigate  = useNavigate();
 
   const { userData, myMockTests }  = useSelector((s) => s.user);
-  const { cartItems } = useSelector((s) => s.cart);
 
   const purchasedTests = userData?.purchasedTests || userData?.enrolledMockTests || [];
   const isGrand        = test.isGrandTest === true;
@@ -20,7 +19,7 @@ const PremiumTestCard = ({ test }) => {
   
   const hasPurchased   = purchasedTests.some((i) => i._id === test._id || i === test._id) || 
                        myMockTests?.some((t) => t._id === test._id);
-  const isInCart       = cartItems.some((i) => i._id === test._id || i.mockTestId === test._id);
+  // const isInCart       = cartItems.some((i) => i._id === test._id || i.mockTestId === test._id);
 
   const imageSource = getImageUrl(test.thumbnail);
   const enrolled    = (test.totalQuestions * 37 + 500).toLocaleString();
@@ -34,14 +33,9 @@ const PremiumTestCard = ({ test }) => {
   const handleStart = () => { if (!loginGuard()) return; navigate(`/student/instructions/${test._id}`); };
   const handleView  = () => navigate(`/mocktests/${test._id}`);
 
-  const handleAddToCart = async () => {
+  const handleUnlock = () => {
     if (!loginGuard()) return;
-    if (isFree)     return toast.info("Free test cannot be added to cart.");
-    if (isInCart)   return toast.info("Already in cart.");
-    if (isGrand && hasPurchased) return toast.info("Grand Test can be purchased only once.");
-    const result = await dispatch(addItemToCart(test._id));
-    if (result.meta.requestStatus === "fulfilled") { toast.success(`${test.title} added to cart!`); dispatch(fetchCart()); }
-    else toast.error("Failed to add to cart.");
+    navigate(`/student/instructions/${test._id}`);
   };
 
   const canStart   = isFree || hasPurchased;
@@ -128,22 +122,10 @@ const PremiumTestCard = ({ test }) => {
         ) : (
           <>
             <button
-              onClick={handleAddToCart}
+              onClick={handleUnlock}
               className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-amber-100 rounded-xl"
             >
               <Unlock size={12} strokeWidth={3} /> Unlock
-            </button>
-            <button
-              onClick={handleAddToCart}
-              disabled={isInCart}
-              title={isInCart ? "Already in cart" : "Add to Cart"}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] font-black uppercase tracking-widest border transition-all rounded-xl ${
-                isInCart
-                  ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed shadow-none"
-                  : "bg-white text-slate-600 border-slate-200 hover:border-amber-400 hover:text-amber-600 hover:bg-amber-50 shadow-sm hover:shadow-md"
-              }`}
-            >
-              <ShoppingCart size={12} strokeWidth={3} /> {isInCart ? "Added" : "Add"}
             </button>
           </>
         )}

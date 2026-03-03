@@ -39,16 +39,20 @@ export default function AllMockTests({ isEmbedded = false }) {
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(filters.q || "");
   const [sortBy, setSortBy] = useState("newest"); // newest, oldest, name-az, name-za
+  const [testType, setTestType] = useState(searchParams.get("type") || "all"); // all, mock, grand
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   useEffect(() => {
     const categoryFromUrl = searchParams.get("category");
     const searchFromUrl = searchParams.get("q");
+    const typeFromUrl = searchParams.get("type");
+    
     if (categoryFromUrl) dispatch(setPublicCategoryFilter(categoryFromUrl));
     if (searchFromUrl) {
       dispatch(setPublicSearch(searchFromUrl));
       setSearchTerm(searchFromUrl);
     }
+    if (typeFromUrl) setTestType(typeFromUrl);
   }, [dispatch, searchParams]);
 
   useEffect(() => {
@@ -79,21 +83,23 @@ export default function AllMockTests({ isEmbedded = false }) {
     setIsFilterPanelOpen(false);
   };
 
-  // All tests combined (mock + grand)
-  const type = searchParams.get("type"); // 'mock' or 'grand' or null
-
+  // Memoized filtered tests
   const allTests = useMemo(() => {
     if (!publicMocktests) return [];
     let tests = [...publicMocktests];
-    // Filter by type from URL
-    if (type === "mock") tests = tests.filter((t) => !t.isGrandTest);
-    if (type === "grand") tests = tests.filter((t) => t.isGrandTest === true);
+    
+    // Filter by type (Mock vs Grand)
+    if (testType === "mock") tests = tests.filter((t) => !t.isGrandTest);
+    if (testType === "grand") tests = tests.filter((t) => t.isGrandTest === true);
+    
+    // Sort
     if (sortBy === "newest") tests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     if (sortBy === "oldest") tests.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     if (sortBy === "name-az") tests.sort((a, b) => a.title.localeCompare(b.title));
     if (sortBy === "name-za") tests.sort((a, b) => b.title.localeCompare(a.title));
+    
     return tests;
-  }, [publicMocktests, sortBy, type]);
+  }, [publicMocktests, sortBy, testType]);
 
   const selectedCategoryName = useMemo(() => {
     if (!filters.category) return null;
@@ -106,7 +112,7 @@ export default function AllMockTests({ isEmbedded = false }) {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters.q, filters.category]);
+  }, [filters.q, filters.category, testType]);
 
   const currentTests = useMemo(() => {
     const start = (currentPage - 1) * testsPerPage;
@@ -123,16 +129,16 @@ export default function AllMockTests({ isEmbedded = false }) {
   return (
     <div className={`min-h-screen ${
       isEmbedded ? "bg-transparent" :
-      type === "mock" ? "bg-[#f0fff4] pt-20 pb-16" :
-      type === "grand" ? "bg-[#fffbeb] pt-20 pb-16" :
+      testType === "mock" ? "bg-[#f0fff4] pt-20 pb-16" :
+      testType === "grand" ? "bg-[#fffbeb] pt-20 pb-16" :
       "bg-[#f4f7fa] pt-20 pb-16"
     }`}>
       <div className={isEmbedded ? "w-full" : "max-w-[1440px] mx-auto px-6 md:px-12"}>
 
         {/* ── TYPE HERO BANNER ── */}
-        {type === "mock" && (
-          <div className="mb-8 border-l-4 border-[#21b731] bg-white shadow-sm px-6 py-5 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
+        {testType === "mock" && (
+          <div className="mt-2 mb-6 border-l-4 border-[#21b731] bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4 w-full md:w-auto">
               <div className="w-12 h-12 bg-[#21b731]/10 flex items-center justify-center text-[#21b731] flex-shrink-0">
                 <IoDocumentText size={24} />
               </div>
@@ -143,15 +149,77 @@ export default function AllMockTests({ isEmbedded = false }) {
                 </p>
               </div>
             </div>
-            <span className="hidden md:block text-[10px] font-black text-[#21b731] border border-[#21b731]/20 bg-[#21b731]/5 px-3 py-1.5 tracking-widest uppercase">
-              Practice &amp; Improve
-            </span>
+
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+              <div className="relative w-full md:w-80 group">
+                <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg focus-within:bg-white focus-within:border-[#21b731] transition-all duration-300 overflow-hidden p-1">
+                  <div className="pl-3 pr-2 py-2 text-slate-400">
+                    <IoSearch size={18} />
+                  </div>
+                  <input
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search Test Series"
+                    className="w-full px-1 py-1.5 outline-none text-[13px] text-slate-700 placeholder:text-slate-400 bg-transparent"
+                  />
+                  <button className="bg-[#21b731] hover:bg-[#1a9227] text-white px-5 py-2 rounded-md text-[11px] font-bold shadow-sm transition-all ml-1 tracking-wider">
+                    SEARCH
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative w-full md:w-auto">
+                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg hover:border-[#21b731] transition-all cursor-pointer p-0.5">
+                  <div className="pl-3 text-slate-400">
+                    <IoSwapVertical size={16} />
+                  </div>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="appearance-none bg-transparent pl-2 pr-10 py-2.5 outline-none text-xs font-bold text-slate-700 cursor-pointer min-w-[140px]"
+                  >
+                    <option value="newest">NEWEST FIRST</option>
+                    <option value="oldest">OLDEST FIRST</option>
+                    <option value="name-az">NAME (A-Z)</option>
+                    <option value="name-za">NAME (Z-A)</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <IoChevronDown size={14} />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── TYPE FILTER ── */}
+              <div className="relative w-full md:w-auto">
+                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg hover:border-[#21b731] transition-all cursor-pointer p-0.5">
+                  <div className="pl-3 text-slate-400">
+                    <IoApps size={16} />
+                  </div>
+                  <select
+                    value={testType}
+                    onChange={(e) => setTestType(e.target.value)}
+                    className="appearance-none bg-transparent pl-2 pr-10 py-2.5 outline-none text-xs font-bold text-slate-700 cursor-pointer min-w-[140px]"
+                  >
+                    <option value="all">ALL EXAMS</option>
+                    <option value="mock">MOCK TESTS</option>
+                    <option value="grand">GRAND TESTS</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <IoChevronDown size={14} />
+                  </div>
+                </div>
+              </div>
+
+              <span className="hidden xl:block text-[10px] font-black text-[#21b731] border border-[#21b731]/20 bg-[#21b731]/5 px-3 py-1.5 tracking-widest uppercase whitespace-nowrap">
+                Practice & Improve
+              </span>
+            </div>
           </div>
         )}
 
-        {type === "grand" && (
-          <div className="mb-8 border-l-4 border-amber-500 bg-white shadow-sm px-6 py-5 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
+        {testType === "grand" && (
+          <div className="mt-2 mb-6 border-l-4 border-amber-500 bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4 w-full md:w-auto">
               <div className="w-12 h-12 bg-amber-50 flex items-center justify-center text-amber-500 flex-shrink-0">
                 <IoTrophy size={24} />
               </div>
@@ -162,65 +230,152 @@ export default function AllMockTests({ isEmbedded = false }) {
                 </p>
               </div>
             </div>
-            <span className="hidden md:block text-[10px] font-black text-amber-600 border border-amber-200 bg-amber-50 px-3 py-1.5 tracking-widest uppercase">
-              Premium Exams
-            </span>
+
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+              <div className="relative w-full md:w-80 group">
+                <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg focus-within:bg-white focus-within:border-amber-500 transition-all duration-300 overflow-hidden p-1">
+                  <div className="pl-3 pr-2 py-2 text-slate-400">
+                    <IoSearch size={18} />
+                  </div>
+                  <input
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search Test Series"
+                    className="w-full px-1 py-1.5 outline-none text-[13px] text-slate-700 placeholder:text-slate-400 bg-transparent"
+                  />
+                  <button className="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2 rounded-md text-[11px] font-bold shadow-sm transition-all ml-1 tracking-wider">
+                    SEARCH
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative w-full md:w-auto">
+                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg hover:border-amber-500 transition-all cursor-pointer p-0.5">
+                  <div className="pl-3 text-slate-400">
+                    <IoSwapVertical size={16} />
+                  </div>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="appearance-none bg-transparent pl-2 pr-10 py-2.5 outline-none text-xs font-bold text-slate-700 cursor-pointer min-w-[140px]"
+                  >
+                    <option value="newest">NEWEST FIRST</option>
+                    <option value="oldest">OLDEST FIRST</option>
+                    <option value="name-az">NAME (A-Z)</option>
+                    <option value="name-za">NAME (Z-A)</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <IoChevronDown size={14} />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── TYPE FILTER ── */}
+              <div className="relative w-full md:w-auto">
+                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg hover:border-amber-500 transition-all cursor-pointer p-0.5">
+                  <div className="pl-3 text-slate-400">
+                    <IoApps size={16} />
+                  </div>
+                  <select
+                    value={testType}
+                    onChange={(e) => setTestType(e.target.value)}
+                    className="appearance-none bg-transparent pl-2 pr-10 py-2.5 outline-none text-xs font-bold text-slate-700 cursor-pointer min-w-[140px]"
+                  >
+                    <option value="all">ALL EXAMS</option>
+                    <option value="mock">MOCK TESTS</option>
+                    <option value="grand">GRAND TESTS</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <IoChevronDown size={14} />
+                  </div>
+                </div>
+              </div>
+
+              <span className="hidden xl:block text-[10px] font-black text-amber-600 border border-amber-200 bg-amber-50 px-3 py-1.5 tracking-widest uppercase whitespace-nowrap">
+                Premium Exams
+              </span>
+            </div>
           </div>
         )}
 
-        {/* TOP HEADER */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4 pt-2">
-          {!type && (
-            <div className="space-y-1">
-              <h1 className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">All Tests</h1>
-              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-                {allTests.length} Total Tests Available
-              </p>
-            </div>
-          )}
-          {type && <div />}
-
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-            <div className="relative w-full md:w-96 group">
-              <div className="relative flex items-center bg-white border border-slate-200 rounded-lg shadow-sm focus-within:shadow-md focus-within:border-blue-500 transition-all duration-300 overflow-hidden p-1">
-                 <div className="pl-3 pr-2 py-2 text-slate-400">
-                    <IoSearch size={18} />
-                 </div>
-                 <input
-                   value={searchTerm}
-                   onChange={(e) => setSearchTerm(e.target.value)}
-                   placeholder="Search Test Series"
-                   className="w-full px-1 py-1.5 outline-none text-[13px] text-slate-700 placeholder:text-slate-400 bg-transparent"
-                 />
-                 <button className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-[11px] font-bold shadow-sm transition-all ml-1 tracking-wider">
-                    SEARCH
-                 </button>
+        {!["mock", "grand"].includes(testType) && (
+          <div className="mt-2 mb-6 border-l-4 border-blue-600 bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <div className="w-12 h-12 bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">
+                <IoDocumentText size={24} />
+              </div>
+              <div>
+                <h1 className="text-xl font-black text-[#3e4954] tracking-tight">
+                  {testType === "mock" ? "Mock Tests" : testType === "grand" ? "Grand Tests" : "All Tests"}
+                </h1>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                  {allTests.length} {testType === "mock" ? "Mock Tests" : testType === "grand" ? "Grand Tests" : "Total Tests"} Available
+                </p>
               </div>
             </div>
 
-            {/* SORT DROPDOWN */}
-            <div className="relative">
-              <div className="flex items-center bg-white border border-slate-200 rounded-lg shadow-sm hover:border-blue-500 transition-all cursor-pointer p-0.5">
-                <div className="pl-3 text-slate-400">
-                  <IoSwapVertical size={16} />
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+              <div className="relative w-full md:w-80 group">
+                <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg focus-within:bg-white focus-within:border-blue-600 transition-all duration-300 overflow-hidden p-1">
+                  <div className="pl-3 pr-2 py-2 text-slate-400">
+                    <IoSearch size={18} />
+                  </div>
+                  <input
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search Test Series"
+                    className="w-full px-1 py-1.5 outline-none text-[13px] text-slate-700 placeholder:text-slate-400 bg-transparent"
+                  />
+                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-[11px] font-bold shadow-sm transition-all ml-1 tracking-wider">
+                    SEARCH
+                  </button>
                 </div>
-                <select 
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none bg-transparent pl-2 pr-10 py-2.5 outline-none text-xs font-bold text-slate-700 cursor-pointer min-w-[140px]"
-                >
-                  <option value="newest">NEWEST FIRST</option>
-                  <option value="oldest">OLDEST FIRST</option>
-                  <option value="name-az">NAME (A-Z)</option>
-                  <option value="name-za">NAME (Z-A)</option>
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <IoChevronDown size={14} />
+              </div>
+
+              <div className="relative w-full md:w-auto">
+                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg hover:border-blue-600 transition-all cursor-pointer p-0.5">
+                  <div className="pl-3 text-slate-400">
+                    <IoSwapVertical size={16} />
+                  </div>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="appearance-none bg-transparent pl-2 pr-10 py-2.5 outline-none text-xs font-bold text-slate-700 cursor-pointer min-w-[140px]"
+                  >
+                    <option value="newest">NEWEST FIRST</option>
+                    <option value="oldest">OLDEST FIRST</option>
+                    <option value="name-az">NAME (A-Z)</option>
+                    <option value="name-za">NAME (Z-A)</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <IoChevronDown size={14} />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── TYPE FILTER ── */}
+              <div className="relative w-full md:w-auto">
+                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg hover:border-blue-600 transition-all cursor-pointer p-0.5">
+                  <div className="pl-3 text-slate-400">
+                    <IoApps size={16} />
+                  </div>
+                  <select
+                    value={testType}
+                    onChange={(e) => setTestType(e.target.value)}
+                    className="appearance-none bg-transparent pl-2 pr-10 py-2.5 outline-none text-xs font-bold text-slate-700 cursor-pointer min-w-[140px]"
+                  >
+                    <option value="all">ALL EXAMS</option>
+                    <option value="mock">MOCK TESTS</option>
+                    <option value="grand">GRAND TESTS</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <IoChevronDown size={14} />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="flex items-center justify-between mb-6 lg:hidden">
           <button

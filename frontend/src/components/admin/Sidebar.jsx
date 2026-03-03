@@ -5,7 +5,6 @@ import { fetchAdminProfile } from "../../redux/adminSlice";
 import api from "../../api/axios";
 import toast from "react-hot-toast";
 import { setUserData } from "../../redux/userSlice";
-import { clearCart } from "../../redux/cartSlice";
 import { motion, AnimatePresence } from "framer-motion";
 
 import {
@@ -106,7 +105,6 @@ const Sidebar = ({ mobileOpen, setMobileOpen }) => {
     try {
       await api.get("/api/auth/logout");
       dispatch(setUserData(null));
-      dispatch(clearCart());
       toast.success("You are now signed out");
       navigate("/");
     } catch (error) {

@@ -164,14 +164,18 @@ export const getMyAttempts = async (req, res) => {
                 return { ...attempt, mocktestId: { title: "Invalid Test Reference", totalMarks: 0 }};
             }
 
-            let test = await MockTest.findById(attempt.mocktestId).select("title totalMarks").lean();
+            let test = await MockTest.findById(attempt.mocktestId).select("title totalMarks isGrandTest").lean();
+            let isGrandTest = false;
             if (!test) {
                 test = await GrandTest.findById(attempt.mocktestId).select("title totalMarks").lean();
+                isGrandTest = !!test;
             }
 
             return {
                 ...attempt,
-                mocktestId: test || { title: "Deleted Test", totalMarks: 0 }
+                mocktestId: test
+                    ? { ...test, isGrandTest }
+                    : { title: "Deleted Test", totalMarks: 0, isGrandTest: false }
             };
         } catch (err) {
             return { ...attempt, mocktestId: { title: "Error Loading Title", totalMarks: 0 }};
