@@ -2,6 +2,8 @@ import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { fetchCart, removeItemFromCart } from "../redux/cartSlice";
+import { fetchPublicMockTests } from "../redux/mockTestSlice";
+import PremiumTestCard from "../components/PremiumTestCard";
 import { CgSpinner } from "react-icons/cg";
 import { FaTrash, FaTag, FaCheckCircle } from "react-icons/fa";
 import { ShoppingCart } from "lucide-react";
@@ -99,6 +101,7 @@ export default function Cart() {
     const cartItems = useSelector((state) => state.cart.cartItems);
     const status = useSelector((state) => state.cart.status);
     const { userData } = useSelector((state) => state.user);
+    const { publicMocktests, publicStatus } = useSelector((state) => state.mocktest);
 
     const [selectedIds, setSelectedIds] = React.useState([]);
 
@@ -106,7 +109,10 @@ export default function Cart() {
         if (userData) {
             dispatch(fetchCart());
         }
-    }, [dispatch, userData]);
+        if (publicStatus === "idle") {
+            dispatch(fetchPublicMockTests());
+        }
+    }, [dispatch, userData, publicStatus]);
 
     // Update selectedIds when cartItems change (auto-select all new items)
     useEffect(() => {
@@ -145,6 +151,12 @@ export default function Cart() {
         navigate("/checkout", { state: { selectedIds } });
     };
 
+    // FILTER FOR UN-ENROLLED PREMIUM TESTS
+    const browseTests = publicMocktests.filter(test => 
+        !test.isFree && 
+        !cartItems.some(i => i._id === test._id || i.mockTestId === test._id)
+    ).slice(0, 4); // Show top 4 recommendations
+
     // Loading
     if (status === "loading") {
         return (
@@ -179,12 +191,12 @@ export default function Cart() {
     }
 
     return (
-        <div className="bg-gray-50 min-h-screen pt-28 pb-16 text-gray-900">
+        <div className="min-h-screen pb-16 text-gray-900">
             <div className="max-w-7xl mx-auto px-4">
 
-                <h1 className="text-4xl font-extrabold mb-10 border-b border-gray-200 pb-3 text-gray-900">
-                    <ShoppingCart size={32} className="inline mr-3 text-indigo-600" />
-                    Shopping Cart
+                <h1 className="text-2xl font-black mb-8 border-b border-gray-200 pb-3 text-gray-800 uppercase tracking-tight">
+                    <ShoppingCart size={24} className="inline mr-3 text-indigo-600" />
+                    Add to Enroll
                 </h1>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -241,6 +253,30 @@ export default function Cart() {
                         </div>
                     </aside>
                 </div>
+
+                {/* BROWSE MORE TESTS SECTION */}
+                {browseTests.length > 0 && (
+                    <div className="mt-20 border-t border-gray-100 pt-16 mb-20">
+                        <div className="flex items-center justify-between mb-10">
+                            <div>
+                                <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Browse More Premium Tests</h2>
+                                <p className="text-slate-500 font-bold mt-1 text-sm uppercase tracking-widest">Handpicked series to level up your prep</p>
+                            </div>
+                            <Link 
+                                to="/mocktests" 
+                                className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                            >
+                                View All Tests
+                            </Link>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {browseTests.map(test => (
+                                <PremiumTestCard key={test._id} test={test} />
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

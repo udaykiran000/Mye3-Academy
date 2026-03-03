@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  Bell, Trophy, Search, ShoppingCart, X, User,
-  LogOut, ChevronRight, Star, Medal, TrendingUp
+  Bell, Search, X, User, BookOpen, GraduationCap,
+  LogOut, ChevronRight, Star, Medal, TrendingUp, Trophy
 } from 'lucide-react';
 import { getSocket } from '../../socket';
 import toast from 'react-hot-toast';
@@ -126,8 +126,8 @@ const StuHeader = ({ user, setActiveTab }) => {
     if (setActiveTab) setActiveTab('settings');
   };
 
-  const handleCartClick = () => {
-    if (setActiveTab) setActiveTab('my-tests');
+  const handleEnrollClick = () => {
+    if (setActiveTab) setActiveTab('enrollment');
   };
 
   const handleExploreTest = (test) => {
@@ -190,121 +190,55 @@ const StuHeader = ({ user, setActiveTab }) => {
             <p className="text-[9px] text-blue-200/70 font-bold uppercase tracking-widest hidden sm:block">
               Control Center
             </p>
-            {rankLabel && (
-              <span className="hidden sm:flex items-center gap-0.5 bg-amber-500/20 border border-amber-500/30 text-amber-400 text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider">
-                <Medal size={9} className="flex-shrink-0" />
-                {rankLabel}
-              </span>
-            )}
           </div>
         </div>
 
-        {/* SEPARATOR */}
-        <div className="hidden xl:block w-px h-8 bg-white/10 flex-shrink-0" />
+        {/* ── LEFT ACTIONS (SEARCH, ENROLL, NOTIFICATIONS) ── */}
+        <div className="flex items-center gap-10 flex-1 ml-4 h-10 border-l border-white/10 pl-10">
+          {/* SEARCH BAR */}
+          <div className="relative flex items-center group w-full max-w-[180px]">
+            <Search className="absolute left-3 text-slate-400 group-focus-within:text-blue-400 transition-colors" size={14} />
+            <input 
+              type="text"
+              placeholder="Search tests..."
+              className="bg-white/5 hover:bg-white/10 focus:bg-white/15 border border-white/10 rounded-xl py-2 pl-9 pr-4 text-[13px] font-bold text-white placeholder-white/30 outline-none w-full transition-all focus:ring-2 focus:ring-blue-500/50"
+              onFocus={() => setShowSearch(true)}
+            />
+          </div>
 
-        {/* ── HALL OF FAME STRIP ── */}
-        <AnimatePresence>
-          {globalLeaderboard.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="relative z-10 flex-1 flex items-center gap-3 overflow-hidden min-w-0"
-            >
-              <div className="flex items-center gap-1.5 min-w-fit">
-                <div className="w-7 h-7 rounded-md bg-amber-500/20 flex items-center justify-center text-amber-500 border border-amber-500/30 flex-shrink-0">
-                  <Trophy size={13} />
-                </div>
-                <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest hidden lg:block">
-                  Hall of Fame
-                </p>
-              </div>
-
-              <div className="flex-1 overflow-x-auto scroll-hidden">
-                <div className="flex items-center gap-2 py-0.5">
-                  {globalLeaderboard.slice(0, 4).map((ranker, index) => (
-                    <motion.div
-                      key={index}
-                      whileHover={{ scale: 1.05, y: -1 }}
-                      className="flex items-center gap-1.5 bg-white/5 pl-1 pr-2.5 py-1 rounded-xl border border-white/5 hover:border-blue-500/40 hover:bg-white/10 transition-all cursor-default min-w-fit group backdrop-blur-sm"
-                    >
-                      <div className="relative">
-                        <div
-                          className={`w-6 h-6 rounded-[6px] flex items-center justify-center text-white font-black text-[10px] shadow-inner
-                            ${index === 0 ? 'bg-amber-400' : index === 1 ? 'bg-slate-400' : index === 2 ? 'bg-orange-400' : 'bg-blue-500'}`}
-                        >
-                          {ranker.name?.charAt(0)}
-                        </div>
-                        <div
-                          className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[6px] font-black border border-slate-900
-                            ${index === 0 ? 'bg-amber-400 text-amber-900' : index === 1 ? 'bg-slate-200 text-slate-600' : index === 2 ? 'bg-orange-100 text-orange-700' : 'bg-white text-blue-600'}`}
-                        >
-                          {index + 1}
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-black text-slate-200 truncate max-w-[70px] leading-tight group-hover:text-blue-400 transition-colors uppercase tracking-tighter">
-                          {ranker.name}
-                        </p>
-                        <p className="text-[7px] font-bold text-slate-500 uppercase tracking-tighter">
-                          {ranker.totalScore?.toLocaleString()} pts
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ── RIGHT ACTIONS ── */}
-        <div className="flex items-center gap-1.5 ml-auto flex-shrink-0 relative z-10">
-
-          {/* 🔍 GLOBAL SEARCH */}
+          {/* ADD TO ENROLL BUTTON */}
           <button
-            onClick={() => setShowSearch(true)}
-            className="relative p-2 bg-white/15 hover:bg-white/25 rounded-lg border border-white/20 transition-all group backdrop-blur-md"
-            title="Search Tests"
+            onClick={handleEnrollClick}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-black text-[11px] uppercase tracking-wider shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
           >
-            <Search className="text-white group-hover:text-yellow-300 transition-colors drop-shadow" size={15} />
+            <BookOpen size={14} />
+            Add to Enroll
           </button>
 
-          {/* 🛒 CART (My Tests) */}
-          <button
-            onClick={handleCartClick}
-            className="relative p-2 bg-emerald-500/20 hover:bg-emerald-500/35 rounded-lg border border-emerald-400/30 transition-all group backdrop-blur-md"
-            title="My Enrolled Tests"
-          >
-            <ShoppingCart className="text-emerald-300 group-hover:text-emerald-200 transition-colors drop-shadow" size={15} />
-            {purchasedCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-emerald-400 rounded-full border-2 border-blue-900 text-[8px] font-black text-blue-900 flex items-center justify-center px-0.5 shadow-lg">
-                {purchasedCount > 9 ? '9+' : purchasedCount}
-              </span>
-            )}
-          </button>
-
-          {/* 🔔 NOTIFICATIONS */}
+          {/* 🔔 NOTIFICATIONS WITH TEXT */}
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => {
                 setShowNotifications((p) => !p);
                 setShowSearch(false);
               }}
-              className="relative p-2 bg-rose-500/20 hover:bg-rose-500/35 rounded-lg border border-rose-400/30 transition-all group backdrop-blur-md"
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all backdrop-blur-md 
+                ${hasNotification ? 'bg-rose-500/20 border-rose-400/30' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
               title="Notifications"
             >
               <Bell
-                className={`transition-colors drop-shadow ${hasNotification ? 'text-rose-300 animate-pulse' : 'text-rose-300 group-hover:text-rose-200'}`}
-                size={15}
+                className={`transition-colors drop-shadow ${hasNotification ? 'text-rose-300 animate-pulse' : 'text-slate-300'}`}
+                size={16}
               />
+              <span className={`text-[11px] font-black uppercase tracking-wider ${hasNotification ? 'text-rose-300' : 'text-slate-300'}`}>
+                Notifications
+              </span>
               {hasNotification && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-rose-400 rounded-full border-2 border-blue-900 text-[8px] font-black text-white flex items-center justify-center px-0.5 shadow-lg">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
+                <span className="w-2 h-2 bg-rose-500 rounded-full" />
               )}
             </button>
 
-            {/* Notification Dropdown */}
+            {/* Notification Dropdown (logic remains same) */}
             <AnimatePresence>
               {showNotifications && (
                 <motion.div
@@ -312,39 +246,38 @@ const StuHeader = ({ user, setActiveTab }) => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.97 }}
                   transition={{ duration: 0.18 }}
-                  className="absolute top-full right-0 mt-2 w-72 bg-gradient-to-b from-[#1e3a7a] to-[#162d62] border border-blue-400/30 rounded-2xl shadow-2xl z-[200] overflow-hidden"
+                  className="absolute top-full left-0 mt-3 w-80 bg-white border border-slate-200 shadow-2xl z-[200] rounded-2xl overflow-hidden"
                 >
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-blue-400/20 bg-white/5">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center gap-2">
-                      <Bell size={12} className="text-rose-300" />
-                      <p className="text-[10px] font-black text-white uppercase tracking-widest">Notifications</p>
+                      <Bell size={12} className="text-rose-500" />
+                      <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Inbox</p>
                     </div>
                     <button
                       onClick={() => { setNotifications([]); setShowNotifications(false); }}
-                      className="text-blue-300 hover:text-white text-[9px] font-bold uppercase tracking-wider hover:underline"
+                      className="text-blue-600 hover:text-blue-700 text-[9px] font-black uppercase tracking-wider"
                     >
-                      Clear all
+                      Clear All
                     </button>
                   </div>
-                  <div className="max-h-64 overflow-y-auto">
+                  <div className="max-h-80 overflow-y-auto custom-scrollbar">
                     {notifications.length === 0 ? (
-                      <div className="py-8 flex flex-col items-center justify-center text-center">
-                        <Bell size={28} className="text-blue-400/40 mb-2" />
-                        <p className="text-blue-200/70 text-[11px] font-bold">No new notifications</p>
-                        <p className="text-blue-300/40 text-[10px] mt-1">We'll notify you when doubts are answered</p>
+                      <div className="py-12 flex flex-col items-center justify-center text-center">
+                        <Bell size={32} className="text-slate-200 mb-2" />
+                        <p className="text-[11px] font-bold text-slate-400">No new notifications</p>
                       </div>
                     ) : (
                       notifications.map((n) => (
                         <div
                           key={n.id}
-                          className="flex items-start gap-3 px-4 py-3 border-b border-blue-400/10 hover:bg-white/5 transition-colors"
+                          className="flex items-start gap-4 px-4 py-4 border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer group"
                         >
-                          <div className="w-7 h-7 rounded-lg bg-rose-500/20 border border-rose-400/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <Bell size={11} className="text-rose-300" />
+                          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+                            <Bell size={14} className="text-blue-600" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-bold text-white leading-snug">{n.text}</p>
-                            <p className="text-[9px] text-blue-300/50 mt-0.5">{n.time}</p>
+                            <p className="text-[12px] font-bold text-slate-700 leading-snug group-hover:text-blue-600 transition-colors">{n.text}</p>
+                            <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">{n.time}</p>
                           </div>
                         </div>
                       ))
@@ -354,14 +287,22 @@ const StuHeader = ({ user, setActiveTab }) => {
               )}
             </AnimatePresence>
           </div>
+        </div>
 
+        {/* ── RIGHT ACTIONS (PROFILE ONLY) ── */}
+        <div className="flex items-center gap-3 ml-auto flex-shrink-0 relative z-10 pr-2">
           {/* 👤 PROFILE ICON BUTTON */}
           <button
             onClick={handleProfileClick}
-            className="p-2 bg-indigo-500/25 hover:bg-indigo-500/40 rounded-lg border border-indigo-400/40 transition-all group backdrop-blur-md"
-            title="My Profile"
+            className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 p-0.5 shadow-lg hover:scale-105 active:scale-95 transition-all"
           >
-            <User className="text-indigo-200 group-hover:text-white transition-colors drop-shadow" size={15} />
+            <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center font-black text-blue-400 text-xs overflow-hidden">
+              {userData?.avatar ? (
+                 <img src={getImageUrl(userData.avatar)} alt="avatar" className="w-full h-full object-cover" />
+              ) : (
+                userData?.firstname?.charAt(0).toUpperCase()
+              )}
+            </div>
           </button>
         </div>
       </div>
@@ -373,7 +314,7 @@ const StuHeader = ({ user, setActiveTab }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-start justify-center pt-20 px-4"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-start justify-center pt-20 px-4"
             onClick={() => { setShowSearch(false); setSearchTerm(''); }}
           >
             <motion.div
@@ -382,11 +323,11 @@ const StuHeader = ({ user, setActiveTab }) => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.97 }}
               transition={{ duration: 0.2 }}
-              className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+              className="w-full max-w-2xl bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Search Input */}
-              <div className="flex items-center gap-3 px-5 py-4 border-b border-white/10">
+              <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
                 <Search size={18} className="text-slate-400 flex-shrink-0" />
                 <input
                   id="header-search-input"
@@ -394,11 +335,11 @@ const StuHeader = ({ user, setActiveTab }) => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search any test, exam, category..."
-                  className="flex-1 bg-transparent text-white placeholder-slate-500 text-sm font-medium outline-none"
+                  className="flex-1 bg-transparent text-slate-800 placeholder-slate-400 text-sm font-medium outline-none"
                 />
                 <button
                   onClick={() => { setShowSearch(false); setSearchTerm(''); }}
-                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
                 >
                   <X size={14} className="text-slate-400" />
                 </button>
@@ -407,51 +348,51 @@ const StuHeader = ({ user, setActiveTab }) => {
               {/* Results */}
               <div className="max-h-80 overflow-y-auto">
                 {!searchTerm.trim() ? (
-                  <div className="p-6 text-center">
-                    <TrendingUp size={32} className="text-slate-700 mx-auto mb-3" />
-                    <p className="text-slate-400 text-sm font-bold">Start typing to search tests</p>
-                    <p className="text-slate-600 text-[11px] mt-1">Search mock tests, grand tests, categories and more</p>
+                  <div className="p-10 text-center">
+                    <TrendingUp size={32} className="text-slate-200 mx-auto mb-3" />
+                    <p className="text-slate-500 text-sm font-bold">Start typing to search tests</p>
+                    <p className="text-slate-400 text-[11px] mt-1">Search mock tests, grand tests, categories and more</p>
                   </div>
                 ) : searchResults.length === 0 ? (
-                  <div className="p-6 text-center">
-                    <Search size={32} className="text-slate-700 mx-auto mb-3" />
-                    <p className="text-slate-400 text-sm font-bold">No results found</p>
-                    <p className="text-slate-600 text-[11px] mt-1">Try searching with different keywords</p>
+                  <div className="p-10 text-center">
+                    <Search size={32} className="text-slate-200 mx-auto mb-3" />
+                    <p className="text-slate-500 text-sm font-bold">No results found</p>
+                    <p className="text-slate-400 text-[11px] mt-1">Try searching with different keywords</p>
                   </div>
                 ) : (
                   <div className="p-2">
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-3 py-2">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 py-2">
                       {searchResults.length} Results Found
                     </p>
                     {searchResults.map((test) => (
                       <button
                         key={test._id}
                         onClick={() => handleExploreTest(test)}
-                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/5 transition-colors group text-left"
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 transition-all group text-left"
                       >
                         <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-black text-sm shadow-inner
-                            ${test.isGrandTest ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-black text-sm shadow-sm
+                            ${test.isGrandTest ? 'bg-amber-100 text-amber-600 border border-amber-200' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}
                         >
                           {test.isGrandTest ? <Trophy size={16} /> : <Star size={16} />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-slate-200 group-hover:text-white transition-colors truncate">
+                          <p className="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors truncate">
                             {test.title}
                           </p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span
                               className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded
-                                ${test.isGrandTest ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400'}`}
+                                ${test.isGrandTest ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}
                             >
                               {test.isGrandTest ? 'Grand Test' : 'Mock Test'}
                             </span>
                             {test.category?.name && (
-                              <span className="text-[9px] text-slate-500 font-bold">{test.category.name}</span>
+                              <span className="text-[9px] text-slate-400 font-bold">{test.category.name}</span>
                             )}
                           </div>
                         </div>
-                        <ChevronRight size={14} className="text-slate-600 group-hover:text-slate-400 transition-colors flex-shrink-0" />
+                        <ChevronRight size={14} className="text-slate-300 group-hover:text-slate-400 transition-colors flex-shrink-0" />
                       </button>
                     ))}
                   </div>
@@ -459,11 +400,11 @@ const StuHeader = ({ user, setActiveTab }) => {
               </div>
 
               {/* Footer */}
-              <div className="px-5 py-3 border-t border-white/5 flex items-center justify-between">
-                <p className="text-[9px] text-slate-600 font-bold">Press Esc to close</p>
+              <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <p className="text-[9px] text-slate-400 font-bold">Press Esc to close</p>
                 <button
                   onClick={() => { setShowSearch(false); if (setActiveTab) setActiveTab('explore'); }}
-                  className="text-[9px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-wider hover:underline"
+                  className="text-[9px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-wider hover:underline"
                 >
                   Browse All Tests →
                 </button>
