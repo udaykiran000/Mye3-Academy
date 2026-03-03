@@ -103,7 +103,7 @@ export const createMockTest = async (req, res) => {
     }
 
     const parsedSubjects = (req.body.subjects || []).map((s) => ({
-      name: (s.name || "").trim().toLowerCase(),
+      name: (s.name || "").trim(),
       easy: Number(s.easy) || 0,
       medium: 0,
       hard: 0,
@@ -183,7 +183,7 @@ export const updateMockTest = async (req, res) => {
         const medium = Number(s.medium) || 0;
         const hard = Number(s.hard) || 0;
         calcTotal += easy + medium + hard;
-        return { name: (s.name || "").trim().toLowerCase(), easy, medium, hard };
+        return { name: (s.name || "").trim(), easy, medium, hard };
       });
       if (!req.body.totalQuestions) mockTest.totalQuestions = calcTotal;
     }
@@ -194,6 +194,22 @@ export const updateMockTest = async (req, res) => {
         mockTest[field] = req.body[field];
       }
     });
+
+    // ✅ Sync existing questions if global marking scheme is updated
+    if (req.body.marksPerQuestion !== undefined || req.body.negativeMarking !== undefined) {
+      const gMarks = Number(req.body.marksPerQuestion);
+      const gNeg = Number(req.body.negativeMarking);
+
+      if (mockTest.questions && mockTest.questions.length > 0) {
+        mockTest.questions.forEach(q => {
+          if (req.body.marksPerQuestion !== undefined) q.marks = gMarks;
+          if (req.body.negativeMarking !== undefined) q.negative = gNeg;
+        });
+        // Recalculate totalMarks based on updated questions
+        mockTest.totalMarks = mockTest.questions.reduce((sum, q) => sum + (Number(q.marks) || 0), 0);
+        mockTest.totalQuestions = mockTest.questions.length;
+      }
+    }
 
     // Duration: store null for auto-mode, or manual value if > 0
     if (req.body.durationMinutes !== undefined) {
@@ -245,10 +261,15 @@ export const togglePublish = async (req, res) => {
       const errors = [];
       if (!test.title || test.title.trim() === "New Mock Test") errors.push("Test title is missing");
       if (!test.subcategory || test.subcategory.trim() === "") errors.push("Sub-category is missing");
-      if (!test.durationMinutes || Number(test.durationMinutes) <= 0) errors.push("Duration must be set (greater than 0)");
-      
+
+      // Fallback duration instead of blocking
+      if (!test.durationMinutes || Number(test.durationMinutes) <= 0) {
+        test.durationMinutes = 60; // Default to 60m if admin forgot
+        console.log(`- Defaulted duration to 60m for test: ${test.title}`);
+      }
+
       const questionCount = test.questions?.length || 0;
-      if (questionCount < 1) errors.push("Add at least one question");
+      if (questionCount < 1) errors.push("Add at least one question before publishing");
 
       if (errors.length > 0) {
         return res.status(400).json({

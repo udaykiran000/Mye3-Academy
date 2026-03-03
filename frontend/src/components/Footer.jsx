@@ -1,6 +1,7 @@
 // src/components/Footer.jsx
 import React from "react";
-import { GraduationCap } from "lucide-react"; // Added for logo consistency
+import { GraduationCap } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => (
   <footer className="bg-slate-900 text-slate-300 border-t border-slate-800">
@@ -8,14 +9,14 @@ const Footer = () => (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
         {/* BRAND COLUMN */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 group transition-opacity hover:opacity-80">
             <div className="bg-indigo-600 p-1.5 rounded-lg">
               <GraduationCap className="text-white w-5 h-5" />
             </div>
             <h3 className="text-xl font-bold text-white tracking-tight">
               <span className="text-indigo-400">MYE 3 Academy</span>
             </h3>
-          </div>
+          </Link>
           <p className="text-xs leading-relaxed text-slate-400">
             The nation's most trusted AI-powered test series platform. Your
             partner in exam excellence and professional success.
