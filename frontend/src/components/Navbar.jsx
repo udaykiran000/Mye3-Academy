@@ -209,14 +209,14 @@ const Navbar = () => {
                   All Tests
                 </Link>
                 <Link
-                  to="/mocktests?type=mock"
-                  className={location.search.includes("type=mock") ? "text-indigo-600" : "hover:text-indigo-600 transition-colors"}
+                  to="/mock-tests"
+                  className={location.pathname === "/mock-tests" ? "text-indigo-600" : "hover:text-indigo-600 transition-colors"}
                 >
                   Mock Tests
                 </Link>
                 <Link
-                  to="/mocktests?type=grand"
-                  className={location.search.includes("type=grand") ? "text-indigo-600" : "hover:text-indigo-600 transition-colors"}
+                  to="/grand-tests"
+                  className={location.pathname === "/grand-tests" ? "text-indigo-600" : "hover:text-indigo-600 transition-colors"}
                 >
                   Grand Tests
                 </Link>
@@ -321,13 +321,13 @@ const Navbar = () => {
               id: "mock",
               label: "MOCK",
               icon: ClipboardList,
-              path: "/mocktests?type=mock",
+              path: "/mock-tests",
             },
             {
               id: "grand",
               label: "GRAND",
               icon: Zap,
-              path: "/mocktests?type=grand",
+              path: "/grand-tests",
             },
             {
               id: "profile",
@@ -343,7 +343,7 @@ const Navbar = () => {
             >
               <div
                 className={`p-2.5 rounded-full transition-all ${
-                  location.pathname + location.search === tab.path || (tab.id === 'all' && location.pathname === tab.path && !location.search.includes('type='))
+                  location.pathname === tab.path || (tab.id === 'all' && location.pathname === tab.path)
                     ? "bg-indigo-600 text-white shadow-lg"
                     : "text-slate-400 hover:text-indigo-400"
                 }`}
@@ -352,7 +352,7 @@ const Navbar = () => {
               </div>
               <span
                 className={`text-[9px] font-black tracking-widest ${
-                  location.pathname + location.search === tab.path || (tab.id === 'all' && location.pathname === tab.path && !location.search.includes('type='))
+                  location.pathname === tab.path || (tab.id === 'all' && location.pathname === tab.path)
                     ? "text-indigo-600"
                     : "text-slate-400"
                 }`}

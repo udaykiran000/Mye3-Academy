@@ -40,7 +40,7 @@ const MyTests = ({ setActiveTab }) => {
       );
     } else {
       content = (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
           {myMockTests.map((test) => {
             // Safety: ensure test is an object (populated) not just an ID string
             if (!test || typeof test !== 'object') return null;

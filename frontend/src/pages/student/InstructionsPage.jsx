@@ -44,19 +44,25 @@ const InstructionsPage = () => {
     const fetchTestDetails = async (id) => {
       try {
         setLoading(true);
-        console.log("📡 FETCHING DETAILS FOR:", id);
-        const { data } = await api.get(`/api/public/mocktests/${id}`);
-        console.log("✅ FETCH SUCCESS:", data);
-
+        console.log("📡 FETCHING STUDENT-SPECIFIC DETAILS FOR:", id);
+        // Use student-specific route for retry status
+        const { data } = await api.get(`/api/student/my-mocktest/${id}`);
+        
         if (data.success && data.test) {
           setTest(data.test);
         } else {
-          console.error("❌ INVALID DATA:", data);
           setFetchError(true);
         }
       } catch (error) {
-        console.error("❌ AXIOS ERROR:", error);
-        setFetchError(true);
+        console.error("❌ FETCH ERROR:", error);
+        // Fallback to public
+        try {
+          const { data } = await api.get(`/api/public/mocktests/${id}`);
+          if (data.success && data.test) setTest(data.test);
+          else setFetchError(true);
+        } catch (e) {
+          setFetchError(true);
+        }
       } finally {
         setLoading(false);
       }
@@ -158,6 +164,7 @@ const InstructionsPage = () => {
   } = test;
   const isCompleted = test.status === "completed";
   const isInProgress = test.status === "in-progress";
+  const isReadyToRetry = test.status === "ready_to_retry";
   const isPurchaseRequired = test.isPurchaseRequired;
 
   return (
@@ -165,7 +172,7 @@ const InstructionsPage = () => {
       <div className="max-w-3xl mx-auto">
         <div className="flex justify-between items-center mb-5">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/student-dashboard?tab=my-tests")}
             className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors"
           >
             <ArrowLeft size={12} /> Go Back
@@ -332,40 +339,53 @@ const InstructionsPage = () => {
         </div>
 
         {/* ACTION BUTTON AREA — SHARP */}
-        <div className="text-center space-y-4">
-          {isPurchaseRequired ? (
-            <button
-              onClick={() => navigate(`/mocktests/${mocktestId}`)}
-              className="w-full md:w-72 bg-red-600 hover:bg-red-700 text-white font-black py-3.5 shadow-md transition-all flex items-center justify-center gap-2 mx-auto uppercase tracking-widest text-[11px]"
-            >
-              <Zap size={16} /> Buy New Attempt
-            </button>
-          ) : isCompleted ? (
-            <button
-              onClick={() =>
-                navigate(`/student/report/${test.latestAttemptId}`)
-              }
-              className="w-full md:w-72 bg-indigo-900 hover:bg-black text-white font-black py-3.5 shadow-md transition-all flex items-center justify-center gap-2 mx-auto uppercase tracking-widest text-[11px]"
-            >
-              <BarChart2 size={16} /> View Analytics Report
-            </button>
-          ) : (
-            <button
-              onClick={handleStartTest}
-              disabled={loading}
-              className={`w-full md:w-72 font-black py-3.5 shadow-md transition-all flex items-center justify-center gap-2 mx-auto uppercase tracking-widest text-[11px] ${isInProgress
-                ? "bg-amber-600 hover:bg-amber-700"
-                : "bg-blue-600 hover:bg-blue-700"
-                } text-white disabled:bg-slate-300`}
-            >
-              {loading ? (
-                <ClipLoader size={16} color="#fff" />
-              ) : (
-                <Play size={16} fill="white" />
-              )}
-              {isInProgress ? "Resume Examination" : "Start Examination"}
-            </button>
-          )}
+        <div className="text-center space-y-6">
+          <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
+            {isPurchaseRequired ? (
+              <button
+                onClick={() => navigate(`/mocktests/${mocktestId}`)}
+                className="w-full md:w-72 bg-red-600 hover:bg-red-700 text-white font-black py-3.5 shadow-md transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[11px]"
+              >
+                <Zap size={16} /> Buy New Attempt
+              </button>
+            ) : (isReadyToRetry || !isCompleted || isInProgress) ? (
+              <>
+                <button
+                  onClick={handleStartTest}
+                  disabled={loading}
+                  className={`w-full md:w-72 font-black py-3.5 shadow-md transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[11px] ${isInProgress
+                    ? "bg-amber-600 hover:bg-amber-700"
+                    : isReadyToRetry ? "bg-[#21b731] hover:bg-[#1a9227]" : "bg-blue-600 hover:bg-blue-700"
+                    } text-white disabled:bg-slate-300`}
+                >
+                  {loading ? (
+                    <ClipLoader size={16} color="#fff" />
+                  ) : (
+                    <Play size={16} fill="white" />
+                  )}
+                  {isInProgress ? "Resume Examination" : isReadyToRetry ? "Start Re-attempt" : "Start Examination"}
+                </button>
+                
+                {test.attemptsMade > 0 && (
+                   <button
+                    onClick={() => navigate(`/student/test-attempts/${mocktestId}`)}
+                    className="w-full md:w-72 bg-white border-2 border-slate-800 text-slate-800 hover:bg-slate-50 font-black py-3.5 shadow-md transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[11px]"
+                  >
+                    <BarChart2 size={16} /> View All Attempts
+                  </button>
+                )}
+              </>
+            ) : isCompleted ? (
+              <button
+                onClick={() =>
+                  navigate(`/student/test-attempts/${mocktestId}`)
+                }
+                className="w-full md:w-72 bg-indigo-900 hover:bg-black text-white font-black py-3.5 shadow-md transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-[11px]"
+              >
+                <BarChart2 size={16} /> View Analytics Report
+              </button>
+            ) : null}
+          </div>
 
           <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">
             AUTO-SUBMIT AT 00:00

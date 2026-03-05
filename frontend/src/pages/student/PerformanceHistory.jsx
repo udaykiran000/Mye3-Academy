@@ -78,12 +78,17 @@ const DonutCenterLabel = ({ viewBox, total, mock, grand }) => {
 };
 
 /* ─── Main ─────────────────────────────────────────────── */
-const PerformanceHistory = () => {
+const PerformanceHistory = ({ initialFilter = "all" }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { attemptsHistory, attemptsHistoryStatus } = useSelector((s) => s.students);
   const loading = attemptsHistoryStatus === "loading";
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState(initialFilter);
+  
+  useEffect(() => {
+    setActiveFilter(initialFilter);
+  }, [initialFilter]);
+
 
   useEffect(() => { dispatch(fetchPerformanceHistory()); }, [dispatch]);
 
@@ -343,7 +348,7 @@ const PerformanceHistory = () => {
             </div>
             <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Attempt History</h3>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="hidden items-center gap-2 flex-wrap">
             <Filter size={13} className="text-slate-400" />
             {FILTER_TABS.map(({ key, label, icon: Icon }) => (
               <button
