@@ -90,14 +90,14 @@ const DashboardOverview = ({ setActiveTab }) => {
             value={grandAttempts.length}
             color="amber"
             subValue="ATTEMPTS"
-            onClick={() => setActiveTab('performance')}
+            onClick={() => setActiveTab('performance-all')}
           />
           <StatCard
             icon={<CheckCircle />}
             title="Total Attempts"
             value={myAttempts.length}
             color="emerald"
-            onClick={() => setActiveTab('performance')}
+            onClick={() => setActiveTab('performance-all')}
           />
           <StatCard
             icon={<Target />}
@@ -105,7 +105,7 @@ const DashboardOverview = ({ setActiveTab }) => {
             value={avgScore} 
             color="indigo"
             subValue="/ 100"
-            onClick={() => setActiveTab('performance')}
+            onClick={() => setActiveTab('performance-all')}
           />
           <StatCard
             icon={<MessageSquare />}

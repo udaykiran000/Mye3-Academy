@@ -14,8 +14,10 @@ import {
 import {
   getAvailableMocktests,
   getMyPurchasedTests,
+  getMyMockTestById,
   getMyAttempts,
   getAttemptById,
+  getTestAttemptsByTestId,
   getStudentLeaderboard
 } from "../../controllers/student/studentController.js";
 
@@ -32,8 +34,10 @@ router.put("/profile", isAuth, upload.single("avatar"), updateUserProfile);
 router.get("/stats", isAuth, getStudentDashboardStats);
 router.get("/available-tests", isAuth, getAvailableMocktests);
 router.get("/my-mocktests", isAuth, getMyPurchasedTests); // Align with usersSlice.js
+router.get("/my-mocktest/:id", isAuth, getMyMockTestById); // Specialized detail for instructions
 router.get("/my-attempts", isAuth, getMyAttempts); // Align with attemptSlice.js
 router.get("/attempt/:attemptId", isAuth, getAttemptById);
+router.get("/test-attempts/:testId", isAuth, getTestAttemptsByTestId);
 
 // Exam Engine
 router.post("/start-test", isAuth, startTestAttempt);

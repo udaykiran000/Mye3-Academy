@@ -43,6 +43,7 @@ import AllMockTests from "./pages/AllMockTests";
 import MockTestDetail from "./pages/MockTestDetail";
 import ReviewSolutions from "./pages/student/ReviewSolutions";
 import StudentDoubts from "./pages/student/StudentDoubts";
+import TestAttemptsReport from "./pages/student/TestAttemptsReport";
 
 // INSTRUCTOR PAGES
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
@@ -72,6 +73,7 @@ const MainLayout = ({ children }) => {
     location.pathname.startsWith("/student/write-test") ||
     location.pathname.startsWith("/student/review") ||
     location.pathname.startsWith("/student/instructions") ||
+    location.pathname.startsWith("/student/test-attempts") ||
     location.pathname === "/login" ||
     location.pathname === "/signup";
 
@@ -89,6 +91,7 @@ const MainLayout = ({ children }) => {
 // ------------------------- MAIN APP COMPONENT -------------------------
 const App = () => {
   const { userData } = useSelector((state) => state.user);
+  const location = useLocation();
 
   return (
     <>
@@ -130,6 +133,22 @@ const App = () => {
             }
           />
           <Route
+            path="/mock-tests"
+            element={
+              <ProtectedRoute>
+                <AllMockTests overrideType="mock" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/grand-tests"
+            element={
+              <ProtectedRoute>
+                <AllMockTests overrideType="grand" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/mocktests/:id"
             element={
               <ProtectedRoute>
@@ -167,6 +186,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <ReviewSolutions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/test-attempts/:testId"
+            element={
+              <ProtectedRoute>
+                <TestAttemptsReport />
               </ProtectedRoute>
             }
           />

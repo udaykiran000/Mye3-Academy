@@ -19,14 +19,17 @@ import {
   LayoutGrid,
   ChevronDown,
   Menu,
-  X
+  X,
+  Zap
 } from "lucide-react";
 
 const MENU = [
   { label: "Overview", icon: LayoutGrid, key: "overview" },
   { label: "My Enrollments", icon: BookOpen, key: "my-tests" },
   { label: "Explore Tests", icon: Search, key: "explore" },
-  { label: "My Performance", icon: TrendingUp, key: "performance" },
+  { label: "Performance All", icon: TrendingUp, key: "performance-all" },
+  { label: "Performance Mock", icon: BarChart2, key: "performance-mock" },
+  { label: "Performance Grand", icon: Zap, key: "performance-grand" },
   { label: "My Doubts", icon: MessageCircle, key: "doubts" },
   { label: "Profile Settings", icon: Settings, key: "settings" },
 ];

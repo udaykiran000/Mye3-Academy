@@ -286,12 +286,12 @@ const ManageStudents = () => {
                               <span className="font-extrabold text-gray-800 text-xs capitalize transition-colors">
                                 {fullName || "Unnamed"}
                               </span>
-                              <span className="text-[10px] text-gray-400 font-bold lowercase">
+                              <span className="text-xs text-gray-500 font-semibold lowercase">
                                 {s.email}
                               </span>
                               <div className="flex items-center gap-2 mt-0.5">
                                 <Phone size={8} className="text-cyan-500" />
-                                <span className="text-[9px] text-gray-500 tracking-tighter opacity-70">{s.phoneNumber || "N/A"}</span>
+                                <span className="text-[11px] text-gray-500 tracking-tighter">{s.phoneNumber || "N/A"}</span>
                               </div>
                             </div>
                           </div>
@@ -315,7 +315,7 @@ const ManageStudents = () => {
                                 )}
                               </div>
                             )}
-                            <span className="text-[8px] text-gray-300 font-black uppercase tracking-widest pl-0.5 mt-0.5">
+                            <span className="text-xs text-gray-500 font-bold uppercase tracking-wide pl-0.5 mt-0.5">
                               {new Date(s.createdAt).toLocaleDateString()}
                             </span>
                           </div>

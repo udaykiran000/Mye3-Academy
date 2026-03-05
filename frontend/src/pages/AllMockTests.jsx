@@ -1,7 +1,7 @@
 // frontend/src/pages/AllMockTests.jsx
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { IoSearch, IoFunnel, IoClose, IoApps, IoChevronDown, IoSwapVertical, IoTrophy, IoDocumentText } from "react-icons/io5";
 import { getImageUrl, handleImageError } from "../utils/imageHelper";
 
@@ -25,7 +25,55 @@ const getCategoryTheme = (name = "") => {
   return { border: "border-indigo-200", text: "text-indigo-600", bg: "bg-indigo-50", icon: "text-indigo-500" };
 };
 
-export default function AllMockTests({ isEmbedded = false }) {
+const TYPE_THEME = {
+  all: { border: "border-blue-200", text: "text-blue-600", bg: "bg-blue-50", primary: "bg-blue-600", hover: "hover:border-blue-600" },
+  mock: { border: "border-[#21b731]/20", text: "text-[#21b731]", bg: "bg-[#21b731]/5", primary: "bg-[#21b731]", hover: "hover:border-[#21b731]" },
+  grand: { border: "border-amber-200", text: "text-amber-600", bg: "bg-amber-50", primary: "bg-amber-500", hover: "hover:border-amber-500" }
+};
+
+const TypeTabs = ({ activeType, onTypeChange, isEmbedded }) => {
+  const tabs = [
+    { id: 'all', label: 'All Exams', path: '/mocktests' },
+    { id: 'mock', label: 'Mock Tests', path: '/mock-tests' },
+    { id: 'grand', label: 'Grand Tests', path: '/grand-tests' },
+  ];
+
+  const theme = TYPE_THEME[activeType] || TYPE_THEME.all;
+
+  return (
+    <div className="flex items-center bg-slate-50 border border-slate-200 p-1 rounded-xl shadow-sm w-full md:w-auto overflow-x-auto no-scrollbar">
+      {tabs.map((tab) => (
+        isEmbedded ? (
+          <button
+            key={tab.id}
+            onClick={() => onTypeChange(tab.id)}
+            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              activeType === tab.id
+                ? `${theme.primary} text-white shadow-md`
+                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ) : (
+          <Link
+            key={tab.id}
+            to={tab.path}
+            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              activeType === tab.id
+                ? `${theme.primary} text-white shadow-md`
+                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            {tab.label}
+          </Link>
+        )
+      ))}
+    </div>
+  );
+};
+
+export default function AllMockTests({ isEmbedded = false, overrideType = null }) {
   const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
 
@@ -39,7 +87,7 @@ export default function AllMockTests({ isEmbedded = false }) {
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState(filters.q || "");
   const [sortBy, setSortBy] = useState("newest"); // newest, oldest, name-az, name-za
-  const [testType, setTestType] = useState(searchParams.get("type") || "all"); // all, mock, grand
+  const [testType, setTestType] = useState(overrideType || searchParams.get("type") || "all"); // all, mock, grand
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   useEffect(() => {
@@ -52,8 +100,14 @@ export default function AllMockTests({ isEmbedded = false }) {
       dispatch(setPublicSearch(searchFromUrl));
       setSearchTerm(searchFromUrl);
     }
-    if (typeFromUrl) setTestType(typeFromUrl);
-  }, [dispatch, searchParams]);
+    if (typeFromUrl && !overrideType) setTestType(typeFromUrl);
+  }, [dispatch, searchParams, overrideType]);
+
+  useEffect(() => {
+    if (overrideType) {
+      setTestType(overrideType);
+    }
+  }, [overrideType]);
 
   useEffect(() => {
     if (debouncedSearchTerm !== filters.q) {
@@ -151,6 +205,8 @@ export default function AllMockTests({ isEmbedded = false }) {
             </div>
 
             <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+              <TypeTabs activeType="mock" onTypeChange={setTestType} isEmbedded={isEmbedded} />
+              
               <div className="relative w-full md:w-80 group">
                 <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg focus-within:bg-white focus-within:border-[#21b731] transition-all duration-300 overflow-hidden p-1">
                   <div className="pl-3 pr-2 py-2 text-slate-400">
@@ -189,30 +245,6 @@ export default function AllMockTests({ isEmbedded = false }) {
                 </div>
               </div>
 
-              {/* ── TYPE FILTER ── */}
-              <div className="relative w-full md:w-auto">
-                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg hover:border-[#21b731] transition-all cursor-pointer p-0.5">
-                  <div className="pl-3 text-slate-400">
-                    <IoApps size={16} />
-                  </div>
-                  <select
-                    value={testType}
-                    onChange={(e) => setTestType(e.target.value)}
-                    className="appearance-none bg-transparent pl-2 pr-10 py-2.5 outline-none text-xs font-bold text-slate-700 cursor-pointer min-w-[140px]"
-                  >
-                    <option value="all">ALL EXAMS</option>
-                    <option value="mock">MOCK TESTS</option>
-                    <option value="grand">GRAND TESTS</option>
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                    <IoChevronDown size={14} />
-                  </div>
-                </div>
-              </div>
-
-              <span className="hidden xl:block text-[10px] font-black text-[#21b731] border border-[#21b731]/20 bg-[#21b731]/5 px-3 py-1.5 tracking-widest uppercase whitespace-nowrap">
-                Practice & Improve
-              </span>
             </div>
           </div>
         )}
@@ -232,6 +264,8 @@ export default function AllMockTests({ isEmbedded = false }) {
             </div>
 
             <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+              <TypeTabs activeType="grand" onTypeChange={setTestType} isEmbedded={isEmbedded} />
+
               <div className="relative w-full md:w-80 group">
                 <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg focus-within:bg-white focus-within:border-amber-500 transition-all duration-300 overflow-hidden p-1">
                   <div className="pl-3 pr-2 py-2 text-slate-400">
@@ -243,7 +277,7 @@ export default function AllMockTests({ isEmbedded = false }) {
                     placeholder="Search Test Series"
                     className="w-full px-1 py-1.5 outline-none text-[13px] text-slate-700 placeholder:text-slate-400 bg-transparent"
                   />
-                  <button className="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2 rounded-md text-[11px] font-bold shadow-sm transition-all ml-1 tracking-wider">
+                  <button className="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2 rounded-md text-[11px] font-bold shadow-sm transition-all ml-1 tracking-wider">
                     SEARCH
                   </button>
                 </div>
@@ -270,30 +304,6 @@ export default function AllMockTests({ isEmbedded = false }) {
                 </div>
               </div>
 
-              {/* ── TYPE FILTER ── */}
-              <div className="relative w-full md:w-auto">
-                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg hover:border-amber-500 transition-all cursor-pointer p-0.5">
-                  <div className="pl-3 text-slate-400">
-                    <IoApps size={16} />
-                  </div>
-                  <select
-                    value={testType}
-                    onChange={(e) => setTestType(e.target.value)}
-                    className="appearance-none bg-transparent pl-2 pr-10 py-2.5 outline-none text-xs font-bold text-slate-700 cursor-pointer min-w-[140px]"
-                  >
-                    <option value="all">ALL EXAMS</option>
-                    <option value="mock">MOCK TESTS</option>
-                    <option value="grand">GRAND TESTS</option>
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                    <IoChevronDown size={14} />
-                  </div>
-                </div>
-              </div>
-
-              <span className="hidden xl:block text-[10px] font-black text-amber-600 border border-amber-200 bg-amber-50 px-3 py-1.5 tracking-widest uppercase whitespace-nowrap">
-                Premium Exams
-              </span>
             </div>
           </div>
         )}
@@ -315,6 +325,8 @@ export default function AllMockTests({ isEmbedded = false }) {
             </div>
 
             <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+              <TypeTabs activeType="all" onTypeChange={setTestType} isEmbedded={isEmbedded} />
+
               <div className="relative w-full md:w-80 group">
                 <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-lg focus-within:bg-white focus-within:border-blue-600 transition-all duration-300 overflow-hidden p-1">
                   <div className="pl-3 pr-2 py-2 text-slate-400">
@@ -346,27 +358,6 @@ export default function AllMockTests({ isEmbedded = false }) {
                     <option value="oldest">OLDEST FIRST</option>
                     <option value="name-az">NAME (A-Z)</option>
                     <option value="name-za">NAME (Z-A)</option>
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                    <IoChevronDown size={14} />
-                  </div>
-                </div>
-              </div>
-
-              {/* ── TYPE FILTER ── */}
-              <div className="relative w-full md:w-auto">
-                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg hover:border-blue-600 transition-all cursor-pointer p-0.5">
-                  <div className="pl-3 text-slate-400">
-                    <IoApps size={16} />
-                  </div>
-                  <select
-                    value={testType}
-                    onChange={(e) => setTestType(e.target.value)}
-                    className="appearance-none bg-transparent pl-2 pr-10 py-2.5 outline-none text-xs font-bold text-slate-700 cursor-pointer min-w-[140px]"
-                  >
-                    <option value="all">ALL EXAMS</option>
-                    <option value="mock">MOCK TESTS</option>
-                    <option value="grand">GRAND TESTS</option>
                   </select>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                     <IoChevronDown size={14} />

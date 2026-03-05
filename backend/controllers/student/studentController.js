@@ -53,15 +53,19 @@ export const getMyPurchasedTests = async (req, res) => {
                 return null;
             }
 
-            let test = await MockTest.findById(id).populate("category", "name slug").lean();
+            let test = await MockTest.findById(id).select("title totalMarks marksPerQuestion negativeMarking totalQuestions durationMinutes price discountPrice isFree isPublished isGrandTest category thumbnail subjects").populate("category", "name slug").lean();
             if (test) {
-
+                // ✅ Add effective fields for consistency
+                test.marksPerQuestion = (test.marksPerQuestion > 0) ? test.marksPerQuestion : (test.totalQuestions > 0 ? Number((test.totalMarks / test.totalQuestions).toFixed(2)) : 1);
+                test.negativeMarking = (test.negativeMarking !== undefined && test.negativeMarking !== null) ? test.negativeMarking : 0;
                 return { ...test, isGrandTest: false };
             }
             
-            test = await GrandTest.findById(id).populate("category", "name slug").lean();
+            test = await GrandTest.findById(id).select("title totalMarks marksPerQuestion negativeMarking totalQuestions durationMinutes price discountPrice isFree isPublished isGrandTest category thumbnail subjects").populate("category", "name slug").lean();
             if (test) {
-
+                // ✅ Add effective fields for consistency
+                test.marksPerQuestion = (test.marksPerQuestion > 0) ? test.marksPerQuestion : (test.totalQuestions > 0 ? Number((test.totalMarks / test.totalQuestions).toFixed(2)) : 1);
+                test.negativeMarking = (test.negativeMarking !== undefined && test.negativeMarking !== null) ? test.negativeMarking : 0;
                 return { ...test, isGrandTest: true };
             }
             
@@ -79,13 +83,20 @@ export const getMyPurchasedTests = async (req, res) => {
     // Fetch all attempts for this user
     const attempts = await Attempt.find({ studentId: userId });
 
-    // Create a map for quick lookup of attempts by mockTestId
+    // Create mapping for quick lookup and count attempts
     const attemptMap = {};
+    const countMap = {};
+
     attempts.forEach(attempt => {
        try {
            if (!attempt.mocktestId) return;
            
            const mtId = attempt.mocktestId.toString();
+           
+           // Track total count
+           countMap[mtId] = (countMap[mtId] || 0) + 1;
+
+           // Keep track of the latest attempt for status/progress
            if (!attemptMap[mtId] || new Date(attempt.updatedAt) > new Date(attemptMap[mtId].updatedAt)) {
                attemptMap[mtId] = attempt;
            }
@@ -94,47 +105,69 @@ export const getMyPurchasedTests = async (req, res) => {
        }
     });
 
-    // Inject status into each purchased test
-    const purchasedTestsWithStatus = validTests.map(test => {
+    // Inject status and metadata into each purchased test
+    const purchasedTestsWithStatus = await Promise.all(validTests.map(async (test) => {
         try {
             const testObj = { ...test }; 
             const testIdStr = test._id?.toString();
             if (!testIdStr) return null;
 
             const latestAttempt = attemptMap[testIdStr];
+            const attemptsMade = countMap[testIdStr] || 0;
+            const maxAttempts = 1; // Base policy
         
-        // Default status
-        let status = 'not_started';
-        let progress = 0;
+            // Default status
+            let status = 'not_started';
+            let progress = 0;
+            let latestAttemptId = null;
 
-        if (latestAttempt) {
-            status = latestAttempt.status; // 'started', 'submitted', 'completed' etc.
-            // If the attemptSchema uses different status strings, verify them. 
-            // The schema has: enum: ['started', 'finished', 'completed']
+            if (latestAttempt) {
+                latestAttemptId = latestAttempt._id;
+                status = latestAttempt.status;
+                
+                if (status === 'finished') status = 'completed'; 
+                
+                if (status === 'started') progress = 10;
+                if (status === 'completed') progress = 100;
+            }
+
+            // RE-ATTEMPT LOGIC: check for successful but unused order
+            const isFree = test.isFree === true || test.price <= 0;
             
-            // Map 'finished' to 'completed' for frontend consistency if needed, 
-            // or ensure frontend handles 'finished'.
-            if (status === 'finished') status = 'completed'; 
+            const unusedOrder = isFree ? true : await Order.findOne({
+                user: userId,
+                items: test._id,
+                status: "successful",
+                attemptUsed: false,
+            }).lean();
+
+            const isPurchaseRequired = (status === 'completed') && !unusedOrder && !isFree;
             
-            // Calculate progress if needed (simple logic provided)
-            if (status === 'started') progress = 10; // Example: In progress
-            if (status === 'completed') progress = 100;
-        }
+            // If completed but we have a fresh order or it's free, let them retry
+            if (status === 'completed' && (unusedOrder || isFree)) {
+                status = 'ready_to_retry';
+            }
 
             return {
                 ...testObj,
                 status, 
-                progress
+                progress,
+                attemptsMade,
+                maxAttempts,
+                latestAttemptId,
+                isPurchaseRequired
             };
         } catch (e) {
             console.error("Error processing final test object:", e);
             return null;
         }
-    }).filter(Boolean);
+    }));
+
+    const finalTests = purchasedTestsWithStatus.filter(Boolean);
 
     res.status(200).json({
       success: true,
-      mocktests: purchasedTestsWithStatus,
+      mocktests: finalTests,
     });
   } catch (error) {
     console.error("Error in getMyPurchasedTests:", error);
@@ -142,6 +175,78 @@ export const getMyPurchasedTests = async (req, res) => {
       .status(500)
       .json({ success: false, message: "Error loading purchased tests" });
   }
+};
+
+/**
+ * @desc    Get detailed status for ONE purchased test (for Instructions Page)
+ */
+export const getMyMockTestById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id;
+
+        // 1. Find the test
+        let test = await MockTest.findById(id).select("title totalMarks marksPerQuestion negativeMarking totalQuestions durationMinutes price discountPrice isFree isPublished isGrandTest category thumbnail subjects description").populate("category", "name slug").lean();
+        let isGrandTest = false;
+
+        if (!test) {
+            test = await GrandTest.findById(id).select("title totalMarks marksPerQuestion negativeMarking totalQuestions durationMinutes price discountPrice isFree isPublished isGrandTest category thumbnail subjects description").populate("category", "name slug").lean();
+            isGrandTest = true;
+        }
+
+        if (!test) return res.status(404).json({ success: false, message: "Test not found" });
+
+        // 2. Fetch attempts for this test
+        const attempts = await Attempt.find({ studentId: userId, mocktestId: id });
+        const attemptsMade = attempts.length;
+        
+        const latestAttempt = attempts.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
+
+        // 3. Status logic
+        let status = 'not_started';
+        let progress = 0;
+        let latestAttemptId = null;
+
+        if (latestAttempt) {
+            latestAttemptId = latestAttempt._id;
+            status = latestAttempt.status;
+            if (status === 'finished') status = 'completed';
+            if (status === 'started') progress = 10;
+            if (status === 'completed') progress = 100;
+        }
+
+        const isFree = test.isFree === true || test.price <= 0;
+        const unusedOrder = isFree ? true : await Order.findOne({
+            user: userId,
+            items: id,
+            status: "successful",
+            attemptUsed: false,
+        }).lean();
+
+        const isPurchaseRequired = (status === 'completed') && !unusedOrder && !isFree;
+        if (status === 'completed' && (unusedOrder || isFree)) {
+            status = 'ready_to_retry';
+        }
+
+        res.status(200).json({
+            success: true,
+            test: {
+                ...test,
+                // ✅ Effective Marking Scheme Fallbacks
+                marksPerQuestion: (test.marksPerQuestion > 0) ? test.marksPerQuestion : (test.totalQuestions > 0 ? Number((test.totalMarks / test.totalQuestions).toFixed(2)) : 1),
+                negativeMarking: (test.negativeMarking !== undefined && test.negativeMarking !== null) ? test.negativeMarking : 0,
+                isGrandTest,
+                status,
+                progress,
+                attemptsMade,
+                maxAttempts: 1,
+                latestAttemptId,
+                isPurchaseRequired
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 };
 
 /**
@@ -164,11 +269,17 @@ export const getMyAttempts = async (req, res) => {
                 return { ...attempt, mocktestId: { title: "Invalid Test Reference", totalMarks: 0 }};
             }
 
-            let test = await MockTest.findById(attempt.mocktestId).select("title totalMarks isGrandTest").lean();
+            let test = await MockTest.findById(attempt.mocktestId).select("title totalMarks marksPerQuestion negativeMarking isGrandTest totalQuestions").lean();
             let isGrandTest = false;
             if (!test) {
-                test = await GrandTest.findById(attempt.mocktestId).select("title totalMarks").lean();
+                test = await GrandTest.findById(attempt.mocktestId).select("title totalMarks marksPerQuestion negativeMarking totalQuestions").lean();
                 isGrandTest = !!test;
+            }
+
+            if (test) {
+              // ✅ Apply effective logic here as well for consistent dashboard display
+              test.marksPerQuestion = (test.marksPerQuestion > 0) ? test.marksPerQuestion : (test.totalQuestions > 0 ? Number((test.totalMarks / test.totalQuestions).toFixed(2)) : 1);
+              test.negativeMarking = (test.negativeMarking !== undefined && test.negativeMarking !== null) ? test.negativeMarking : 0;
             }
 
             return {
@@ -210,11 +321,22 @@ export const getAttemptById = async (req, res) => {
     // Manually populate test details
     try {
         if (attempt.mocktestId && mongoose.Types.ObjectId.isValid(attempt.mocktestId)) {
-            let test = await MockTest.findById(attempt.mocktestId).select("title totalMarks").lean();
-            if (!test) {
-                test = await GrandTest.findById(attempt.mocktestId).select("title totalMarks").lean();
+            let test = await MockTest.findById(attempt.mocktestId).select("title totalMarks negativeMarking marksPerQuestion isGrandTest").lean();
+            let isGrandTest = false;
+            if (test) {
+                isGrandTest = !!test.isGrandTest;
+                // ✅ Effective fields
+                test.marksPerQuestion = (test.marksPerQuestion > 0) ? test.marksPerQuestion : (test.totalQuestions > 0 ? Number((test.totalMarks / test.totalQuestions).toFixed(2)) : 1);
+                test.negativeMarking = (test.negativeMarking !== undefined && test.negativeMarking !== null) ? test.negativeMarking : 0;
+            } else {
+                test = await GrandTest.findById(attempt.mocktestId).select("title totalMarks negativeMarking marksPerQuestion").lean();
+                isGrandTest = !!test;
+                if (test) {
+                  test.marksPerQuestion = (test.marksPerQuestion > 0) ? test.marksPerQuestion : (test.totalQuestions > 0 ? Number((test.totalMarks / test.totalQuestions).toFixed(2)) : 1);
+                  test.negativeMarking = (test.negativeMarking !== undefined && test.negativeMarking !== null) ? test.negativeMarking : 0;
+                }
             }
-            attempt.mocktestId = test || { title: "Deleted Test", totalMarks: 0 };
+            attempt.mocktestId = test ? { ...test, isGrandTest } : { title: "Deleted Test", totalMarks: 0 };
         } else {
             attempt.mocktestId = { title: "Invalid Reference", totalMarks: 0 };
         }
@@ -248,10 +370,41 @@ export const getAttemptById = async (req, res) => {
       attempt,
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({ success: false, message: "Error fetching attempt details" });
+    res.status(500).json({ success: false, message: err.message });
   }
+};
+
+/**
+ * @desc    Get all attempts for a specific test ID (for history page)
+ * @route   GET /api/student/test-attempts/:testId
+ */
+export const getTestAttemptsByTestId = async (req, res) => {
+    try {
+        const { testId } = req.params;
+        const userId = req.user._id;
+
+        // 1. Fetch test basic info
+        let test = await MockTest.findById(testId).select("title totalMarks marksPerQuestion negativeMarking").lean();
+        if (!test) {
+            test = await GrandTest.findById(testId).select("title totalMarks marksPerQuestion negativeMarking").lean();
+        }
+
+        if (!test) return res.status(404).json({ success: false, message: "Test not found" });
+
+        // 2. Fetch all attempts for this test by this user
+        const attempts = await Attempt.find({ studentId: userId, mocktestId: testId })
+            .sort({ createdAt: -1 })
+            .select("score status startedAt submittedAt correctCount createdAt")
+            .lean();
+
+        res.status(200).json({
+            success: true,
+            test,
+            attempts
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 };
 
 /**

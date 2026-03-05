@@ -251,7 +251,7 @@ const QuestionRenderer = ({ question, answers, handleAnswer }) => {
         <span>
           Negative:{" "}
           <strong className="text-red-500">
-            {question.globalNegative !== undefined && question.globalNegative > 0
+            {question.globalNegative !== undefined && question.globalNegative !== null
               ? question.globalNegative
               : (question.negative || 0)}
           </strong>
@@ -412,14 +412,7 @@ const WriteMocktest = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
   const isSubmittedRef = React.useRef(false); // tracks if exam is done
-
-  // Result Modal State
-  const [showResultModal, setShowResultModal] = useState(false);
-  const [resultData, setResultData] = useState(null);
-
-  // ✅ State: Controls whether the user sees the dashboard/review buttons
-  // This should be true if the student has purchased at least ONE mocktest (has dashboard)
-  const [hasDashboardAccess, setHasDashboardAccess] = useState(false);
+  const endsAt = attempt?.endsAt;
 
   const handleAnswer = useCallback((qid, type, value) => {
     setAnswers((prev) => ({
@@ -431,47 +424,73 @@ const WriteMocktest = () => {
     }));
   }, []);
 
+  const isFreeTest = useMemo(() => {
+    const price = attempt?.mocktestId?.price;
+    if (price === undefined || price === null) return false;
+    if (typeof price === "number") return price === 0;
+    if (typeof price === "string") return price === "0";
+    return false;
+  }, [attempt]);
+
   const subjects = useMemo(() => {
     if (!attempt || !attempt.questions) return [];
-
     const normalized = attempt.questions
       .map((q) => (q.subject || q.category || "").trim())
       .filter(Boolean)
-      .map((s) => s.toLowerCase()); // normalize
-
+      .map((s) => s.toLowerCase());
     const uniqueSet = new Set(normalized);
-
-    // Convert back to pretty format (Maths, English, Reasoning)
     const prettySubjects = [...uniqueSet].map(
       (s) => s.charAt(0).toUpperCase() + s.slice(1),
     );
-
     return ["all", ...prettySubjects];
   }, [attempt]);
 
   const filteredQuestions = useMemo(() => {
     if (!attempt || !attempt.questions) return [];
-
-    if (selectedSubject === "all") {
-      // ✅ Show ALL questions exactly as backend sent (already randomised)
-      return attempt.questions;
-    }
-
-    // ✅ Filter by subject OR category (to be safe for older data)
+    if (selectedSubject === "all") return attempt.questions;
     return attempt.questions.filter(
       (q) => q.subject === selectedSubject || q.category === selectedSubject,
     );
   }, [attempt, selectedSubject]);
 
-  // ✅ FIX: define current safely based on filteredQuestions + index
-  const current =
-    filteredQuestions.length > 0 ? filteredQuestions[currentIndex] : null;
+  const current = useMemo(() => {
+    return filteredQuestions.length > 0 ? filteredQuestions[currentIndex] : null;
+  }, [filteredQuestions, currentIndex]);
 
-  // Navigation questions (for palette) - uses the currently filtered list
   const navigationQuestions = useMemo(() => {
-    if (!attempt || !attempt.questions) return [];
     return filteredQuestions;
   }, [filteredQuestions]);
+
+  const actionableQuestions = useMemo(() => {
+    return filteredQuestions.filter(q => q.questionType !== "passage");
+  }, [filteredQuestions]);
+
+  const currentActionableIndex = useMemo(() => {
+    if (!current || current.questionType === "passage") return -1;
+    return actionableQuestions.indexOf(current);
+  }, [current, actionableQuestions]);
+
+  const totalAnswered = useMemo(() => {
+    return actionableQuestions.filter((q) => {
+      const qId = q.id || q._id;
+      return (
+        answers[qId]?.selected?.length ||
+        (answers[qId]?.manual && answers[qId].manual.trim().length > 0)
+      );
+    }).length;
+  }, [actionableQuestions, answers]);
+
+  // Result Modal State
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [resultData, setResultData] = useState(null);
+
+  // ✅ State: Controls whether the user sees the dashboard/review buttons
+  // This should be true if the student has purchased at least ONE mocktest (has dashboard)
+  const [hasDashboardAccess, setHasDashboardAccess] = useState(false);
+
+
+
+
 
   /* --- SUBMIT HANDLER --- */
   const handleSubmit = useCallback(
@@ -643,14 +662,7 @@ const WriteMocktest = () => {
     }
   }, [filteredQuestions, currentIndex]);
 
-  // ✅ Determine if THIS mocktest is free (price = 0)
-  const isFreeTest = useMemo(() => {
-    const price = attempt?.mocktestId?.price;
-    if (price === undefined || price === null) return false;
-    if (typeof price === "number") return price === 0;
-    if (typeof price === "string") return price === "0";
-    return false;
-  }, [attempt]);
+
 
   if (loading || !attempt) {
     return (
@@ -683,18 +695,7 @@ const WriteMocktest = () => {
     );
   }
 
-  const endsAt = attempt.endsAt;
-  const questionNumber = currentIndex + 1;
-  const totalQuestionCount = filteredQuestions.length;
 
-  const totalAnswered = filteredQuestions.filter((q) => {
-    const qId = q.id || q._id;
-    return (
-      q.questionType !== "passage" &&
-      (answers[qId]?.selected?.length ||
-        (answers[qId]?.manual && answers[qId].manual.trim().length > 0))
-    );
-  }).length;
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 overflow-hidden font-sans relative">
@@ -783,10 +784,16 @@ const WriteMocktest = () => {
           <div className="sticky top-0 z-10 bg-white p-4 shadow-sm flex flex-col sm:flex-row justify-between items-center border-b border-gray-200">
             <div className="flex flex-col">
               <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1 mb-1 self-start">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em]">LIVE EXAMINATION</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                  {current?.questionType === "passage" ? "READING CONTEXT" : "LIVE EXAMINATION"}
+                </span>
               </div>
               <h2 className="text-lg font-black text-slate-800 uppercase tracking-tight">
-                Question {questionNumber} of {totalQuestionCount}
+                {current?.questionType === "passage" ? (
+                  "Reading Passage"
+                ) : (
+                  <>Question {currentActionableIndex + 1} of {actionableQuestions.length}</>
+                )}
                 <span className="text-slate-400 ml-4 font-bold text-sm">
                   ({totalAnswered} Answered)
                 </span>
@@ -823,9 +830,11 @@ const WriteMocktest = () => {
                 <QuestionRenderer
                   question={{
                     ...current,
-                    marksPerQuestion: attempt.totalQuestions > 0
-                      ? (attempt.totalMarks / attempt.totalQuestions).toFixed(1).replace(/\.0$/, '')
-                      : current.marks,
+                    marksPerQuestion: attempt.marksPerQuestion !== undefined && attempt.marksPerQuestion !== null
+                      ? attempt.marksPerQuestion
+                      : (attempt.totalQuestions > 0
+                        ? (attempt.totalMarks / attempt.totalQuestions).toFixed(1).replace(/\.0$/, '')
+                        : current.marks),
                     globalNegative: attempt.negativeMarking
                   }}
                   answers={answers}

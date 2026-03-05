@@ -47,8 +47,13 @@ const MyTestCard = ({ test }) => {
             : { bg: isGrandTest ? "from-indigo-500 to-purple-400" : "from-cyan-500 to-teal-400", text: isGrandTest ? "text-indigo-400" : "text-cyan-400" };
 
     const handleStart = () => {
-        // Prioritize START/RESUME/RE-ATTEMPT over View Report
-        if (isReadyForNewAttempt || test.status === 'not_started' || test.status === 'in-progress' || isCompleted) {
+        // If completed and no re-attempt is ready, go straight to report
+        if (isCompleted && !isReadyForNewAttempt) {
+            navigate(`/student/report/${test.latestAttemptId}`);
+            return;
+        }
+        // Prioritize START/RESUME/RE-ATTEMPT
+        if (isReadyForNewAttempt || test.status === 'not_started' || test.status === 'in-progress') {
             navigate(`/student/instructions/${test._id}`);
         }
     };
@@ -58,7 +63,7 @@ const MyTestCard = ({ test }) => {
     let bannerStatus = "READY";
     
     if (isCompleted && !isReadyForNewAttempt) {
-        buttonText = "Re-attempt Exam";
+        buttonText = "View Report";
         bannerStatus = "COMPLETED";
     } else if (isInProgress) {
         buttonText = "Resume Exam";
@@ -78,7 +83,7 @@ const MyTestCard = ({ test }) => {
             `}
         >
             {/* ── MINI THUMBNAIL AREA ── */}
-            <div className="relative w-full h-20 overflow-hidden bg-slate-50">
+            <div className="relative w-full h-36 overflow-hidden bg-slate-50">
                 <img
                     src={imgSrc}
                     alt={test.title}
@@ -88,14 +93,14 @@ const MyTestCard = ({ test }) => {
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-40" />
                 
                 {/* Micro Badges */}
-                <div className="absolute top-2 left-2">
-                    <span className={`px-1.5 py-0.5 text-[6.5px] font-black text-white rounded-[4px] shadow-sm uppercase tracking-widest backdrop-blur-md border border-white/5 ${badgeColor}`}>
+                <div className="absolute top-2.5 left-2.5">
+                    <span className={`px-2 py-0.5 text-[8px] font-black text-white rounded-[4px] shadow-sm uppercase tracking-widest backdrop-blur-md border border-white/5 ${badgeColor}`}>
                         {testTypeBadge?.split(" ")[0]}
                     </span>
                 </div>
 
-                <div className="absolute bottom-2 left-2">
-                    <span className={`px-1.5 py-0.5 text-[7px] font-black text-white rounded-md shadow-sm uppercase tracking-tighter flex items-center gap-1 bg-slate-900/70 border border-white/10`}>
+                <div className="absolute bottom-2.5 left-2.5">
+                    <span className={`px-2 py-0.5 text-[9px] font-black text-white rounded-md shadow-sm uppercase tracking-tighter flex items-center gap-1 bg-slate-900/70 border border-white/10`}>
                         <div className={`w-1 h-1 rounded-full animate-pulse bg-current ${accent.text}`}></div>
                         {bannerStatus}
                     </span>
@@ -103,25 +108,25 @@ const MyTestCard = ({ test }) => {
             </div>
 
             {/* ── ULTRA-LEAN CONTENT AREA ── */}
-            <div className="p-2.5 flex flex-grow flex-col">
-                <h3 className="text-[11px] font-black text-slate-800 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors mb-2 min-h-[22px]">
+            <div className="p-4 flex flex-grow flex-col">
+                <h3 className="text-[14px] font-black text-slate-800 leading-tight line-clamp-2 group-hover:text-blue-600 transition-colors mb-3 min-h-[36px]">
                     {test.title}
                 </h3>
 
                 {/* Single-Line Micro Meta */}
-                <div className="flex items-center justify-between py-1.5 border-y border-slate-50/50 mb-2">
-                    <div className="flex items-center gap-1.5 overflow-hidden">
-                        <div className="flex items-center gap-0.5 min-w-fit">
-                            <Clock size={8} className="text-slate-300" />
-                            <span className="text-[7.5px] font-black text-slate-500">{test.durationMinutes || 30}m</span>
+                <div className="flex items-center justify-between py-2 border-y border-slate-50/50 mb-3">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="flex items-center gap-1 min-w-fit">
+                            <Clock size={12} className="text-slate-300" />
+                            <span className="text-[10px] font-black text-slate-500">{test.durationMinutes || 30}m</span>
                         </div>
-                        <div className="w-px h-2 bg-slate-100"></div>
-                        <div className="flex items-center gap-0.5 min-w-fit">
-                            <BookOpen size={8} className="text-slate-300" />
-                            <span className="text-[7.5px] font-black text-slate-500">{test.totalQuestions || 0}Q</span>
+                        <div className="w-px h-3 bg-slate-100"></div>
+                        <div className="flex items-center gap-1 min-w-fit">
+                            <BookOpen size={12} className="text-slate-300" />
+                            <span className="text-[10px] font-black text-slate-500">{test.totalQuestions || 0}Q</span>
                         </div>
                     </div>
-                    <div className="text-[7px] font-black text-blue-500 uppercase tracking-tighter">
+                    <div className="text-[10px] font-black text-blue-500 uppercase tracking-tighter">
                         {test.attemptsMade || 0} Attempts
                     </div>
                 </div>
@@ -139,15 +144,15 @@ const MyTestCard = ({ test }) => {
                     <button
                         onClick={handleStart}
                         className={`
-                            w-full py-1.5 rounded-lg font-black text-[7.5px] uppercase tracking-[1px] text-white transition-all transform active:scale-95 shadow-sm flex items-center justify-center gap-1
+                            w-full py-2.5 rounded-lg font-black text-[10px] uppercase tracking-[1.5px] text-white transition-all transform active:scale-95 shadow-sm flex items-center justify-center gap-1.5
                             ${isCompleted && !isReadyForNewAttempt 
                                 ? "bg-slate-800 hover:bg-slate-700" 
                                 : (isGrandTest ? "bg-indigo-600 hover:bg-indigo-500" : "bg-blue-600 hover:bg-blue-500")
                             }
                         `}
                     >
-                        <Play size={8} fill="currentColor" />
-                        {buttonText?.split(" ")[0]}
+                        <Play size={10} fill="currentColor" />
+                        {buttonText?.split(" ")[0]} EXAM
                     </button>
                 </div>
             </div>

@@ -5,7 +5,7 @@ import Question from "../../models/Question.js";
 import User from "../../models/Usermodel.js";
 import Order from "../../models/Order.js";
 import mongoose from "mongoose";
-import { shuffleArray } from "../../utils/examHelpers.js";
+import { shuffleArray, groupPassagesAndChildren } from "../../utils/examHelpers.js";
 
 /**
  * 1. Start Test Attempt (Handles new start and resume)
@@ -40,6 +40,8 @@ export const startTestAttempt = async (req, res) => {
     let selected = [...(mocktest.questions || [])];
     
     shuffleArray(selected);
+    selected = groupPassagesAndChildren(selected); // Maintain passage-child contiguous blocks
+
     if (mocktest.totalQuestions > 0 && mocktest.totalQuestions < selected.length) {
       selected = selected.slice(0, mocktest.totalQuestions);
     }
@@ -78,9 +80,9 @@ export const loadExamPaper = async (req, res) => {
     if (!attempt) return res.status(404).json({ message: "Attempt not found" });
 
     // Fetch test details for metadata (check both collections)
-    let mocktest = await MockTest.findById(attempt.mocktestId).select("title totalMarks negativeMarking").lean();
+    let mocktest = await MockTest.findById(attempt.mocktestId).select("title totalMarks negativeMarking marksPerQuestion").lean();
     if (!mocktest) {
-      mocktest = await GrandTest.findById(attempt.mocktestId).select("title totalMarks negativeMarking").lean();
+      mocktest = await GrandTest.findById(attempt.mocktestId).select("title totalMarks negativeMarking marksPerQuestion").lean();
     }
 
     const isFinished = attempt.status === "completed" || attempt.status === "finished";
@@ -102,6 +104,7 @@ export const loadExamPaper = async (req, res) => {
       testTitle: mocktest?.title || "Exam",
       totalMarks: mocktest?.totalMarks || 0,
       negativeMarking: mocktest?.negativeMarking || 0,
+      marksPerQuestion: mocktest?.marksPerQuestion || 1,
       totalQuestions: mocktest?.totalQuestions || attempt.questions.length
     });
   } catch (err) {
@@ -123,9 +126,9 @@ export const submitMockTest = async (req, res) => {
     if (attempt.status === "completed") return res.status(400).json({ message: "Already submitted." });
 
     // Get metadata for totalMarks (check both collections)
-    let mocktest = await MockTest.findById(attempt.mocktestId).select("totalMarks negativeMarking").lean();
+    let mocktest = await MockTest.findById(attempt.mocktestId).select("totalMarks negativeMarking marksPerQuestion").lean();
     if (!mocktest) {
-      mocktest = await GrandTest.findById(attempt.mocktestId).select("totalMarks negativeMarking").lean();
+      mocktest = await GrandTest.findById(attempt.mocktestId).select("totalMarks negativeMarking marksPerQuestion").lean();
     }
 
     let score = 0;
@@ -138,11 +141,13 @@ export const submitMockTest = async (req, res) => {
       let isCorrect = false;
 
       // Handle marks and negative as valid numbers
-      const qMarks = Number(q.marks) || 0;
+      // Use test-level global settings if set (>0 for negative, or explicitly defined for marks)
+      const qMarks = (mocktest?.marksPerQuestion > 0)
+        ? mocktest.marksPerQuestion
+        : (Number(q.marks) || 0);
       
-      // Use test-level global negative if > 0, else question default
-      const qNegative = (mocktest?.negativeMarking > 0) 
-        ? mocktest.negativeMarking 
+      const qNegative = (mocktest?.negativeMarking !== undefined && mocktest?.negativeMarking !== null)
+        ? Number(mocktest.negativeMarking) 
         : (Number(q.negative) || 0);
 
       if (q.questionType === "mcq") {

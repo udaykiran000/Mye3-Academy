@@ -65,17 +65,38 @@ const ReviewSolutions = () => {
   /* ── Score breakdown ── */
   const scoreBreakdown = useMemo(() => {
     if (!processedQuestions.length) return null;
+    
+    // Get test-level global settings
+    const testMetadata = attempt?.mocktestId || attempt?.mockTest || {};
+    const globalMarks = (testMetadata.marksPerQuestion !== undefined && testMetadata.marksPerQuestion !== null)
+      ? Number(testMetadata.marksPerQuestion)
+      : null;
+    const globalNegative = (testMetadata.negativeMarking !== undefined && testMetadata.negativeMarking !== null)
+      ? Number(testMetadata.negativeMarking)
+      : 0;
+
     let correct = 0, wrong = 0, skipped = 0, earned = 0, deducted = 0;
+    
     for (const q of processedQuestions) {
-      if (q.status === "correct") { correct++; earned += Number(q.marks) || 0; }
-      else if (q.status === "wrong") { wrong++; deducted += Number(q.negative) || 0; }
+      const qMarks = globalMarks !== null ? globalMarks : (Number(q.marks) || 1);
+
+      if (q.status === "correct") { 
+        correct++; 
+        earned += qMarks; 
+      }
+      else if (q.status === "wrong") { 
+        wrong++; 
+        deducted += globalNegative; 
+      }
       else skipped++;
     }
+    
     const total = earned - deducted;
-    const maxMarks = processedQuestions.reduce((s, q) => s + (Number(q.marks) || 0), 0);
+    const maxMarks = processedQuestions.reduce((s, q) => s + (globalMarks !== null ? globalMarks : (Number(q.marks) || 1)), 0);
     const pct = maxMarks > 0 ? ((total / maxMarks) * 100).toFixed(1) : "0.0";
+    
     return { correct, wrong, skipped, earned, deducted, total, maxMarks, pct };
-  }, [processedQuestions]);
+  }, [processedQuestions, attempt]);
 
   const currentQ = processedQuestions[currentIndex];
 
@@ -416,6 +437,26 @@ const ReviewSolutions = () => {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Marks & Negative Info */}
+              <div className="flex justify-between items-center px-5 py-3 border-t border-slate-100 bg-white">
+                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <span>Marks: </span>
+                  <span className="text-emerald-600">
+                    +{(attempt?.mocktestId?.marksPerQuestion !== undefined && attempt?.mocktestId?.marksPerQuestion !== null)
+                        ? attempt.mocktestId.marksPerQuestion
+                        : (currentQ?.marks || 1)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <span>Negative: </span>
+                  <span className="text-rose-600">
+                    -{(attempt?.mocktestId?.negativeMarking !== undefined && attempt?.mocktestId?.negativeMarking !== null)
+                        ? attempt.mocktestId.negativeMarking
+                        : (currentQ?.negative || 0)}
+                  </span>
+                </div>
               </div>
 
               {/* Explanation */}

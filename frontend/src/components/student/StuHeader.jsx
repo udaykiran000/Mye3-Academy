@@ -154,7 +154,7 @@ const StuHeader = ({ user, setActiveTab }) => {
 
 
         <div className="flex flex-col min-w-fit pl-2 flex-1">
-          <h1 className="text-sm font-black text-white tracking-tight leading-none">
+          <h1 className="text-base font-black text-white tracking-tight leading-none">
             Hi,{' '}
             <button
               onClick={handleProfileClick}
@@ -174,14 +174,14 @@ const StuHeader = ({ user, setActiveTab }) => {
             <input 
               type="text"
               placeholder="Search tests..."
-              className="bg-white/5 hover:bg-white/10 focus:bg-white/15 border border-white/10 rounded-xl py-2 pl-9 pr-4 text-[13px] font-bold text-white placeholder-white/30 outline-none w-full transition-all focus:ring-2 focus:ring-blue-500/50"
+              className="bg-white/5 hover:bg-white/10 focus:bg-white/15 border border-white/10 rounded-xl py-2 pl-9 pr-4 text-sm font-bold text-white placeholder-white/30 outline-none w-full transition-all focus:ring-2 focus:ring-blue-500/50"
               onFocus={() => setShowSearch(true)}
             />
           </div>
 
           <button
             onClick={() => setActiveTab('my-tests')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-[11px] uppercase tracking-wider shadow-lg shadow-blue-500/20 transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-500/20 transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
           >
             <BookOpen size={14} />
             My Enrolls
@@ -202,7 +202,7 @@ const StuHeader = ({ user, setActiveTab }) => {
                 className={`transition-colors drop-shadow ${hasNotification ? 'text-rose-300 animate-pulse' : 'text-slate-300'}`}
                 size={16}
               />
-              <span className={`text-[11px] font-black uppercase tracking-wider ${hasNotification ? 'text-rose-300' : 'text-slate-300'}`}>
+              <span className={`text-xs font-black uppercase tracking-wider ${hasNotification ? 'text-rose-300' : 'text-slate-300'}`}>
                 Notifications
               </span>
               {hasNotification && (
@@ -223,11 +223,11 @@ const StuHeader = ({ user, setActiveTab }) => {
                   <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center gap-2">
                        <Bell size={12} className="text-rose-500" />
-                       <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Inbox</p>
+                       <p className="text-xs font-black text-slate-800 uppercase tracking-widest">Inbox</p>
                     </div>
                     <button
                       onClick={() => { setNotifications([]); setShowNotifications(false); }}
-                      className="text-blue-600 hover:text-blue-700 text-[9px] font-black uppercase tracking-wider"
+                      className="text-blue-600 hover:text-blue-700 text-[11px] font-black uppercase tracking-wider"
                     >
                       Clear All
                     </button>
@@ -236,7 +236,7 @@ const StuHeader = ({ user, setActiveTab }) => {
                     {notifications.length === 0 ? (
                       <div className="py-12 flex flex-col items-center justify-center text-center">
                         <Bell size={32} className="text-slate-200 mb-2" />
-                        <p className="text-[11px] font-bold text-slate-400">No new notifications</p>
+                        <p className="text-xs font-bold text-slate-400">No new notifications</p>
                       </div>
                     ) : (
                       notifications.map((n) => (
@@ -248,8 +248,8 @@ const StuHeader = ({ user, setActiveTab }) => {
                             <Bell size={14} className="text-blue-600" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-[12px] font-bold text-slate-700 leading-snug group-hover:text-blue-600 transition-colors">{n.text}</p>
-                            <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">{n.time}</p>
+                            <p className="text-sm font-bold text-slate-700 leading-snug group-hover:text-blue-600 transition-colors">{n.text}</p>
+                            <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-tighter">{n.time}</p>
                           </div>
                         </div>
                       ))

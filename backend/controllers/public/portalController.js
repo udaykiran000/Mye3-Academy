@@ -82,7 +82,12 @@ export const getMockTestById = async (req, res) => {
 
     if (!test) return res.status(404).json({ message: "Mocktest not found" });
     
-    res.status(200).json({ success: true, test });
+    // ✅ Add effective fields for consistency (Instruction page fallback uses this)
+    const testObj = test.toObject ? test.toObject() : test;
+    testObj.marksPerQuestion = (testObj.marksPerQuestion > 0) ? testObj.marksPerQuestion : (testObj.totalQuestions > 0 ? Number((testObj.totalMarks / testObj.totalQuestions).toFixed(2)) : 1);
+    testObj.negativeMarking = (testObj.negativeMarking !== undefined && testObj.negativeMarking !== null) ? testObj.negativeMarking : 0;
+
+    res.status(200).json({ success: true, test: testObj });
   } catch (err) {
     console.error("GET_MOCKTEST_BY_ID_ERROR:", err);
     res.status(500).json({ message: "Error fetching test details", error: err.message });
